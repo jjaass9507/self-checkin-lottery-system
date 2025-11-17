@@ -1,11 +1,14 @@
-# config.py
 import os
 basedir = os.path.abspath(os.path.dirname(__file__))
 
 class Config:
-    # 新增這一行！
-    SECRET_KEY = os.environ.get('SECRET_KEY') or 'a-very-hard-to-guess-string' # 建議未來用環境變數
-
-    # 資料庫設定
-    SQLALCHEMY_DATABASE_URI = 'sqlite:///' + os.path.join(basedir, 'event.db')
+    # (關鍵修改)
+    # 優先讀取環境變數 'DATABASE_URL' (雲端用)
+    # 如果讀不到，就用原本的 sqlite (本機用)
+    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or \
+        'sqlite:///' + os.path.join(basedir, 'event.db')
+    
     SQLALCHEMY_TRACK_MODIFICATIONS = False
+    
+    # 設定 Secret Key (雲端部署建議要有)
+    SECRET_KEY = os.environ.get('SECRET_KEY') or 'dev-key-for-local-testing'
