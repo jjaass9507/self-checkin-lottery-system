@@ -1,0 +1,16 @@
+# Python
+venv/
+*.pyc
+__pycache__/
+*.py[cod]
+
+# Flask
+.flaskenv
+
+# 敏感資料 (!!)
+event.db
+*.xlsx
+*.csv
+
+# 系統檔案
+.DS_Store
