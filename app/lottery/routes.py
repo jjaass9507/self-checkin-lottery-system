@@ -1,9 +1,9 @@
 from flask import Blueprint, render_template, request, jsonify
 from app import db
-from app.models import CheckinList, Prize, Winner
+# (*** 1. 移除了 Prize, Winner ***)
+from app.models import CheckinList, DrawnTailNumber
 from datetime import datetime
-import random # <-- (1) 匯入 random
-from sqlalchemy.orm import joinedload # (優化查詢用)
+from sqlalchemy import or_ # (我們需要這個來做 .endswith() 查詢)
 
 bp = Blueprint('lottery', __name__)
 
@@ -15,16 +15,16 @@ def lottery_screen():
 # --- (B) 完整中獎名單 (日誌) 頁面 ---
 @bp.route('/winners')
 def winners_list():
-    # (*** 核心查詢 ***)
-    # 1. 取得所有「獎項」
-    # 2. 預先載入 (joinedload) 每個獎項的「中獎紀錄 (winners)」
-    # 3. 預先載入 (joinedload) 每筆中獎紀錄的「報到者 (checkin_item)」
-    # 這樣可以避免 N+1 查詢，效能極高
-    prizes_with_winners = Prize.query.options(
-        joinedload(Prize.winners).joinedload(Winner.checkin_item)
-    ).order_by(Prize.id).all()
+    # (*** 2. 邏輯大改 ***)
+    # 查詢所有「已中獎」的人，並依工號排序
+    all_winners = CheckinList.query.filter_by(has_won=True).order_by(CheckinList.employee_id).all()
     
-    return render_template('lottery/winners.html', prizes_with_winners=prizes_with_winners)
+    # 查詢所有「已抽出的尾號」
+    drawn_numbers = DrawnTailNumber.query.all()
+    
+    return render_template('lottery/winners.html', 
+                           all_winners=all_winners,
+                           drawn_numbers=drawn_numbers)
 
 # --- (C) 核心 API：(前端) 獲取當前狀態 ---
 @bp.route('/api/get_data')
@@ -36,23 +36,14 @@ def api_get_data():
             has_won=False
         ).count()
 
-        # 2. 獲取所有獎項
-        prizes = Prize.query.order_by(Prize.id).all()
-        
-        # 3. 組合獎項資料 (並檢查是否已抽出)
-        prize_data = []
-        for p in prizes:
-            is_drawn = bool(p.winners) # 檢查 p.winners 列表是否為空
-            prize_data.append({
-                "id": p.id,
-                "name": p.prize_name,
-                "quantity": p.quantity,
-                "is_drawn": is_drawn # 告訴前端這個獎抽過了沒
-            })
+        # 2. 獲取所有「已抽出的尾號」
+        drawn_numbers_obj = DrawnTailNumber.query.all()
+        # (將 [obj(7), obj(3)] 轉換為 [7, 3])
+        drawn_numbers_list = [d.tail_number for d in drawn_numbers_obj]
             
         return jsonify({
             "available_count": available_count,
-            "prizes": prize_data
+            "drawn_numbers_list": drawn_numbers_list
         })
         
     except Exception as e:
@@ -62,73 +53,66 @@ def api_get_data():
 @bp.route('/api/draw', methods=['POST'])
 def api_draw():
     data = request.get_json()
-    prize_id = data.get('prize_id')
     
-    if not prize_id:
-        return jsonify({"success": False, "message": "未指定獎項ID"}), 400
+    # (*** 3. 傳入的參數是 tail_number ***)
+    tail_number = data.get('tail_number')
+    
+    if tail_number is None or not (0 <= tail_number <= 9):
+        return jsonify({"success": False, "message": "無效的尾號"}), 400
 
     # (*** 啟動資料庫交易 ***)
     try:
-        # 1. 鎖定獎項 (確保只有一個人能抽)
-        # with_for_update() 會鎖定該行，直到 commit
-        prize = Prize.query.with_for_update().get(prize_id) 
-        
-        if not prize:
-            return jsonify({"success": False, "message": "找不到該獎項"}), 404
-        
-        # 2. 檢查是否已抽過 (以防萬一)
-        if prize.winners:
-            return jsonify({"success": False, "message": "此獎項已被抽過！"}), 400
+        # 1. 檢查這個尾號是否已被抽過
+        is_drawn = DrawnTailNumber.query.filter_by(tail_number=tail_number).first()
+        if is_drawn:
+            return jsonify({"success": False, "message": f"尾號 {tail_number} 已經被抽過了！"}), 400
 
-        quantity_to_draw = prize.quantity
+        # 2. 找出抽獎池中，所有符合「尾號」的人
+        # (注意：我們用字串的 .endswith() 來比對)
+        str_tail_number = str(tail_number)
         
-        # 3. 找出抽獎池
-        pool = CheckinList.query.filter_by(
-            status='CheckedIn',
-            has_won=False
+        pool = CheckinList.query.filter(
+            CheckinList.status == 'CheckedIn',
+            CheckinList.has_won == False,
+            CheckinList.lottery_number.endswith(str_tail_number)
         ).all()
         
-        # 4. 檢查人數是否足夠
-        if len(pool) < quantity_to_draw:
-            return jsonify({
-                "success": False, 
-                "message": f"抽獎失敗：抽獎池人數不足！ (僅 {len(pool)} 人，需要 {quantity_to_draw} 人)"
-            }), 400
-        
-        # 5. (*** 核心 ***) 隨機選取中獎者
-        winners_list = random.sample(pool, quantity_to_draw)
-        
-        drawn_winners_info = []
-        
-        # 6. (*** 核心 ***) 標記中獎並寫入 Log
-        for person in winners_list:
-            # a. 標記此人已中獎 (從抽獎池移除)
-            person.has_won = True 
-            
-            # b. 建立中獎紀錄
-            new_win = Winner(
-                checkin_list_id=person.id,
-                prize_id=prize.id,
-                draw_timestamp=datetime.now() # 記錄抽出時間
-            )
-            db.session.add(new_win)
-            
-            # c. 準備回傳給前端
-            drawn_winners_info.append({
-                "name": person.name,
-                "employee_id": person.employee_id
-            })
+        # 3. 檢查中獎人數
+        if not pool:
+            # (沒有人中獎，但也算抽過了)
+            message = f"尾號 {tail_number} 沒有人中獎。"
+            winners_list_info = []
+        else:
+            # (有人中獎)
+            message = f"恭喜尾號 {tail_number} 的中獎者！"
+            winners_list_info = []
 
-        # 7. (*** 核心 ***) 提交交易
+            # 4. (*** 核心 ***) 標記所有人為「已中獎」
+            for person in pool:
+                person.has_won = True
+                winners_list_info.append({
+                    "name": person.name,
+                    "employee_id": person.employee_id,
+                    "lottery_number": person.lottery_number
+                })
+        
+        # 5. (*** 核心 ***) 記錄這個尾號已被抽出
+        new_drawn_number = DrawnTailNumber(
+            tail_number=tail_number,
+            timestamp=datetime.now()
+        )
+        db.session.add(new_drawn_number)
+        
+        # 6. (*** 核心 ***) 提交交易
         db.session.commit()
         
         return jsonify({
             "success": True,
-            "prize_name": prize.prize_name,
-            "winners": drawn_winners_info
+            "message": message,
+            "tail_number": tail_number,
+            "winners": winners_list_info
         })
 
     except Exception as e:
-        # 8. (*** 核心 ***) 如果發生任何錯誤，回滾所有操作
         db.session.rollback()
         return jsonify({"success": False, "message": f"伺服器發生嚴重錯誤：{e}"}), 500
