@@ -3,60 +3,41 @@ from app import db
 from datetime import datetime
 import uuid
 
-# 1. 報到名單 (CheckinList) - 原 Attendee
+# 1. 報到名單 (CheckinList)
 class CheckinList(db.Model):
-    __tablename__ = 'checkin_list'  # 資料表名稱
+    __tablename__ = 'checkin_list'
     
     id = db.Column(db.Integer, primary_key=True)
-    
-    # --- 您要求的欄位 ---
     name = db.Column(db.String(100), nullable=False)
-    employee_id = db.Column(db.String(50), nullable=False, index=True) # 工號
-    # -----------------------
+    employee_id = db.Column(db.String(50), nullable=False, index=True) # 工號 (用於報到)
+    
+    # (*** 1. 這是新增的欄位 ***)
+    # 我們允許它為空 (nullable=True)，以防有些人員沒有抽獎編號
+    lottery_number = db.Column(db.String(50), nullable=True, index=True) # 抽獎編號 (用於抽獎)
     
     # --- 系統運作欄位 ---
     qr_hash = db.Column(db.String(36), unique=True, nullable=False, default=lambda: str(uuid.uuid4()))
-    status = db.Column(db.String(20), nullable=False, default='Registered') # Status: Registered, CheckedIn
+    status = db.Column(db.String(20), nullable=False, default='Registered')
     check_in_time = db.Column(db.DateTime, nullable=True)
-    has_won = db.Column(db.Boolean, default=False, nullable=False, index=True) # 是否已中獎
-    # -----------------------
-
-    # 建立與 Winner 的關聯
-    winnings = db.relationship('Winner', back_populates='checkin_item', lazy=True)
+    
+    # (*** 2. has_won 仍是關鍵 ***)
+    # 抽中後，此欄位會變為 True
+    has_won = db.Column(db.Boolean, default=False, nullable=False, index=True) 
 
     def __repr__(self):
         return f'<CheckinList {self.name} ({self.employee_id})>'
 
-# 2. 獎項表 (Prizes)
-class Prize(db.Model):
-    __tablename__ = 'prize'
+# (*** 3. Prize 和 Winner 模型已被刪除 ***)
+
+# (*** 4. 這是新增的資料表 ***)
+# 用來記錄哪些尾號 (0-9) 已經被抽過了
+class DrawnTailNumber(db.Model):
+    __tablename__ = 'drawn_tail_number'
     
     id = db.Column(db.Integer, primary_key=True)
-    prize_name = db.Column(db.String(100), nullable=False) # e.g., "特獎"
-    description = db.Column(db.String(200), nullable=True) # e.g., "iPhone 16 Pro"
-    quantity = db.Column(db.Integer, nullable=False, default=1) # 總名額
-    
-    # target_category 已移除
-    
-    winners = db.relationship('Winner', back_populates='prize', lazy=True)
+    # (我們用 Integer 儲存 0-9)
+    tail_number = db.Column(db.Integer, unique=True, nullable=False, index=True)
+    timestamp = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
 
     def __repr__(self):
-        return f'<Prize {self.prize_name}>'
-
-# 3. 中獎紀錄表 (Winners)
-class Winner(db.Model):
-    __tablename__ = 'winner'
-    
-    id = db.Column(db.Integer, primary_key=True)
-    draw_timestamp = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
-    
-    # 關聯已更新 (attendee_id -> checkin_list_id)
-    checkin_list_id = db.Column(db.Integer, db.ForeignKey('checkin_list.id'), nullable=False)
-    prize_id = db.Column(db.Integer, db.ForeignKey('prize.id'), nullable=False)
-    
-    # 關聯已更新 (attendee -> checkin_item)
-    checkin_item = db.relationship('CheckinList', back_populates='winnings')
-    prize = db.relationship('Prize', back_populates='winners')
-
-    def __repr__(self):
-        return f'<Winner {self.checkin_item.name} won {self.prize.prize_name}>'
+        return f'<DrawnTailNumber {self.tail_number}>'
