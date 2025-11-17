@@ -18,19 +18,17 @@
         .stat-card.border-primary { border-color: #0d6efd; }
         .stat-card.border-success { border-color: #198754; }
         .stat-card.border-warning { border-color: #ffc107; }
-
-        /* (*** 關鍵：讓表格的頭部固定 ***) */
+        
         .table-container {
-            max-height: 70vh; /* 限制高度 */
-            overflow-y: auto; /* 加上垂直捲軸 */
+            max-height: 70vh;
+            overflow-y: auto;
         }
         .table thead {
-            position: sticky; /* 關鍵 */
-            top: 0; /* 關鍵 */
-            background: #fff; /* 必須有背景色 */
+            position: sticky;
+            top: 0;
+            background: #fff;
             z-index: 10;
         }
-        /* (*** 狀態標籤 ***) */
         .status-badge {
             padding: 0.4em 0.7em;
             border-radius: 0.25rem;
@@ -54,14 +52,19 @@
             <a class="navbar-brand" href="#">
                 <i class="bi bi-speedometer2 me-2"></i> 即時報到儀表板
             </a>
-            <span class="navbar-text" id="last-updated">
-                <span class="spinner-border spinner-border-sm"></span> 載入中...
-            </span>
+            <div class="d-flex">
+                <span class="navbar-text me-3" id="last-updated">
+                    <span class="spinner-border spinner-border-sm"></span> 載入中...
+                </span>
+                <a href="{{ url_for('admin.index') }}" class="btn btn-outline-light btn-sm">
+                    <i class="bi bi-house-door-fill"></i> 回後台
+                </a>
+            </div>
         </div>
     </nav>
 
     <div class="container mt-4">
-
+        
         <div class="row g-3 mb-3">
             <div class="col-md-4">
                 <div class="card shadow-sm stat-card border-primary">
@@ -112,17 +115,18 @@
                 </div>
             </div>
             <div class="card-body p-0 table-container">
-                <table class="table table-hover table-striped mb-0" id="status-table">
+                <table class="table table-hover table-striped mb-0 align-middle" id="status-table">
                     <thead>
                         <tr>
                             <th scope="col">姓名</th>
                             <th scope="col">工號</th>
                             <th scope="col">狀態</th>
                             <th scope="col">報到時間</th>
+                            <th scope="col" class="text-end">操作</th>
                         </tr>
                     </thead>
                     <tbody id="table-body">
-                        <tr><td colspan="4" class="text-center p-5"><div class="spinner-border"></div></td></tr>
+                        <tr><td colspan="5" class="text-center p-5"><div class="spinner-border"></div></td></tr>
                     </tbody>
                 </table>
             </div>
@@ -136,18 +140,16 @@
         const tableBodyEl = document.getElementById('table-body');
         const lastUpdatedEl = document.getElementById('last-updated');
         const searchBoxEl = document.getElementById('search-box');
+        
+        let fullDataCache = []; 
 
-        let fullDataCache = []; // 用來緩存完整資料，方便搜尋
-
-        // 1. (*** 核心 ***) 獲取資料並更新畫面的函式
         async function fetchData() {
             try {
                 const response = await fetch("{{ url_for('checkin.api_status_list') }}");
                 if (!response.ok) throw new Error('Network response was not ok');
                 const data = await response.json();
-
+                
                 if (data.success) {
-                    // (A) 更新統計卡片
                     const total = data.total_count;
                     const checkedIn = data.checked_in_count;
                     const pending = total - checkedIn;
@@ -156,44 +158,45 @@
                     statCheckedInEl.innerText = checkedIn;
                     statPendingEl.innerText = pending;
 
-                    // (B) 緩存資料
                     fullDataCache = data.checkin_list;
-
-                    // (C) 根據搜尋框內容，渲染表格
                     renderTable();
 
-                    // (D) 更新時間戳
                     lastUpdatedEl.innerText = `最後更新: ${new Date().toLocaleTimeString()}`;
-                } else {
-                    console.error('API Error:', data.message);
                 }
             } catch (error) {
                 console.error('Fetch Error:', error);
                 lastUpdatedEl.innerText = "更新失敗";
             }
         }
-
-        // 2. (*** 核心 ***) 渲染表格的函式
+        
         function renderTable() {
             const filter = searchBoxEl.value.toLowerCase();
-
-            // 根據搜尋框過濾資料
+            
             const filteredData = fullDataCache.filter(person => {
                 return person.name.toLowerCase().includes(filter) || 
                        person.employee_id.toLowerCase().includes(filter);
             });
 
-            // 產生 HTML
             let html = '';
             if (filteredData.length === 0) {
-                html = '<tr><td colspan="4" class="text-center p-5 text-muted">查無資料</td></tr>';
+                html = '<tr><td colspan="5" class="text-center p-5 text-muted">查無資料</td></tr>';
             } else {
                 filteredData.forEach(person => {
                     let statusBadge;
+                    let actionBtn = '';
+
                     if (person.status === 'CheckedIn') {
                         statusBadge = '<span class="status-badge status-badge-checkedin">已報到</span>';
+                        // 已報到的人顯示一個灰色的勾勾，不能再點
+                        actionBtn = '<button class="btn btn-sm btn-outline-secondary" disabled><i class="bi bi-check-lg"></i></button>';
                     } else {
                         statusBadge = '<span class="status-badge status-badge-registered">未報到</span>';
+                        // (*** 2. 這是重點：手動簽到按鈕 ***)
+                        // 點擊時觸發 adminCheckIn 函式
+                        actionBtn = `
+                            <button class="btn btn-sm btn-primary" onclick="adminCheckIn(${person.id}, '${person.name}')" title="手動簽到">
+                                <i class="bi bi-box-arrow-in-right"></i> 簽到
+                            </button>`;
                     }
 
                     html += `
@@ -202,6 +205,7 @@
                             <td>${person.employee_id}</td>
                             <td>${statusBadge}</td>
                             <td>${person.check_in_time}</td>
+                            <td class="text-end pe-3">${actionBtn}</td>
                         </tr>
                     `;
                 });
@@ -209,18 +213,40 @@
             tableBodyEl.innerHTML = html;
         }
 
-        // 3. (*** 核心 ***) 啟動！
+        // (*** 3. 新增：處理手動簽到的函式 ***)
+        async function adminCheckIn(id, name) {
+            if (!confirm(`確定要幫 [ ${name} ] 進行手動簽到嗎？`)) {
+                return;
+            }
+
+            try {
+                const response = await fetch("{{ url_for('checkin.api_admin_checkin') }}", {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id: id })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    // 成功後，立即重新抓取資料來更新畫面
+                    fetchData(); 
+                } else {
+                    alert("簽到失敗：" + result.message);
+                }
+            } catch (error) {
+                console.error("Error:", error);
+                alert("發生錯誤，請稍後再試");
+            }
+        }
+
         document.addEventListener('DOMContentLoaded', () => {
-            fetchData(); // 立即載入一次
-
-            // (*** 每 5 秒自動刷新一次 ***)
+            fetchData(); 
             setInterval(fetchData, 5000); 
-
-            // 監聽搜尋框的輸入
             searchBoxEl.addEventListener('input', renderTable);
         });
     </script>
-
+    
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

@@ -5,11 +5,9 @@ from flask import current_app
 
 from alembic import context
 
-# (在 env.py 中加入這三行)
 from app import create_app, db
 app = create_app()
 target_metadata = db.metadata
-
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
 config = context.config

@@ -106,3 +106,36 @@ def api_status_list():
         
     except Exception as e:
         return jsonify({"success": False, "message": str(e)}), 500
+    
+# --- (3) 新增：儀表板專用的手動簽到 API ---
+@bp.route('/api/admin_checkin', methods=['POST'])
+def api_admin_checkin():
+    try:
+        data = request.get_json()
+        person_id = data.get('id')
+        
+        if not person_id:
+            return jsonify({"success": False, "message": "缺少 ID"}), 400
+            
+        # 透過 ID 找到該人員
+        person = CheckinList.query.get(person_id)
+        
+        if not person:
+            return jsonify({"success": False, "message": "找不到此人員"}), 404
+            
+        if person.status == 'CheckedIn':
+            return jsonify({"success": False, "message": "此人已經報到過了"}), 400
+            
+        # 執行簽到
+        person.status = 'CheckedIn'
+        person.check_in_time = datetime.now()
+        db.session.commit()
+        
+        return jsonify({
+            "success": True,
+            "message": f"已成功為 {person.name} 完成報到"
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"success": False, "message": str(e)}), 500

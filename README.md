@@ -61,7 +61,10 @@
     flask db init
 
     # (重要!) 修改 migrations/env.py 檔案，使其支援工廠模式
-    # (詳見開發文件，需加入 target_metadata)
+    # (在 env.py 中加入這三行)
+    from app import create_app, db
+    app = create_app()
+    target_metadata = db.metadata
 
     # 產生遷移腳本
     flask db migrate -m "Initial models"
