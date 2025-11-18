@@ -90,7 +90,29 @@
             </div>
         </div>
     </div>
-    
+    <div class="card shadow-sm border-danger mt-5">
+                    <div class="card-header bg-danger text-white">
+                        <h4 class="mb-0"><i class="bi bi-exclamation-triangle-fill me-2"></i>資料重置 (危險區)</h4>
+                    </div>
+                    <div class="card-body p-4">
+                        <p class="card-text text-danger fw-bold">
+                            警告：此操作將「永久刪除」資料庫中的所有資料，無法復原！
+                        </p>
+                        <ul class="mb-4 text-muted">
+                            <li>清除所有已匯入的報到名單</li>
+                            <li>清除所有已簽到的狀態</li>
+                            <li>清除所有已抽出的尾號紀錄</li>
+                        </ul>
+                        
+                        <form action="{{ url_for('admin.reset_data') }}" method="POST" onsubmit="return confirm('【嚴重警告】\n\n您確定要清空所有資料嗎？\n\n這將會刪除所有名單和抽獎紀錄！\n此動作無法復原！');">
+                            <button type="submit" class="btn btn-outline-danger w-100 btn-lg">
+                                <i class="bi bi-trash3-fill me-2"></i> 確認清空所有資料
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+            </div> </div> </div>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

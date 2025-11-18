@@ -1,3 +1,5 @@
+from app.models import CheckinList, DrawnTailNumber # <-- 加上 DrawnTailNumber
+
 from flask import (
     Blueprint, render_template, request, flash, redirect, url_for
 )
@@ -68,4 +70,22 @@ def import_page():
 
     return render_template('admin/import.html')
 
-# (*** 5. 獎項相關的 /prizes 和 /prizes/delete 路由已全部刪除 ***)
+@bp.route('/reset', methods=['POST'])
+def reset_data():
+    try:
+        # 1. 刪除所有抽獎紀錄
+        deleted_tail_numbers = db.session.query(DrawnTailNumber).delete()
+        
+        # 2. 刪除所有報到名單
+        deleted_people = db.session.query(CheckinList).delete()
+        
+        # 3. 提交變更
+        db.session.commit()
+        
+        flash(f"系統重置成功！已清除 {deleted_people} 筆名單、{deleted_tail_numbers} 筆抽獎紀錄。", 'warning')
+        
+    except Exception as e:
+        db.session.rollback()
+        flash(f"重置失敗：{e}", 'danger')
+        
+    return redirect(url_for('admin.import_page'))
