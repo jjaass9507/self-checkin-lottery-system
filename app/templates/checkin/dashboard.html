@@ -14,10 +14,14 @@
         .stat-card.border-warning { border-color: #ffc107; }
         .table-container { max-height: 65vh; overflow-y: auto; }
         .table thead { position: sticky; top: 0; background: #fff; z-index: 10; }
+        
         .status-badge { padding: 0.4em 0.7em; border-radius: 0.25rem; font-size: 0.85em; font-weight: 700; }
         .status-badge-checkedin { color: #198754; background-color: #d1e7dd; }
         .status-badge-registered { color: #6c757d; background-color: #e9ecef; }
-        /* (*** 篩選按鈕樣式 ***) */
+        
+        /* (*** 新增：中獎標籤樣式 ***) */
+        .prize-badge { background-color: #ffc107; color: #000; padding: 0.3em 0.6em; border-radius: 10px; font-size: 0.85em; font-weight: bold; box-shadow: 1px 1px 3px rgba(0,0,0,0.2); }
+        
         .filter-btn { min-width: 40px; margin-right: 5px; margin-bottom: 5px; }
         .filter-btn.active { background-color: #0d6efd; color: white; border-color: #0d6efd; }
     </style>
@@ -35,7 +39,6 @@
     </nav>
 
     <div class="container mt-4">
-        <!-- 統計卡片 -->
         <div class="row g-3 mb-3">
             <div class="col-md-4"><div class="card shadow-sm stat-card border-primary"><div class="card-body d-flex justify-content-between"><div><h5 class="text-primary">總人數</h5><h2 id="stat-total" class="fw-bold">...</h2></div><i class="bi bi-people-fill fs-1 text-muted"></i></div></div></div>
             <div class="col-md-4"><div class="card shadow-sm stat-card border-success"><div class="card-body d-flex justify-content-between"><div><h5 class="text-success">已報到</h5><h2 id="stat-checkedin" class="fw-bold">...</h2></div><i class="bi bi-person-check-fill fs-1 text-success"></i></div></div></div>
@@ -50,20 +53,26 @@
                         <input type="text" class="form-control" id="search-box" placeholder="搜尋工號或姓名...">
                     </div>
                 </div>
-                <!-- (*** 新增：工號首字元篩選區 ***) -->
                 <div class="mt-2" id="prefix-filters">
                     <small class="text-muted me-2">快速篩選 (工號首碼):</small>
                     <button class="btn btn-sm btn-outline-secondary filter-btn active" data-prefix="ALL">全部</button>
-                    <!-- 其他按鈕由 JS 生成 -->
                 </div>
             </div>
             <div class="card-body p-0 table-container">
                 <table class="table table-hover table-striped mb-0 align-middle">
                     <thead>
-                        <tr><th>姓名</th><th>工號</th><th>狀態</th><th>時間</th><th class="text-end">操作</th></tr>
+                        <tr>
+                            <th>姓名</th>
+                            <th>工號</th>
+                            <th>狀態</th>
+                            <!-- (*** 新增：中獎資訊欄位 ***) -->
+                            <th>中獎資訊</th>
+                            <th>時間</th>
+                            <th class="text-end">操作</th>
+                        </tr>
                     </thead>
                     <tbody id="table-body">
-                        <tr><td colspan="5" class="text-center p-5"><div class="spinner-border"></div></td></tr>
+                        <tr><td colspan="6" class="text-center p-5"><div class="spinner-border"></div></td></tr>
                     </tbody>
                 </table>
             </div>
@@ -96,7 +105,6 @@
                     statCheckedInEl.innerText = checkedIn;
                     statPendingEl.innerText = total - checkedIn;
 
-                    // (*** 檢查是否需要更新篩選按鈕 ***)
                     if (fullDataCache.length === 0 && data.checkin_list.length > 0) {
                         generatePrefixButtons(data.checkin_list);
                     }
@@ -110,14 +118,10 @@
             }
         }
 
-        // (*** 新增：生成篩選按鈕 ***)
         function generatePrefixButtons(list) {
-            // 找出所有不重複的首字元，轉大寫，並排序
             const prefixes = [...new Set(list.map(p => p.employee_id.charAt(0).toUpperCase()))].sort();
-            
-            // 保留第一個 "全部" 按鈕，移除其他的
-            const allBtn = prefixFiltersEl.firstElementChild; // 保留 Label
-            const resetBtn = prefixFiltersEl.children[1]; // 保留 "全部" 按鈕
+            const allBtn = prefixFiltersEl.firstElementChild; 
+            const resetBtn = prefixFiltersEl.children[1]; 
             
             prefixFiltersEl.innerHTML = '';
             prefixFiltersEl.appendChild(allBtn);
@@ -129,7 +133,6 @@
                 btn.innerText = char;
                 btn.dataset.prefix = char;
                 btn.onclick = () => {
-                    // 切換 Active 狀態
                     document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
                     btn.classList.add('active');
                     currentPrefixFilter = char;
@@ -138,7 +141,6 @@
                 prefixFiltersEl.appendChild(btn);
             });
 
-            // 重新綁定 "全部" 按鈕事件
             resetBtn.onclick = () => {
                 document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
                 resetBtn.classList.add('active');
@@ -151,31 +153,39 @@
             const searchText = searchBoxEl.value.toLowerCase();
             
             const filteredData = fullDataCache.filter(person => {
-                // 1. 搜尋文字過濾
                 const matchesSearch = person.name.toLowerCase().includes(searchText) || 
                                       person.employee_id.toLowerCase().includes(searchText);
-                
-                // 2. 首字元過濾
                 const matchesPrefix = currentPrefixFilter === 'ALL' || 
                                       person.employee_id.toUpperCase().startsWith(currentPrefixFilter);
-
                 return matchesSearch && matchesPrefix;
             });
 
             let html = '';
             if (filteredData.length === 0) {
-                html = '<tr><td colspan="5" class="text-center p-5 text-muted">查無資料</td></tr>';
+                html = '<tr><td colspan="6" class="text-center p-5 text-muted">查無資料</td></tr>';
             } else {
                 filteredData.forEach(person => {
                     let statusBadge = person.status === 'CheckedIn' 
                         ? '<span class="status-badge status-badge-checkedin">已報到</span>'
                         : '<span class="status-badge status-badge-registered">未報到</span>';
                     
+                    // (*** 新增：中獎顯示邏輯 ***)
+                    let prizeDisplay = person.prize_info 
+                        ? `<span class="prize-badge"><i class="bi bi-trophy-fill me-1"></i>${person.prize_info}</span>`
+                        : '<span class="text-muted">-</span>';
+
                     let actionBtn = person.status === 'CheckedIn' 
                         ? '<button class="btn btn-sm btn-outline-secondary" disabled><i class="bi bi-check-lg"></i></button>'
                         : `<button class="btn btn-sm btn-primary" onclick="adminCheckIn(${person.id}, '${person.name}')">簽到</button>`;
 
-                    html += `<tr><td><b>${person.name}</b></td><td>${person.employee_id}</td><td>${statusBadge}</td><td>${person.check_in_time}</td><td class="text-end pe-3">${actionBtn}</td></tr>`;
+                    html += `<tr>
+                        <td><b>${person.name}</b></td>
+                        <td>${person.employee_id}</td>
+                        <td>${statusBadge}</td>
+                        <td>${prizeDisplay}</td>
+                        <td>${person.check_in_time}</td>
+                        <td class="text-end pe-3">${actionBtn}</td>
+                    </tr>`;
                 });
             }
             tableBodyEl.innerHTML = html;
