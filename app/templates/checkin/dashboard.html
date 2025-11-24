@@ -2,128 +2,65 @@
 <html lang="zh-Hant">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>即時報到儀表板</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
     <style>
-        body {
-            font-family: 'Noto Sans TC', sans-serif;
-            background-color: #f4f7f6;
-        }
-        .stat-card {
-            border-left: 5px solid;
-        }
+        body { font-family: 'Noto Sans TC', sans-serif; background-color: #f4f7f6; }
+        .stat-card { border-left: 5px solid; }
         .stat-card.border-primary { border-color: #0d6efd; }
         .stat-card.border-success { border-color: #198754; }
         .stat-card.border-warning { border-color: #ffc107; }
-        
-        .table-container {
-            max-height: 70vh;
-            overflow-y: auto;
-        }
-        .table thead {
-            position: sticky;
-            top: 0;
-            background: #fff;
-            z-index: 10;
-        }
-        .status-badge {
-            padding: 0.4em 0.7em;
-            border-radius: 0.25rem;
-            font-size: 0.85em;
-            font-weight: 700;
-        }
-        .status-badge-checkedin {
-            color: #198754;
-            background-color: #d1e7dd;
-        }
-        .status-badge-registered {
-            color: #6c757d;
-            background-color: #e9ecef;
-        }
+        .table-container { max-height: 65vh; overflow-y: auto; }
+        .table thead { position: sticky; top: 0; background: #fff; z-index: 10; }
+        .status-badge { padding: 0.4em 0.7em; border-radius: 0.25rem; font-size: 0.85em; font-weight: 700; }
+        .status-badge-checkedin { color: #198754; background-color: #d1e7dd; }
+        .status-badge-registered { color: #6c757d; background-color: #e9ecef; }
+        /* (*** 篩選按鈕樣式 ***) */
+        .filter-btn { min-width: 40px; margin-right: 5px; margin-bottom: 5px; }
+        .filter-btn.active { background-color: #0d6efd; color: white; border-color: #0d6efd; }
     </style>
 </head>
 <body>
 
     <nav class="navbar navbar-dark bg-dark shadow-sm">
         <div class="container-fluid">
-            <a class="navbar-brand" href="#">
-                <i class="bi bi-speedometer2 me-2"></i> 即時報到儀表板
-            </a>
+            <a class="navbar-brand" href="#"><i class="bi bi-speedometer2 me-2"></i> 即時報到儀表板</a>
             <div class="d-flex">
-                <span class="navbar-text me-3" id="last-updated">
-                    <span class="spinner-border spinner-border-sm"></span> 載入中...
-                </span>
-                <a href="{{ url_for('admin.index') }}" class="btn btn-outline-light btn-sm">
-                    <i class="bi bi-house-door-fill"></i> 回後台
-                </a>
+                <span class="navbar-text me-3" id="last-updated"><span class="spinner-border spinner-border-sm"></span></span>
+                <a href="{{ url_for('admin.index') }}" class="btn btn-outline-light btn-sm"><i class="bi bi-house-door-fill"></i> 回後台</a>
             </div>
         </div>
     </nav>
 
     <div class="container mt-4">
-        
+        <!-- 統計卡片 -->
         <div class="row g-3 mb-3">
-            <div class="col-md-4">
-                <div class="card shadow-sm stat-card border-primary">
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div>
-                                <h5 class="card-title text-primary">總報到人數</h5>
-                                <h2 class="mb-0 fw-bold" id="stat-total">...</h2>
-                            </div>
-                            <i class="bi bi-people-fill fs-1 text-muted"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="card shadow-sm stat-card border-success">
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div>
-                                <h5 class="card-title text-success">已報到</h5>
-                                <h2 class="mb-0 fw-bold" id="stat-checkedin">...</h2>
-                            </div>
-                            <i class="bi bi-person-check-fill fs-1 text-success"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="card shadow-sm stat-card border-warning">
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div>
-                                <h5 class="card-title text-warning">未報到</h5>
-                                <h2 class="mb-0 fw-bold" id="stat-pending">...</h2>
-                            </div>
-                            <i class="bi bi-person-x-fill fs-1 text-warning"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
+            <div class="col-md-4"><div class="card shadow-sm stat-card border-primary"><div class="card-body d-flex justify-content-between"><div><h5 class="text-primary">總人數</h5><h2 id="stat-total" class="fw-bold">...</h2></div><i class="bi bi-people-fill fs-1 text-muted"></i></div></div></div>
+            <div class="col-md-4"><div class="card shadow-sm stat-card border-success"><div class="card-body d-flex justify-content-between"><div><h5 class="text-success">已報到</h5><h2 id="stat-checkedin" class="fw-bold">...</h2></div><i class="bi bi-person-check-fill fs-1 text-success"></i></div></div></div>
+            <div class="col-md-4"><div class="card shadow-sm stat-card border-warning"><div class="card-body d-flex justify-content-between"><div><h5 class="text-warning">未報到</h5><h2 id="stat-pending" class="fw-bold">...</h2></div><i class="bi bi-person-x-fill fs-1 text-warning"></i></div></div></div>
         </div>
 
         <div class="card shadow-sm">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h5 class="mb-0">報到名單</h5>
-                <div class="w-50">
-                    <input type="text" class="form-control" id="search-box" placeholder="搜尋工號或姓名...">
+            <div class="card-header">
+                <div class="row align-items-center">
+                    <div class="col-md-4"><h5 class="mb-0">報到名單</h5></div>
+                    <div class="col-md-8">
+                        <input type="text" class="form-control" id="search-box" placeholder="搜尋工號或姓名...">
+                    </div>
+                </div>
+                <!-- (*** 新增：工號首字元篩選區 ***) -->
+                <div class="mt-2" id="prefix-filters">
+                    <small class="text-muted me-2">快速篩選 (工號首碼):</small>
+                    <button class="btn btn-sm btn-outline-secondary filter-btn active" data-prefix="ALL">全部</button>
+                    <!-- 其他按鈕由 JS 生成 -->
                 </div>
             </div>
             <div class="card-body p-0 table-container">
-                <table class="table table-hover table-striped mb-0 align-middle" id="status-table">
+                <table class="table table-hover table-striped mb-0 align-middle">
                     <thead>
-                        <tr>
-                            <th scope="col">姓名</th>
-                            <th scope="col">工號</th>
-                            <th scope="col">狀態</th>
-                            <th scope="col">報到時間</th>
-                            <th scope="col" class="text-end">操作</th>
-                        </tr>
+                        <tr><th>姓名</th><th>工號</th><th>狀態</th><th>時間</th><th class="text-end">操作</th></tr>
                     </thead>
                     <tbody id="table-body">
                         <tr><td colspan="5" class="text-center p-5"><div class="spinner-border"></div></td></tr>
@@ -140,41 +77,89 @@
         const tableBodyEl = document.getElementById('table-body');
         const lastUpdatedEl = document.getElementById('last-updated');
         const searchBoxEl = document.getElementById('search-box');
+        const prefixFiltersEl = document.getElementById('prefix-filters');
         
-        let fullDataCache = []; 
+        let fullDataCache = [];
+        let currentPrefixFilter = 'ALL';
 
         async function fetchData() {
             try {
                 const response = await fetch("{{ url_for('checkin.api_status_list') }}");
-                if (!response.ok) throw new Error('Network response was not ok');
+                if (!response.ok) throw new Error();
                 const data = await response.json();
                 
                 if (data.success) {
                     const total = data.total_count;
                     const checkedIn = data.checked_in_count;
-                    const pending = total - checkedIn;
-
+                    
                     statTotalEl.innerText = total;
                     statCheckedInEl.innerText = checkedIn;
-                    statPendingEl.innerText = pending;
+                    statPendingEl.innerText = total - checkedIn;
+
+                    // (*** 檢查是否需要更新篩選按鈕 ***)
+                    if (fullDataCache.length === 0 && data.checkin_list.length > 0) {
+                        generatePrefixButtons(data.checkin_list);
+                    }
 
                     fullDataCache = data.checkin_list;
                     renderTable();
-
-                    lastUpdatedEl.innerText = `最後更新: ${new Date().toLocaleTimeString()}`;
+                    lastUpdatedEl.innerText = `更新: ${new Date().toLocaleTimeString()}`;
                 }
-            } catch (error) {
-                console.error('Fetch Error:', error);
+            } catch (e) {
                 lastUpdatedEl.innerText = "更新失敗";
             }
         }
+
+        // (*** 新增：生成篩選按鈕 ***)
+        function generatePrefixButtons(list) {
+            // 找出所有不重複的首字元，轉大寫，並排序
+            const prefixes = [...new Set(list.map(p => p.employee_id.charAt(0).toUpperCase()))].sort();
+            
+            // 保留第一個 "全部" 按鈕，移除其他的
+            const allBtn = prefixFiltersEl.firstElementChild; // 保留 Label
+            const resetBtn = prefixFiltersEl.children[1]; // 保留 "全部" 按鈕
+            
+            prefixFiltersEl.innerHTML = '';
+            prefixFiltersEl.appendChild(allBtn);
+            prefixFiltersEl.appendChild(resetBtn);
+
+            prefixes.forEach(char => {
+                const btn = document.createElement('button');
+                btn.className = 'btn btn-sm btn-outline-secondary filter-btn';
+                btn.innerText = char;
+                btn.dataset.prefix = char;
+                btn.onclick = () => {
+                    // 切換 Active 狀態
+                    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    currentPrefixFilter = char;
+                    renderTable();
+                };
+                prefixFiltersEl.appendChild(btn);
+            });
+
+            // 重新綁定 "全部" 按鈕事件
+            resetBtn.onclick = () => {
+                document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+                resetBtn.classList.add('active');
+                currentPrefixFilter = 'ALL';
+                renderTable();
+            };
+        }
         
         function renderTable() {
-            const filter = searchBoxEl.value.toLowerCase();
+            const searchText = searchBoxEl.value.toLowerCase();
             
             const filteredData = fullDataCache.filter(person => {
-                return person.name.toLowerCase().includes(filter) || 
-                       person.employee_id.toLowerCase().includes(filter);
+                // 1. 搜尋文字過濾
+                const matchesSearch = person.name.toLowerCase().includes(searchText) || 
+                                      person.employee_id.toLowerCase().includes(searchText);
+                
+                // 2. 首字元過濾
+                const matchesPrefix = currentPrefixFilter === 'ALL' || 
+                                      person.employee_id.toUpperCase().startsWith(currentPrefixFilter);
+
+                return matchesSearch && matchesPrefix;
             });
 
             let html = '';
@@ -182,62 +167,32 @@
                 html = '<tr><td colspan="5" class="text-center p-5 text-muted">查無資料</td></tr>';
             } else {
                 filteredData.forEach(person => {
-                    let statusBadge;
-                    let actionBtn = '';
+                    let statusBadge = person.status === 'CheckedIn' 
+                        ? '<span class="status-badge status-badge-checkedin">已報到</span>'
+                        : '<span class="status-badge status-badge-registered">未報到</span>';
+                    
+                    let actionBtn = person.status === 'CheckedIn' 
+                        ? '<button class="btn btn-sm btn-outline-secondary" disabled><i class="bi bi-check-lg"></i></button>'
+                        : `<button class="btn btn-sm btn-primary" onclick="adminCheckIn(${person.id}, '${person.name}')">簽到</button>`;
 
-                    if (person.status === 'CheckedIn') {
-                        statusBadge = '<span class="status-badge status-badge-checkedin">已報到</span>';
-                        // 已報到的人顯示一個灰色的勾勾，不能再點
-                        actionBtn = '<button class="btn btn-sm btn-outline-secondary" disabled><i class="bi bi-check-lg"></i></button>';
-                    } else {
-                        statusBadge = '<span class="status-badge status-badge-registered">未報到</span>';
-                        // (*** 2. 這是重點：手動簽到按鈕 ***)
-                        // 點擊時觸發 adminCheckIn 函式
-                        actionBtn = `
-                            <button class="btn btn-sm btn-primary" onclick="adminCheckIn(${person.id}, '${person.name}')" title="手動簽到">
-                                <i class="bi bi-box-arrow-in-right"></i> 簽到
-                            </button>`;
-                    }
-
-                    html += `
-                        <tr>
-                            <td><b>${person.name}</b></td>
-                            <td>${person.employee_id}</td>
-                            <td>${statusBadge}</td>
-                            <td>${person.check_in_time}</td>
-                            <td class="text-end pe-3">${actionBtn}</td>
-                        </tr>
-                    `;
+                    html += `<tr><td><b>${person.name}</b></td><td>${person.employee_id}</td><td>${statusBadge}</td><td>${person.check_in_time}</td><td class="text-end pe-3">${actionBtn}</td></tr>`;
                 });
             }
             tableBodyEl.innerHTML = html;
         }
 
-        // (*** 3. 新增：處理手動簽到的函式 ***)
         async function adminCheckIn(id, name) {
-            if (!confirm(`確定要幫 [ ${name} ] 進行手動簽到嗎？`)) {
-                return;
-            }
-
+            if (!confirm(`確認幫 [ ${name} ] 簽到？`)) return;
             try {
-                const response = await fetch("{{ url_for('checkin.api_admin_checkin') }}", {
+                const res = await fetch("{{ url_for('checkin.api_admin_checkin') }}", {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ id: id })
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({id: id})
                 });
-                
-                const result = await response.json();
-                
-                if (result.success) {
-                    // 成功後，立即重新抓取資料來更新畫面
-                    fetchData(); 
-                } else {
-                    alert("簽到失敗：" + result.message);
-                }
-            } catch (error) {
-                console.error("Error:", error);
-                alert("發生錯誤，請稍後再試");
-            }
+                const data = await res.json();
+                if(data.success) fetchData();
+                else alert(data.message);
+            } catch(e) { alert("Error"); }
         }
 
         document.addEventListener('DOMContentLoaded', () => {
@@ -246,7 +201,6 @@
             searchBoxEl.addEventListener('input', renderTable);
         });
     </script>
-    
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

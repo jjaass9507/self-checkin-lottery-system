@@ -1,8 +1,8 @@
-"""Initial models
+"""Reset DB with prize_name and filters
 
-Revision ID: a72e0919fffa
+Revision ID: 99e8b46574f7
 Revises: 
-Create Date: 2025-11-17 23:28:31.838831
+Create Date: 2025-11-24 19:01:45.258657
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = 'a72e0919fffa'
+revision = '99e8b46574f7'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -38,6 +38,7 @@ def upgrade():
     op.create_table('drawn_tail_number',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('tail_number', sa.Integer(), nullable=False),
+    sa.Column('prize_name', sa.String(length=100), nullable=False),
     sa.Column('timestamp', sa.DateTime(), nullable=False),
     sa.PrimaryKeyConstraint('id')
     )

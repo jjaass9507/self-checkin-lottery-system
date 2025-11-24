@@ -8,38 +8,34 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Orbitron:wght@700;900&display=swap" rel="stylesheet">
     <style>
-        /* (*** 1. 抽獎按鈕樣式 ***) */
-        .btn-draw-number {
-            font-family: 'Orbitron', sans-serif;
-            font-weight: 700;
-            font-size: 2.5rem;
-            margin: 5px;
-            width: 100px;
-            height: 100px;
-            border-radius: 50%; /* 圓形按鈕 */
-            background-image: linear-gradient(to right, #007bff 0%, #0056b3 100%);
-            border: 3px solid #fff;
-            box-shadow: 0 5px 15px rgba(0,123,255,0.3);
+        body {
+            background: linear-gradient(270deg, #0f0c29, #302b63, #24243e);
+            background-size: 600% 600%;
+            animation: gradient-animation 20s ease infinite;
+            color: #fff;
+            text-align: center;
+            font-family: 'Noto Sans TC', sans-serif;
+            overflow: hidden;
         }
-        .btn-draw-number:disabled {
-            background-image: linear-gradient(to right, #6c757d 0%, #343a40 100%);
-            border-color: #999;
-            opacity: 0.6;
-        }
-        
-        /* (其他 CSS 樣式... 保持原樣) */
-        body { background: linear-gradient(270deg, #0f0c29, #302b63, #24243e); background-size: 600% 600%; animation: gradient-animation 20s ease infinite; color: #fff; text-align: center; font-family: 'Noto Sans TC', sans-serif; overflow: hidden; }
         @keyframes gradient-animation { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
         .lottery-container { min-height: 100vh; display: flex; flex-direction: column; justify-content: space-between; padding: 2rem; }
         .main-title { font-family: 'Orbitron', sans-serif; font-weight: 900; font-size: 5rem; color: #fff; text-shadow: 0 0 10px #fff, 0 0 20px #fff, 0 0 30px #f09, 0 0 40px #f09; margin-top: 1rem; }
         #status-bar { color: #aaa; background: rgba(0,0,0,0.2); padding: 0.5rem; border-radius: 10px; display: inline-block; margin: auto; border: 1px solid #444; }
         #pool-count { font-weight: 700; font-size: 1.25rem; color: #00ffea; font-family: 'Orbitron', sans-serif; }
+        
         #winner-display { min-height: 40vh; }
-        #current-prize-name { font-family: 'Noto Sans TC', sans-serif; font-weight: 700; font-size: 2.5rem; color: #ffd700; text-shadow: 0 0 10px #ffd700; }
+        #result-title { font-size: 2.5rem; color: #ffd700; font-weight: 700; margin-bottom: 2rem; }
+        
         .winner-card { background: linear-gradient(145deg, #fefde8, #f8d7a0); color: #333; padding: 1rem 1.5rem; margin: 0.5rem; border-radius: 10px; font-size: 1.75rem; font-weight: 700; border: 2px solid #fff; box-shadow: 0 0 20px #f8d7a0, 0 5px 15px rgba(0,0,0,0.3); display: inline-block; opacity: 0; transform: scale(0.5) rotate(15deg); animation: pop-in 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
         .winner-card small { font-size: 1rem; font-weight: 500; }
         @keyframes pop-in { to { opacity: 1; transform: scale(1) rotate(0deg); } }
-        .footer-links { padding-bottom: 1rem; }
+        
+        /* (*** 新增：輸入區樣式 ***) */
+        .controls { background: rgba(255,255,255,0.1); border-radius: 15px; padding: 20px; max-width: 800px; margin: auto; backdrop-filter: blur(5px); border: 1px solid rgba(255,255,255,0.2); }
+        .form-control-lg { background: rgba(0,0,0,0.5); color: #fff; border: 1px solid #555; text-align: center; font-size: 1.5rem; }
+        .form-control-lg:focus { background: rgba(0,0,0,0.7); color: #fff; border-color: #00ffea; box-shadow: 0 0 10px rgba(0, 255, 234, 0.5); }
+        #draw-btn { font-size: 1.5rem; font-weight: 700; padding: 10px 40px; background: linear-gradient(to right, #f12711, #f5af19); border: none; }
+        #draw-btn:hover { transform: scale(1.05); box-shadow: 0 0 20px rgba(245, 175, 25, 0.5); }
     </style>
 </head>
 <body>
@@ -48,29 +44,39 @@
         <header>
             <h1 class="main-title">LUCKY DRAW</h1>
             <div id="status-bar" class="h5">
-                目前抽獎池人數： <span id="pool-count">...</span>
+                可抽獎人數： <span id="pool-count">...</span> | 已抽出尾號： <span id="drawn-history">...</span>
             </div>
         </header>
 
         <main id="winner-display">
-            <h2 id="current-prize-name" class="mb-4"></h2>
-            <div id="winner-list" class="d-flex flex-wrap justify-content-center">
-                </div>
+            <h2 id="result-title">準備抽獎</h2>
+            <div id="winner-list" class="d-flex flex-wrap justify-content-center"></div>
         </main>
         
         <footer>
-            <div class="controls p-3 mb-3" style="max-width: 900px; margin: auto;">
-                <h4 class="mb-3">請抽出幸運尾號</h4>
-                <div id="draw-button-container" class="d-flex flex-wrap justify-content-center">
+            <!-- (*** 修改：輸入介面 ***) -->
+            <div class="controls mb-4">
+                <form id="draw-form" class="row g-3 justify-content-center align-items-center">
+                    <div class="col-md-5">
+                        <input type="text" class="form-control form-control-lg" id="prize-name" placeholder="輸入獎項名稱 (如: 特獎)" required>
                     </div>
+                    <div class="col-md-3">
+                        <input type="number" class="form-control form-control-lg" id="tail-number" placeholder="尾號 (0-9)" min="0" max="9" required>
+                    </div>
+                    <div class="col-md-3">
+                        <button type="submit" class="btn btn-warning w-100" id="draw-btn">
+                            <i class="bi bi-gift-fill me-2"></i> 抽出
+                        </button>
+                    </div>
+                </form>
             </div>
             
             <div class="footer-links">
                 <a href="{{ url_for('lottery.winners_list') }}" class="btn btn-outline-secondary btn-sm" target="_blank">
-                    <i class="bi bi-card-checklist me-1"></i> 查看完整中獎名單
+                    <i class="bi bi-card-checklist me-1"></i> 中獎日誌
                 </a>
                 <a href="{{ url_for('admin.index') }}" class="btn btn-outline-secondary btn-sm" target="_blank">
-                    <i class="bi bi-gear-fill me-1"></i> 前往後台
+                    <i class="bi bi-gear-fill me-1"></i> 後台
                 </a>
             </div>
         </footer>
@@ -78,100 +84,91 @@
 
     <script>
         const poolCountEl = document.getElementById('pool-count');
+        const drawnHistoryEl = document.getElementById('drawn-history');
         const winnerListEl = document.getElementById('winner-list');
-        const currentPrizeNameEl = document.getElementById('current-prize-name');
-        const drawButtonContainer = document.getElementById('draw-button-container');
+        const resultTitleEl = document.getElementById('result-title');
+        const drawForm = document.getElementById('draw-form');
+        const drawBtn = document.getElementById('draw-btn');
+        const prizeInput = document.getElementById('prize-name');
+        const tailInput = document.getElementById('tail-number');
 
-        // 1. 載入頁面時，獲取抽獎狀態並生成按鈕
         document.addEventListener('DOMContentLoaded', fetchData);
 
         async function fetchData() {
             try {
                 const response = await fetch("{{ url_for('lottery.api_get_data') }}");
                 const data = await response.json();
-                
-                // data = { available_count: 120, drawn_numbers_list: [3, 7] }
-
-                // 更新抽獎池人數
                 poolCountEl.innerText = data.available_count;
-                
-                // (*** 4. 生成或更新按鈕 ***)
-                drawButtonContainer.innerHTML = ''; // 清空
-                for (let i = 0; i <= 9; i++) {
-                    const isDrawn = data.drawn_numbers_list.includes(i);
-                    const button = document.createElement('button');
-                    button.className = 'btn btn-primary btn-draw-number';
-                    button.innerText = i;
-                    button.dataset.number = i;
-                    button.disabled = isDrawn;
-                    if (isDrawn) {
-                        button.innerText = 'X';
-                    }
-                    // (為按鈕綁定點擊事件)
-                    button.addEventListener('click', () => handleDraw(i));
-                    drawButtonContainer.appendChild(button);
-                }
-
+                drawnHistoryEl.innerText = data.drawn_numbers_list.join(", ") || "無";
+                return data.drawn_numbers_list;
             } catch (error) {
-                console.error("Error fetching data:", error);
-                poolCountEl.innerText = "錯誤";
+                console.error("Error:", error);
             }
+            return [];
         }
-        
-        // 3. (*** 核心 ***) 監聽抽獎按鈕
-        async function handleDraw(tailNumber) {
-            // (*** 5. 確認視窗 ***)
-            if (!confirm(`確定要抽出尾號 [ ${tailNumber} ] 嗎？\n(此動作無法復原)`)) {
-                return;
+
+        drawForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const prizeName = prizeInput.value.trim();
+            const tailNum = parseInt(tailInput.value);
+
+            if (!prizeName) return alert("請輸入獎項名稱");
+            if (isNaN(tailNum) || tailNum < 0 || tailNum > 9) return alert("請輸入 0-9 的尾號");
+
+            // 檢查是否已抽過
+            const drawnList = await fetchData();
+            if (drawnList.includes(tailNum)) {
+                return alert(`尾號 ${tailNum} 已經抽過了！請換一個號碼。`);
             }
 
-            // 鎖定所有按鈕
-            document.querySelectorAll('.btn-draw-number').forEach(btn => btn.disabled = true);
-            
+            if (!confirm(`確認要抽出：\n\n【 ${prizeName} 】\n\n尾號：【 ${tailNum} 】\n\n確定嗎？`)) return;
+
+            // 鎖定 UI
+            drawBtn.disabled = true;
             winnerListEl.innerHTML = '';
-            currentPrizeNameEl.innerText = '抽獎中...';
+            resultTitleEl.innerText = '正在抽出幸運兒...';
 
             try {
-                // 4. 呼叫後端抽獎 API
                 const response = await fetch("{{ url_for('lottery.api_draw') }}", {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ tail_number: tailNumber })
+                    body: JSON.stringify({ prize_name: prizeName, tail_number: tailNum })
                 });
                 
                 const result = await response.json();
-                // result = { success: true, message: "...", winners: [...], tail_number: 7 }
 
                 if (result.success) {
-                    currentPrizeNameEl.innerText = result.message; // "恭喜尾號 7..."
+                    resultTitleEl.innerText = `🎉 ${result.message}`;
                     
                     if (result.winners.length > 0) {
                         result.winners.forEach((winner, index) => {
                             setTimeout(() => {
                                 const card = document.createElement('div');
                                 card.className = 'winner-card shadow';
-                                card.innerHTML = `${winner.name}<br><small class="text-muted">(${winner.employee_id} / ${winner.lottery_number})</small>`;
+                                card.innerHTML = `${winner.name}<br><small class="text-muted">${winner.employee_id}</small>`;
                                 winnerListEl.appendChild(card);
                             }, index * 200);
                         });
                     }
                     
-                    // (*** 6. 重新載入資料 ***)
-                    // (這會自動更新抽獎池人數，並把剛抽的按鈕 disable)
-                    await fetchData();
-
+                    // 清空輸入框
+                    prizeInput.value = '';
+                    tailInput.value = '';
                 } else {
-                    alert(`抽獎失敗：${result.message}`);
-                    // 重新啟用按鈕 (除了已抽過的)
-                    await fetchData();
+                    alert(result.message);
+                    resultTitleEl.innerText = '抽獎失敗';
                 }
+                
+                await fetchData(); // 更新狀態
 
             } catch (error) {
-                console.error("Error drawing:", error);
-                alert("抽獎時發生嚴重錯誤！");
-                await fetchData(); // 發生錯誤時也重載
+                console.error(error);
+                alert("伺服器錯誤");
+            } finally {
+                drawBtn.disabled = false;
             }
-        }
+        });
     </script>
 </body>
 </html>

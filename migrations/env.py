@@ -8,6 +8,7 @@ from alembic import context
 from app import create_app, db
 app = create_app()
 target_metadata = db.metadata
+# (記得把原本的 target_metadata = None 註解掉或刪除)
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
 config = context.config
