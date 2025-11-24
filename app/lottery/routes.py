@@ -9,17 +9,16 @@ bp = Blueprint('lottery', __name__)
 def lottery_screen():
     return render_template('lottery/screen.html')
 
-# (*** 修改：準備完整中獎資料供前端篩選 ***)
 @bp.route('/winners')
 def winners_list():
     # 1. 取得所有中獎人
     all_winners = CheckinList.query.filter_by(has_won=True).order_by(CheckinList.employee_id).all()
     
-    # 2. 取得已抽尾號紀錄，並建立 { '7': '特獎' } 對照表
+    # 2. 取得已抽尾號紀錄
     drawn_numbers = DrawnTailNumber.query.order_by(DrawnTailNumber.timestamp.desc()).all()
     prize_map = {str(d.tail_number): d.prize_name for d in drawn_numbers}
     
-    # 3. 將中獎人資料轉為 List[Dict]，並填入獎項名稱
+    # 3. 準備 JSON 資料給前端
     winners_data = []
     for w in all_winners:
         tail = w.lottery_number.strip()[-1] if w.lottery_number else ""
@@ -32,13 +31,14 @@ def winners_list():
             "prize_name": prize_name
         })
 
-    # 傳遞 JSON 格式的 winners_data 給前端 JS 使用
     return render_template('lottery/winners.html', 
                            drawn_numbers=drawn_numbers, 
-                           winners_data=winners_data)
+                           winners_data=winners_data) # 這裡必須傳遞 winners_data
 
+# (API 部分保持不變)
 @bp.route('/api/get_data')
 def api_get_data():
+    # ... (保持原樣) ...
     try:
         available_count = CheckinList.query.filter_by(status='CheckedIn', has_won=False).count()
         drawn_numbers_obj = DrawnTailNumber.query.all()
@@ -49,6 +49,7 @@ def api_get_data():
 
 @bp.route('/api/draw', methods=['POST'])
 def api_draw():
+    # ... (保持原樣) ...
     data = request.get_json()
     tail_number = data.get('tail_number')
     prize_name = data.get('prize_name', '神秘獎項')
