@@ -1,6 +1,5 @@
 from flask import Blueprint, render_template, request, jsonify
 from app import db
-# (*** 新增匯入 DrawnTailNumber 以查詢獎項名稱 ***)
 from app.models import CheckinList, DrawnTailNumber
 from datetime import datetime
 
@@ -21,8 +20,7 @@ def api_status_list():
         # 1. 查詢所有名單
         all_people = CheckinList.query.order_by(CheckinList.name).all()
         
-        # 2. (*** 新增 ***) 預先抓取所有已抽出的尾號與獎項名稱，做成對照表
-        # 格式: { '7': '特獎', '3': '二獎' }
+        # 2. 預先抓取已抽出尾號與獎項
         drawn_records = DrawnTailNumber.query.all()
         prize_map = {str(d.tail_number): d.prize_name for d in drawn_records}
         
@@ -33,21 +31,20 @@ def api_status_list():
             if person.status == 'CheckedIn':
                 checked_in_count += 1
             
-            # (*** 新增 ***) 判斷獎項資訊
+            # 判斷獎項資訊
             prize_info = ""
             if person.has_won and person.lottery_number:
-                # 取抽獎編號的最後一碼
                 tail = person.lottery_number.strip()[-1]
-                # 從對照表找獎項名稱
                 prize_info = prize_map.get(tail, "已中獎")
 
             output_list.append({
                 "id": person.id,
                 "name": person.name,
                 "employee_id": person.employee_id,
+                "lottery_number": person.lottery_number, # (*** 新增這行：回傳抽獎編號 ***)
                 "status": person.status,
                 "check_in_time": person.check_in_time.strftime('%H:%M:%S') if person.status == 'CheckedIn' else '',
-                "prize_info": prize_info # (*** 新增欄位 ***)
+                "prize_info": prize_info
             })
 
         return jsonify({
