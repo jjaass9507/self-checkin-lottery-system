@@ -68,10 +68,16 @@
         </div>
     </div>
 
+    <!-- (*** 解決 VSC 紅色錯誤的關鍵：將資料放在這裡 ***) -->
+    <script id="winners-data" type="application/json">
+        {{ winners_data | default([]) | tojson | safe }}
+    </script>
+
     <script>
-        // (*** 1. 接收後端傳來的資料 ***)
-        // 注意：這裡使用 Jinja2 的 |tojson 濾鏡將 Python List 轉為 JS Array
-        const fullWinnersData = {{ winners_data | tojson }};
+        // (*** 1. 從上方的 script 標籤讀取資料 ***)
+        // 這樣寫完全符合標準 JS 語法，VS Code 就不會報錯了
+        const dataElement = document.getElementById('winners-data');
+        const fullWinnersData = JSON.parse(dataElement.textContent);
         
         const tableBodyEl = document.getElementById('table-body');
         const searchBoxEl = document.getElementById('search-box');
@@ -82,13 +88,18 @@
 
         // (*** 2. 初始化 ***)
         document.addEventListener('DOMContentLoaded', () => {
-            generatePrefixButtons(fullWinnersData);
-            renderTable();
+            if (fullWinnersData && fullWinnersData.length > 0) {
+                generatePrefixButtons(fullWinnersData);
+                renderTable();
+            } else {
+                // 若無資料，顯示預設狀態
+                tableBodyEl.innerHTML = '<tr><td colspan="4" class="text-center p-4 text-muted">無中獎資料</td></tr>';
+            }
         });
 
         // 生成按鈕邏輯 (與 Dashboard 相同)
         function generatePrefixButtons(list) {
-            if (list.length === 0) return;
+            if (!list || list.length === 0) return;
 
             const prefixes = [...new Set(list.map(p => p.employee_id.charAt(0).toUpperCase()))].sort();
             const resetBtn = prefixFiltersEl.firstElementChild;
