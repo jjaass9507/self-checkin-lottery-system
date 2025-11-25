@@ -1,18 +1,15 @@
-from app.models import CheckinList, DrawnTailNumber # <-- 加上 DrawnTailNumber
-
 from flask import (
     Blueprint, render_template, request, flash, redirect, url_for
 )
 import pandas as pd
 from app import db
-# (*** 1. 移除了 Prize, Winner ***)
-from app.models import CheckinList 
+from app.models import CheckinList, DrawnTailNumber
+from datetime import datetime
 
 bp = Blueprint('admin', __name__)
 
 @bp.route('/')
 def index():
-    # (*** 2. 獎項頁面沒了，所以首頁永遠是匯入頁 ***)
     return redirect(url_for('admin.import_page'))
 
 @bp.route('/import', methods=['GET', 'POST'])
@@ -31,7 +28,6 @@ def import_page():
             try:
                 df = pd.read_excel(file)
 
-                # (*** 3. 檢查欄位更新 ***)
                 if 'name' not in df.columns or 'employee_id' not in df.columns:
                     flash("Excel 檔案中缺少 'name' 或 'employee_id' 欄位", 'danger')
                     return redirect(request.url)
@@ -40,9 +36,6 @@ def import_page():
                 for _, row in df.iterrows():
                     name = str(row['name'])
                     employee_id = str(row['employee_id']) 
-                    
-                    # (*** 4. 讀取新的 lottery_number ***)
-                    # (使用 .get()，如果 Excel 沒這欄，就存為 None)
                     lottery_number = str(row.get('lottery_number', ''))
                     
                     if not employee_id:
@@ -70,22 +63,72 @@ def import_page():
 
     return render_template('admin/import.html')
 
-@bp.route('/reset', methods=['POST'])
-def reset_data():
+# --- (新功能) 1. 清除所有名單 (最徹底) ---
+@bp.route('/reset/list', methods=['POST'])
+def reset_list():
     try:
-        # 1. 刪除所有抽獎紀錄
-        deleted_tail_numbers = db.session.query(DrawnTailNumber).delete()
-        
-        # 2. 刪除所有報到名單
-        deleted_people = db.session.query(CheckinList).delete()
-        
-        # 3. 提交變更
+        # 清空名單會連帶讓所有狀態消失，所以通常也建議清空抽獎紀錄(選項)
+        # 這裡我們只清空 CheckinList，但為了資料一致性，建議使用者先清空抽獎紀錄
+        deleted = db.session.query(CheckinList).delete()
         db.session.commit()
-        
-        flash(f"系統重置成功！已清除 {deleted_people} 筆名單、{deleted_tail_numbers} 筆抽獎紀錄。", 'warning')
-        
+        flash(f"已清除所有名單 (共 {deleted} 筆)。", 'warning')
     except Exception as e:
         db.session.rollback()
-        flash(f"重置失敗：{e}", 'danger')
+        flash(f"清除名單失敗：{e}", 'danger')
+    return redirect(url_for('admin.import_page'))
+
+# --- (新功能) 2. 清除報到紀錄 (重置為未報到) ---
+@bp.route('/reset/checkin', methods=['POST'])
+def reset_checkin():
+    try:
+        # 將所有 status='CheckedIn' 改為 'Registered'，時間歸零
+        updated = CheckinList.query.filter_by(status='CheckedIn').update({
+            'status': 'Registered',
+            'check_in_time': None
+        })
+        db.session.commit()
+        flash(f"已重置所有報到狀態 (共 {updated} 人變回未報到)。", 'warning')
+    except Exception as e:
+        db.session.rollback()
+        flash(f"重置報到失敗：{e}", 'danger')
+    return redirect(url_for('admin.import_page'))
+
+# --- (新功能) 3. 清除中獎紀錄 (重置為未中獎) ---
+@bp.route('/reset/lottery', methods=['POST'])
+def reset_lottery():
+    try:
+        # 1. 刪除 DrawnTailNumber 紀錄
+        deleted_log = db.session.query(DrawnTailNumber).delete()
         
+        # 2. 將所有 has_won=True 改為 False
+        updated_people = CheckinList.query.filter_by(has_won=True).update({
+            'has_won': False
+        })
+        
+        db.session.commit()
+        flash(f"已重置中獎紀錄 (清除 {deleted_log} 筆尾號，{updated_people} 人變回未中獎)。", 'warning')
+    except Exception as e:
+        db.session.rollback()
+        flash(f"重置中獎失敗：{e}", 'danger')
+    return redirect(url_for('admin.import_page'))
+
+# --- 測試用一鍵簽到 ---
+@bp.route('/test_checkin_all', methods=['POST'])
+def test_checkin_all():
+    try:
+        pending_users = CheckinList.query.filter(CheckinList.status != 'CheckedIn').all()
+        count = len(pending_users)
+        if count == 0:
+            flash("目前所有人皆已報到。", 'info')
+            return redirect(url_for('admin.import_page'))
+
+        current_time = datetime.now()
+        for person in pending_users:
+            person.status = 'CheckedIn'
+            person.check_in_time = current_time
+        db.session.commit()
+        flash(f"【測試】已將剩餘 {count} 人標記為已報到。", 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f"失敗：{e}", 'danger')
     return redirect(url_for('admin.import_page'))
