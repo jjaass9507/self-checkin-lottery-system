@@ -3,7 +3,7 @@ from flask import (
 )
 import pandas as pd
 from app import db
-from app.models import CheckinList, DrawnTailNumber
+from app.models import CheckinList, DrawnTailNumber, CancellationLog
 from datetime import datetime
 
 bp = Blueprint('admin', __name__)
@@ -132,3 +132,15 @@ def test_checkin_all():
         db.session.rollback()
         flash(f"失敗：{e}", 'danger')
     return redirect(url_for('admin.import_page'))
+
+# --- (新增) 檢視取消紀錄頁面 ---
+@bp.route('/logs')
+def logs_page():
+    # 撈取所有紀錄，並依照時間倒序 (最新的在最上面)
+    # 使用 join 讓我們可以直接查到「被取消的人」的名字
+    logs = db.session.query(CancellationLog, CheckinList)\
+        .join(CheckinList, CancellationLog.checkin_list_id == CheckinList.id)\
+        .order_by(CancellationLog.timestamp.desc())\
+        .all()
+
+    return render_template('admin/logs.html', logs=logs)
