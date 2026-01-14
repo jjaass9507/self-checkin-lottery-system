@@ -1,6 +1,6 @@
 from flask import Blueprint, render_template, request, jsonify
 from app import db
-from app.models import CheckinList, DrawnTailNumber
+from app.models import CheckinList, DrawnTailNumber, CancellationLog
 from datetime import datetime
 
 bp = Blueprint('checkin', __name__)
@@ -95,28 +95,43 @@ def api_admin_checkin():
         db.session.rollback()
         return jsonify({"success": False, "message": str(e)}), 500
 
-# --- (新功能) 取消報到 API ---
+# --- (修改功能) 取消報到 API ---
 @bp.route('/api/admin_cancel_checkin', methods=['POST'])
 def api_admin_cancel_checkin():
     try:
         data = request.get_json()
         person_id = data.get('id')
-        if not person_id: return jsonify({"success": False, "message": "缺少 ID"}), 400
+        canceller_id = data.get('canceller_id') # <--- 新增：取得操作者工號
+
+        if not person_id: 
+            return jsonify({"success": False, "message": "缺少 ID"}), 400
+        
+        # 檢查是否有輸入操作者工號
+        if not canceller_id:
+            return jsonify({"success": False, "message": "請輸入操作人員工號以進行確認"}), 400
         
         person = CheckinList.query.get(person_id)
-        if not person: return jsonify({"success": False, "message": "找不到此人員"}), 404
+        if not person: 
+            return jsonify({"success": False, "message": "找不到此人員"}), 404
         
         if person.status == 'Registered':
             return jsonify({"success": False, "message": "此人本來就尚未報到"}), 400
             
+        # --- 新增紀錄寫入邏輯 ---
+        new_log = CancellationLog(
+            checkin_list_id=person.id,
+            cancelled_by=canceller_id,
+            timestamp=datetime.now()
+        )
+        db.session.add(new_log)
+        # ---------------------
+
         # 執行取消報到
         person.status = 'Registered'
         person.check_in_time = None
-        # 注意：若此人已中獎，取消報到並不會取消中獎資格，這是為了資料安全。
-        # 若需取消中獎，請去資料庫重置或後台重置。
         
         db.session.commit()
-        return jsonify({"success": True, "message": f"已取消 {person.name} 的報到狀態"})
+        return jsonify({"success": True, "message": f"已取消 {person.name} 的報到狀態 (操作者: {canceller_id})"})
         
     except Exception as e:
         db.session.rollback()

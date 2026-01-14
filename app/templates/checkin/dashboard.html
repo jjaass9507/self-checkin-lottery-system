@@ -275,19 +275,38 @@
             } catch(e) { alert("Error"); }
         }
 
-        // (*** 新增：取消報到函式 ***)
+    // (*** 修改：取消報到函式，需輸入工號 ***)
         async function adminCancelCheckIn(id, name) {
-            if (!confirm(`【警告】\n確認要取消 [ ${name} ] 的報到狀態嗎？\n(他將變回未報到)`)) return;
+            // 使用 prompt 彈出輸入框
+            const cancellerId = prompt(`【警告】\n確認要取消 [ ${name} ] 的報到狀態嗎？\n\n為了保留紀錄，請輸入「您的工號」：`);
+            
+            // 如果使用者按取消 (null) 或沒輸入內容，則停止執行
+            if (cancellerId === null) return; 
+            if (!cancellerId.trim()) {
+                alert("未輸入工號，無法執行取消操作。");
+                return;
+            }
+
             try {
                 const res = await fetch("{{ url_for('checkin.api_admin_cancel_checkin') }}", {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({id: id})
+                    body: JSON.stringify({
+                        id: id,
+                        canceller_id: cancellerId.trim() // <--- 將輸入的工號傳給後端
+                    })
                 });
                 const data = await res.json();
-                if(data.success) fetchData();
-                else alert(data.message);
-            } catch(e) { alert("Error"); }
+                if(data.success) {
+                    alert(data.message); // 顯示成功訊息
+                    fetchData(); // 重新整理列表
+                } else {
+                    alert(data.message);
+                }
+            } catch(e) { 
+                console.error(e);
+                alert("發生錯誤，請稍後再試"); 
+            }
         }
 
         document.addEventListener('DOMContentLoaded', () => {

@@ -33,3 +33,15 @@ class DrawnTailNumber(db.Model):
 
     def __repr__(self):
         return f'<DrawnTailNumber {self.tail_number} - {self.prize_name}>'
+    
+# 3. (新增) 取消報到紀錄 (CancellationLog)
+class CancellationLog(db.Model):
+    __tablename__ = 'cancellation_log'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    checkin_list_id = db.Column(db.Integer, db.ForeignKey('checkin_list.id'), nullable=False) # 被取消者的 ID
+    cancelled_by = db.Column(db.String(50), nullable=False) # 操作取消的人員工號
+    timestamp = db.Column(db.DateTime, nullable=False, default=datetime.now) # 操作時間
+
+    def __repr__(self):
+        return f'<CancellationLog Target:{self.checkin_list_id} By:{self.cancelled_by}>'
