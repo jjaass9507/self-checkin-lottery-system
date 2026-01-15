@@ -37,7 +37,7 @@ def api_status_list():
                 "name": person.name,
                 "employee_id": person.employee_id,
                 "lottery_number": person.lottery_number,
-                "unit": person.unit,
+                "site": person.site,
                 "dept_code": person.dept_code,
                 "status": person.status,
                 "check_in_time": person.check_in_time.strftime('%H:%M:%S') if person.status == 'CheckedIn' else '',

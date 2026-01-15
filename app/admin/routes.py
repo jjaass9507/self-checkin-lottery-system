@@ -40,7 +40,7 @@ def import_page():
                     
                     # (*** 新增讀取欄位 ***)
                     # 使用 .get() 避免 Excel 沒這欄位時報錯
-                    unit = str(row.get('unit', ''))
+                    site = str(row.get('site', ''))
                     dept_code = str(row.get('dept_code', ''))
 
                     if not employee_id:
@@ -55,7 +55,7 @@ def import_page():
                             lottery_number=lottery_number if lottery_number else None,
                             # (*** 寫入資料庫 ***)
                             # 如果讀到 'nan' (pandas 空值) 則存為 None
-                            unit=unit if unit and unit.lower() != 'nan' else None,
+                            site=site if site and site.lower() != 'nan' else None,
                             dept_code=dept_code if dept_code and dept_code.lower() != 'nan' else None
                         )
                         db.session.add(new_item)
