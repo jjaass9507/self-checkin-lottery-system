@@ -50,10 +50,10 @@
             </div>
             
             <div class="filter-section">
-                <div class="row g-2">
+                <div class="row g-2 mb-2">
                     <div class="col-md-3">
-                        <label class="form-label small text-muted">關鍵字搜尋</label>
-                        <input type="text" class="form-control" id="search-box" placeholder="工號或姓名...">
+                        <label class="form-label small text-muted">關鍵字</label>
+                        <input type="text" class="form-control" id="search-box" placeholder="工號/姓名/站點...">
                     </div>
                     <div class="col-md-3">
                         <label class="form-label small text-muted">報到狀態</label>
@@ -63,6 +63,21 @@
                             <option value="Registered">未報到</option>
                         </select>
                     </div>
+                    <div class="col-md-3">
+                        <label class="form-label small text-muted">站點 (Site)</label>
+                        <select class="form-select" id="filter-site">
+                            <option value="ALL">所有站點</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label small text-muted">部門代碼</label>
+                        <select class="form-select" id="filter-dept">
+                            <option value="ALL">所有部門</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="row g-2">
                     <div class="col-md-3">
                         <label class="form-label small text-muted">中獎狀態</label>
                         <select class="form-select" id="filter-win">
@@ -78,6 +93,7 @@
                         </select>
                     </div>
                 </div>
+                
                 <div class="mt-3 pt-2 border-top" id="prefix-filters">
                     <small class="text-muted me-2">工號首碼:</small>
                     <button class="btn btn-sm btn-outline-secondary filter-btn active" data-prefix="ALL">全部</button>
@@ -90,6 +106,7 @@
                         <tr>
                             <th>姓名</th>
                             <th>工號</th>
+                            <th>Site</th>       <th>部門代碼</th> 
                             <th>抽獎編號</th>
                             <th>狀態</th>
                             <th>中獎資訊</th>
@@ -98,7 +115,7 @@
                         </tr>
                     </thead>
                     <tbody id="table-body">
-                        <tr><td colspan="7" class="text-center p-5"><div class="spinner-border"></div></td></tr>
+                        <tr><td colspan="9" class="text-center p-5"><div class="spinner-border"></div></td></tr>
                     </tbody>
                 </table>
             </div>
@@ -119,6 +136,10 @@
         const filterPrizeEl = document.getElementById('filter-prize');
         const prefixFiltersEl = document.getElementById('prefix-filters');
         
+        // 取得新篩選元素
+        const filterSiteEl = document.getElementById('filter-site'); // 修正 ID
+        const filterDeptEl = document.getElementById('filter-dept');  
+
         let fullDataCache = [];
         let currentPrefixFilter = 'ALL';
 
@@ -136,11 +157,14 @@
                     statCheckedInEl.innerText = checkedIn;
                     statPendingEl.innerText = total - checkedIn;
 
+                    // 僅在第一次載入或快取為空時生成下拉選單
                     if (fullDataCache.length === 0 && data.checkin_list.length > 0) {
                         generatePrefixButtons(data.checkin_list);
                         updatePrizeDropdown(data.checkin_list);
+                        updateSiteAndDeptDropdowns(data.checkin_list);
                     } else if (data.checkin_list.length > 0) {
-                        updatePrizeDropdown(data.checkin_list);
+                         // 若有新獎項動態增加，可考慮是否要更新，這裡為求效能暫不頻繁更新
+                         // updatePrizeDropdown(data.checkin_list);
                     }
 
                     fullDataCache = data.checkin_list;
@@ -149,7 +173,31 @@
                 }
             } catch (e) {
                 lastUpdatedEl.innerText = "更新失敗";
+                console.error(e);
             }
+        }
+
+        // 產生 Site 與 部門代碼 下拉選單
+        function updateSiteAndDeptDropdowns(list) {
+            // 處理 Site
+            const sites = [...new Set(list.map(p => p.site).filter(s => s))].sort();
+            filterSiteEl.innerHTML = '<option value="ALL">所有站點</option>';
+            sites.forEach(s => {
+                const opt = document.createElement('option');
+                opt.value = s;
+                opt.innerText = s;
+                filterSiteEl.appendChild(opt);
+            });
+            
+            // 處理部門代碼
+            const depts = [...new Set(list.map(p => p.dept_code).filter(d => d))].sort();
+            filterDeptEl.innerHTML = '<option value="ALL">所有部門</option>';
+            depts.forEach(d => {
+                const opt = document.createElement('option');
+                opt.value = d;
+                opt.innerText = d;
+                filterDeptEl.appendChild(opt);
+            });
         }
 
         function updatePrizeDropdown(list) {
@@ -167,33 +215,27 @@
 
         function generatePrefixButtons(list) {
             const prefixes = [...new Set(list.map(p => p.employee_id.charAt(0).toUpperCase()))].sort();
-            const allBtn = prefixFiltersEl.children[0]; 
-            const resetBtn = prefixFiltersEl.children[1]; 
-            
-            prefixFiltersEl.innerHTML = '';
-            prefixFiltersEl.appendChild(allBtn);
-            prefixFiltersEl.appendChild(resetBtn);
+            // 重置按鈕區，保留「全部」按鈕的結構
+            // 這裡簡單直接重繪
+            prefixFiltersEl.innerHTML = `
+                <small class="text-muted me-2">工號首碼:</small>
+                <button class="btn btn-sm btn-outline-secondary filter-btn active" onclick="setPrefixFilter('ALL', this)">全部</button>
+            `;
 
             prefixes.forEach(char => {
                 const btn = document.createElement('button');
                 btn.className = 'btn btn-sm btn-outline-secondary filter-btn';
                 btn.innerText = char;
-                btn.dataset.prefix = char;
-                btn.onclick = () => {
-                    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-                    btn.classList.add('active');
-                    currentPrefixFilter = char;
-                    renderTable();
-                };
+                btn.onclick = () => setPrefixFilter(char, btn);
                 prefixFiltersEl.appendChild(btn);
             });
+        }
 
-            resetBtn.onclick = () => {
-                document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-                resetBtn.classList.add('active');
-                currentPrefixFilter = 'ALL';
-                renderTable();
-            };
+        function setPrefixFilter(val, btn) {
+            document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            currentPrefixFilter = val;
+            renderTable();
         }
         
         function renderTable() {
@@ -201,11 +243,13 @@
             const statusFilter = filterStatusEl.value;
             const winFilter = filterWinEl.value;
             const prizeFilter = filterPrizeEl.value;
-            
+            const siteFilter = filterSiteEl.value;
+            const deptFilter = filterDeptEl.value;
+
             const filteredData = fullDataCache.filter(person => {
                 const matchesSearch = person.name.toLowerCase().includes(searchText) || 
                                       person.employee_id.toLowerCase().includes(searchText) ||
-                                      (person.lottery_number && person.lottery_number.toLowerCase().includes(searchText));
+                                      (person.site && person.site.toLowerCase().includes(searchText)); 
                 
                 const matchesPrefix = currentPrefixFilter === 'ALL' || 
                                       person.employee_id.toUpperCase().startsWith(currentPrefixFilter);
@@ -220,15 +264,19 @@
                 }
 
                 const matchesPrize = prizeFilter === 'ALL' || person.prize_info === prizeFilter;
+                
+                // 新增篩選邏輯
+                const matchesSite = siteFilter === 'ALL' || person.site === siteFilter;
+                const matchesDept = deptFilter === 'ALL' || person.dept_code === deptFilter;
 
-                return matchesSearch && matchesPrefix && matchesStatus && matchesWin && matchesPrize;
+                return matchesSearch && matchesPrefix && matchesStatus && matchesWin && matchesPrize && matchesSite && matchesDept;
             });
 
             displayCountEl.innerText = filteredData.length;
 
             let html = '';
             if (filteredData.length === 0) {
-                html = '<tr><td colspan="7" class="text-center p-5 text-muted">查無符合條件的資料</td></tr>';
+                html = '<tr><td colspan="9" class="text-center p-5 text-muted">查無符合條件的資料</td></tr>';
             } else {
                 filteredData.forEach(person => {
                     let statusBadge = person.status === 'CheckedIn' 
@@ -239,7 +287,6 @@
                         ? `<span class="prize-badge"><i class="bi bi-trophy-fill me-1"></i>${person.prize_info}</span>`
                         : '<span class="text-muted">-</span>';
 
-                    // (*** 核心修改：加入取消報到按鈕 ***)
                     let actionBtn = '';
                     if (person.status === 'CheckedIn') {
                         actionBtn = `<button class="btn btn-sm btn-outline-danger" onclick="adminCancelCheckIn(${person.id}, '${person.name}')" title="取消報到"><i class="bi bi-x-lg"></i></button>`;
@@ -250,6 +297,8 @@
                     html += `<tr>
                         <td><b>${person.name}</b></td>
                         <td>${person.employee_id}</td>
+                        <td>${person.site || '-'}</td>
+                        <td>${person.dept_code || '-'}</td>
                         <td>${person.lottery_number || '-'}</td>
                         <td>${statusBadge}</td>
                         <td>${prizeDisplay}</td>
@@ -275,12 +324,9 @@
             } catch(e) { alert("Error"); }
         }
 
-    // (*** 修改：取消報到函式，需輸入工號 ***)
         async function adminCancelCheckIn(id, name) {
-            // 使用 prompt 彈出輸入框
             const cancellerId = prompt(`【警告】\n確認要取消 [ ${name} ] 的報到狀態嗎？\n\n為了保留紀錄，請輸入「您的工號」：`);
             
-            // 如果使用者按取消 (null) 或沒輸入內容，則停止執行
             if (cancellerId === null) return; 
             if (!cancellerId.trim()) {
                 alert("未輸入工號，無法執行取消操作。");
@@ -293,13 +339,13 @@
                     headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify({
                         id: id,
-                        canceller_id: cancellerId.trim() // <--- 將輸入的工號傳給後端
+                        canceller_id: cancellerId.trim()
                     })
                 });
                 const data = await res.json();
                 if(data.success) {
-                    alert(data.message); // 顯示成功訊息
-                    fetchData(); // 重新整理列表
+                    alert(data.message);
+                    fetchData();
                 } else {
                     alert(data.message);
                 }
@@ -317,6 +363,10 @@
             filterStatusEl.addEventListener('change', renderTable);
             filterWinEl.addEventListener('change', renderTable);
             filterPrizeEl.addEventListener('change', renderTable);
+            
+            // (*** 重要：補上 Site 與 Dept 的監聽器 ***)
+            filterSiteEl.addEventListener('change', renderTable);
+            filterDeptEl.addEventListener('change', renderTable);
         });
     </script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>

@@ -5,11 +5,14 @@ import uuid
 # 1. 報到名單 (CheckinList)
 class CheckinList(db.Model):
     __tablename__ = 'checkin_list'
-    
+    lottery_number = db.Column(db.String(50), nullable=True, index=True)
+
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
     employee_id = db.Column(db.String(50), nullable=False, index=True) 
     lottery_number = db.Column(db.String(50), nullable=True, index=True)
+    site = db.Column(db.String(50), nullable=True)      # Site (站點/廠區)
+    dept_code = db.Column(db.String(20), nullable=True) # 部門代碼
     
     qr_hash = db.Column(db.String(36), unique=True, nullable=False, default=lambda: str(uuid.uuid4()))
     status = db.Column(db.String(20), nullable=False, default='Registered')
