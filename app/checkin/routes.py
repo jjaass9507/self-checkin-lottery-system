@@ -68,13 +68,28 @@ def api_checkin_by_id():
         return jsonify({"success": False, "message": f"工號 [ {employee_id} ] 不在名單中。請洽詢工作人員。", "status": "danger"})
 
     if person.status == 'CheckedIn':
-        return jsonify({"success": False, "message": f"{person.name} ({person.employee_id}) 您已於 {person.check_in_time.strftime('%H:%M:%S')} 報到，無須重複。", "status": "warning"})
+        # (這裡也可以順便加上編號，方便重複刷的人查詢)
+        lottery_msg = f"<br>您的抽獎編號：<b>{person.lottery_number}</b>" if person.lottery_number else ""
+        return jsonify({
+            "success": False, 
+            "message": f"{person.name} ({person.employee_id}) 您已於 {person.check_in_time.strftime('%H:%M:%S')} 報到，無須重複。{lottery_msg}", 
+            "status": "warning"
+        })
     
     try:
         person.status = 'CheckedIn'
         person.check_in_time = datetime.now()
         db.session.commit()
-        return jsonify({"success": True, "message": f"歡迎！{person.name} ({person.employee_id}) 報到成功！", "status": "success"})
+        
+        # (*** 修改這裡：加入抽獎編號 ***)
+        # 如果有抽獎編號才顯示，並加粗顯示
+        lottery_msg = f"<br>您的抽獎編號：<b>{person.lottery_number}</b>" if person.lottery_number else ""
+        
+        return jsonify({
+            "success": True, 
+            "message": f"歡迎！{person.name} ({person.employee_id}) 報到成功！{lottery_msg}", 
+            "status": "success"
+        })
     except Exception as e:
         db.session.rollback()
         return jsonify({"success": False, "message": f"伺服器錯誤：{e}。請洽詢工作人員。", "status": "danger"})

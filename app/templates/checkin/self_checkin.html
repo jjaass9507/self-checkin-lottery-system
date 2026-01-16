@@ -115,9 +115,9 @@
             .then(data => {
                 setResult(data.message, data.status);
                 if (data.success) {
-                    setTimeout(resetForm, 2000);
+                    setTimeout(resetForm, 5000);
                 } else {
-                    setTimeout(resetForm, 2000);
+                    setTimeout(resetForm, 3000);
                 }
             })
             .catch(error => {
