@@ -240,17 +240,17 @@
         }
         
         function renderTable() {
-            // 1. 取得篩選條件
+            // 1. 取得目前篩選條件
             const searchText = searchBoxEl.value.toLowerCase();
             const statusFilter = filterStatusEl.value;
             const winFilter = filterWinEl.value;
             const prizeFilter = filterPrizeEl.value;
-            const siteFilter = filterSiteEl.value; 
-            const deptFilter = filterDeptEl.value; 
+            const siteFilter = filterSiteEl.value;
+            const deptFilter = filterDeptEl.value;
 
-            // 2. 執行篩選
+            // 2. 執行篩選邏輯
             const filteredData = fullDataCache.filter(person => {
-                // 搜尋邏輯 (包含姓名、工號、Site、抽獎編號)
+                // 搜尋範圍：姓名、工號、Site、抽獎編號
                 const matchesSearch = person.name.toLowerCase().includes(searchText) || 
                                       person.employee_id.toLowerCase().includes(searchText) ||
                                       (person.site && person.site.toLowerCase().includes(searchText)) ||
@@ -262,10 +262,8 @@
                 const matchesStatus = statusFilter === 'ALL' || person.status === statusFilter;
                 const matchesSite = siteFilter === 'ALL' || person.site === siteFilter;
                 const matchesDept = deptFilter === 'ALL' || person.dept_code === deptFilter;
-                // 獎項篩選
                 const matchesPrize = prizeFilter === 'ALL' || (person.prize_info && person.prize_info.includes(prizeFilter));
 
-                // 中獎狀態篩選
                 let matchesWin = true;
                 const isWinner = person.has_won || person.has_won_public;
                 if (winFilter === 'WON') matchesWin = isWinner;
@@ -274,13 +272,16 @@
                 return matchesSearch && matchesPrefix && matchesStatus && matchesWin && matchesPrize && matchesSite && matchesDept;
             });
 
-            // 3. 更新統計數字 (修正變數名稱錯誤)
-            // 更新總人數
-            if (countEl) countEl.innerText = filteredData.length;
-            
-            // (*** 補回：計算並更新已簽到人數 ***)
+            // 3. 更新上方統計數字 (加入防呆檢查)
+            // (A) 總人數
+            const totalCountEl = document.getElementById('count'); // 重新抓取元素最保險
+            if (totalCountEl) {
+                totalCountEl.innerText = filteredData.length;
+            }
+
+            // (B) 已簽到人數
             const checkedInCount = filteredData.filter(p => p.status === 'CheckedIn').length;
-            const checkedInCountEl = document.getElementById('checked-in-count'); // 確保有抓到這個元素
+            const checkedInCountEl = document.getElementById('checked-in-count');
             if (checkedInCountEl) {
                 checkedInCountEl.innerText = checkedInCount;
             }
@@ -296,12 +297,12 @@
                         ? `<span class="badge bg-success">已報到</span>` 
                         : `<span class="badge bg-secondary">未報到</span>`;
                     
-                    // 獎項顯示
+                    // 獎項顯示 (紅色字體)
                     let prizeDisplay = person.prize_info 
                         ? `<div class="text-danger fw-bold" style="font-size:0.9rem">${person.prize_info}</div>`
                         : '<span class="text-muted small">-</span>';
 
-                    // (*** 領獎按鈕邏輯 ***)
+                    // --- 領獎確認按鈕邏輯 ---
                     let claimHtml = '';
                     
                     // A. 尾數獎按鈕
@@ -315,7 +316,7 @@
 
                     // B. 公獎按鈕
                     if (person.has_won_public) {
-                        if (claimHtml !== '') claimHtml += '<br>'; // 換行
+                        if (claimHtml !== '') claimHtml += '<br>'; // 若同時中兩個則換行
                         if (person.public_prize_claimed) {
                             claimHtml += `<button class="btn btn-sm btn-primary me-1" style="font-size:0.8rem" onclick="toggleClaim(${person.id}, 'public')"><i class="bi bi-check-circle-fill"></i> 公獎已領</button>`;
                         } else {
@@ -324,8 +325,9 @@
                     }
                     
                     if (claimHtml === '') claimHtml = '<span class="text-muted small">-</span>';
+                    // -----------------------
 
-                    // 操作按鈕
+                    // 操作按鈕 (簽到/取消)
                     let actionBtn = '';
                     if (person.status === 'CheckedIn') {
                         actionBtn = `<button class="btn btn-sm btn-outline-secondary" onclick="adminCancelCheckIn(${person.id}, '${person.name}')">取消</button>`;
@@ -347,7 +349,12 @@
                     </tr>`;
                 });
             }
-            tableBodyEl.innerHTML = html;
+            
+            // 更新表格內容
+            const tableBodyEl = document.getElementById('table-body'); // 重新抓取最保險
+            if (tableBodyEl) {
+                tableBodyEl.innerHTML = html;
+            }
         }
 
         async function adminCheckIn(id, name) {
