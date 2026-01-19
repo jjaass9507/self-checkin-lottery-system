@@ -106,16 +106,21 @@ def reset_checkin():
 @bp.route('/reset/lottery', methods=['POST'])
 def reset_lottery():
     try:
-        # 1. 刪除 DrawnTailNumber 紀錄
+        # 1. 刪除所有開獎號碼紀錄 (DrawnTailNumber)
+        # 這會一併刪除尾數獎和公獎的開獎歷史
         deleted_log = db.session.query(DrawnTailNumber).delete()
         
-        # 2. 將所有 has_won=True 改為 False
-        updated_people = CheckinList.query.filter_by(has_won=True).update({
-            'has_won': False
+        # 2. 重置所有人員的中獎與領獎狀態
+        # 使用 update 一次性更新所有欄位
+        updated_rows = db.session.query(CheckinList).update({
+            CheckinList.has_won: False,              # 清除尾數中獎
+            CheckinList.prize_claimed: False,        # 清除尾數已領
+            CheckinList.has_won_public: False,       # (新增) 清除公獎中獎
+            CheckinList.public_prize_claimed: False  # (新增) 清除公獎已領
         })
         
         db.session.commit()
-        flash(f"已重置中獎紀錄 (清除 {deleted_log} 筆尾號，{updated_people} 人變回未中獎)。", 'warning')
+        flash(f"已重置所有中獎紀錄 (清除 {deleted_log} 筆開獎，更新 {updated_rows} 人狀態)。", 'warning')
     except Exception as e:
         db.session.rollback()
         flash(f"重置中獎失敗：{e}", 'danger')
