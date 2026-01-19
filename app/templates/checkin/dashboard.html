@@ -239,39 +239,29 @@
             renderTable();
         }
         
-        function renderTable() {
-            // 1. 取得目前篩選條件
+function renderTable() {
             const searchText = searchBoxEl.value.toLowerCase();
             const statusFilter = filterStatusEl.value;
             const winFilter = filterWinEl.value;
             const prizeFilter = filterPrizeEl.value;
-            const siteFilter = filterSiteEl.value; 
-            const deptFilter = filterDeptEl.value; 
-            
-            // 2. 執行篩選邏輯
+            const siteFilter = filterSiteEl.value;
+            const deptFilter = filterDeptEl.value;
+
             const filteredData = fullDataCache.filter(person => {
-                // (篩選邏輯保持不變)
+                // 搜尋邏輯
                 const matchesSearch = person.name.toLowerCase().includes(searchText) || 
                                       person.employee_id.toLowerCase().includes(searchText) ||
                                       (person.site && person.site.toLowerCase().includes(searchText)) ||
-                                      (person.lottery_number && person.lottery_number.toLowerCase().includes(searchText));
+                                      (person.lottery_number && person.lottery_number.includes(searchText));
                 
-                // (B) 工號首碼篩選 (A, B, C...)
                 const matchesPrefix = currentPrefixFilter === 'ALL' || 
                                       person.employee_id.toUpperCase().startsWith(currentPrefixFilter);
 
-                // (C) 報到狀態
                 const matchesStatus = statusFilter === 'ALL' || person.status === statusFilter;
-
-                // (D) Site 與 Dept 篩選
                 const matchesSite = siteFilter === 'ALL' || person.site === siteFilter;
                 const matchesDept = deptFilter === 'ALL' || person.dept_code === deptFilter;
-
-                // (E) 獎項名稱篩選
-                // 若 person.prize_info 有值且符合篩選，或是選 ALL
                 const matchesPrize = prizeFilter === 'ALL' || (person.prize_info && person.prize_info.includes(prizeFilter));
 
-                // (F) 中獎狀態 (邏輯：尾數獎 或 公獎 都算中獎)
                 let matchesWin = true;
                 const isWinner = person.has_won || person.has_won_public;
                 if (winFilter === 'WON') matchesWin = isWinner;
@@ -280,54 +270,51 @@
                 return matchesSearch && matchesPrefix && matchesStatus && matchesWin && matchesPrize && matchesSite && matchesDept;
             });
 
-            displayCountEl.innerText = filteredData.length;
+            countEl.innerText = filteredData.length;
 
-            // 4. 生成 HTML
             let html = '';
             if (filteredData.length === 0) {
-                html = '<tr><td colspan="10" class="text-center p-5 text-muted">查無符合條件的資料</td></tr>';
+                html = '<tr><td colspan="10" class="text-center p-5 text-muted">查無符合資料</td></tr>';
             } else {
                 filteredData.forEach(person => {
-                    // 狀態徽章
+                    // 1. 狀態欄
                     let statusBadge = person.status === 'CheckedIn' 
-                        ? '<span class="status-badge status-badge-checkedin">已報到</span>'
-                        : '<span class="status-badge status-badge-registered">未報到</span>';
+                        ? `<span class="badge bg-success">已報到</span>` 
+                        : `<span class="badge bg-secondary">未報到</span>`;
                     
+                    // 2. 獎項顯示 (後端已包含尾數資訊)
                     let prizeDisplay = person.prize_info 
-                        ? `<span class="prize-badge"><i class="bi bi-trophy-fill me-1"></i>${person.prize_info}</span>`
-                        : '<span class="text-muted">-</span>';
+                        ? `<div class="text-danger fw-bold" style="font-size:0.9rem">${person.prize_info}</div>`
+                        : '<span class="text-muted small">-</span>';
 
-                    // (*** 補上這段遺失的 claimHtml 邏輯 ***)
+                    // 3. 領獎確認按鈕 (定義 claimHtml)
                     let claimHtml = '';
-                    // 1. 尾數獎
+                    
+                    // (A) 尾數獎按鈕
                     if (person.has_won) {
                         if (person.prize_claimed) {
-                            // 已領取 (綠色實心)
-                            claimHtml += `<button class="btn btn-sm btn-success me-1 mb-1" onclick="toggleClaim(${person.id}, 'tail')"><i class="bi bi-check-circle-fill"></i> 尾數已領</button>`;
+                            claimHtml += `<button class="btn btn-sm btn-success me-1 mb-1" style="font-size:0.8rem" onclick="toggleClaim(${person.id}, 'tail')"><i class="bi bi-check-circle-fill"></i> 尾數已領</button>`;
                         } else {
-                            // 未領取 (紅色空心)
-                            claimHtml += `<button class="btn btn-sm btn-outline-danger me-1 mb-1" onclick="toggleClaim(${person.id}, 'tail')">領取尾數</button>`;
+                            claimHtml += `<button class="btn btn-sm btn-outline-danger me-1 mb-1" style="font-size:0.8rem" onclick="toggleClaim(${person.id}, 'tail')">領取尾數</button>`;
                         }
                     }
-                    // 2. 公獎
+
+                    // (B) 公獎按鈕
                     if (person.has_won_public) {
-                        if (claimHtml !== '') claimHtml += '<br>';
+                        if (claimHtml !== '') claimHtml += '<br>'; // 若同時中獎則換行
                         if (person.public_prize_claimed) {
-                            // 已領取 (藍色實心)
-                            claimHtml += `<button class="btn btn-sm btn-primary me-1" onclick="toggleClaim(${person.id}, 'public')"><i class="bi bi-check-circle-fill"></i> 公獎已領</button>`;
+                            claimHtml += `<button class="btn btn-sm btn-primary me-1" style="font-size:0.8rem" onclick="toggleClaim(${person.id}, 'public')"><i class="bi bi-check-circle-fill"></i> 公獎已領</button>`;
                         } else {
-                            // 未領取 (藍色空心)
-                            claimHtml += `<button class="btn btn-sm btn-outline-primary me-1" onclick="toggleClaim(${person.id}, 'public')">領取公獎</button>`;
+                            claimHtml += `<button class="btn btn-sm btn-outline-primary me-1" style="font-size:0.8rem" onclick="toggleClaim(${person.id}, 'public')">領取公獎</button>`;
                         }
                     }
                     
                     if (claimHtml === '') claimHtml = '<span class="text-muted small">-</span>';
-                    // (***************************************)
 
-                    // 操作按鈕 (您原本的代碼)
+                    // 4. 操作按鈕 (簽到/取消)
                     let actionBtn = '';
                     if (person.status === 'CheckedIn') {
-                        actionBtn = `<button class="btn btn-sm btn-outline-danger" onclick="adminCancelCheckIn(${person.id}, '${person.name}')" title="取消報到"><i class="bi bi-x-lg"></i></button>`;
+                        actionBtn = `<button class="btn btn-sm btn-outline-secondary" onclick="adminCancelCheckIn(${person.id}, '${person.name}')">取消</button>`;
                     } else {
                         actionBtn = `<button class="btn btn-sm btn-primary" onclick="adminCheckIn(${person.id}, '${person.name}')">簽到</button>`;
                     }
@@ -337,15 +324,14 @@
                         <td>${person.employee_id}</td>
                         <td>${person.site || '-'}</td>
                         <td>${person.dept_code || '-'}</td>
-                        <td>${person.lottery_number || '-'}</td>
+                        <td class="fw-bold text-primary">${person.lottery_number || '-'}</td>
                         <td>${statusBadge}</td>
                         <td>${prizeDisplay}</td>
                         <td>${claimHtml}</td> <td>${person.check_in_time || ''}</td>
-                        <td class="text-end pe-3">${actionBtn}</td>
+                        <td class="text-end">${actionBtn}</td>
                     </tr>`;
                 });
             }
-
             tableBodyEl.innerHTML = html;
         }
 

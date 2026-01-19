@@ -16,47 +16,69 @@ def dashboard():
 @bp.route('/api/status_list')
 def api_status_list():
     try:
-        all_people = CheckinList.query.order_by(CheckinList.name).all()
-        drawn_records = DrawnTailNumber.query.all()
-        prize_map = {str(d.tail_number): d.prize_name for d in drawn_records}
+        # 1. 撈取所有人員與開獎紀錄
+        checkin_list = CheckinList.query.all()
+        all_draws = DrawnTailNumber.query.all() # 取得所有開出的號碼
         
-        checked_in_count = 0
         output_list = []
         
-        for person in all_people:
-            if person.status == 'CheckedIn':
-                checked_in_count += 1
+        for person in checkin_list:
+            # --- 建構中獎資訊字串 ---
+            prize_info_parts = []
             
-            prize_info = ""
-            if person.has_won and person.lottery_number:
-                tail = person.lottery_number.strip()[-1]
-                prize_info = prize_map.get(tail, "已中獎")
+            # (A) 處理尾數獎/加碼獎
+            if person.has_won:
+                user_num = str(person.lottery_number).zfill(3) if person.lottery_number else "000"
+                matched_prizes = []
+                
+                for draw in all_draws:
+                    # 排除公獎紀錄 (通常公獎會獨立顯示)
+                    if "公獎" in draw.prize_name:
+                        continue
+                        
+                    draw_tail = str(draw.tail_number)
+                    # 比對尾數
+                    if user_num.endswith(draw_tail):
+                        # 格式：A獎(中:5)
+                        matched_prizes.append(f"{draw.prize_name}(中:{draw_tail})")
+                
+                # 如果有比對到紀錄就顯示，沒比對到(可能資料不同步)就顯示預設文字
+                if matched_prizes:
+                    prize_info_parts.extend(matched_prizes)
+                else:
+                    prize_info_parts.append("尾數中獎")
+
+            # (B) 處理公獎
+            if person.has_won_public:
+                # 公獎通常是全碼
+                prize_info_parts.append("公獎")
+
+            # 組合字串
+            prize_info = " | ".join(prize_info_parts)
+            # ---------------------
 
             output_list.append({
                 "id": person.id,
-                "has_won": person.has_won,              # 回傳中獎狀態
-                "has_won_public": person.has_won_public,# 回傳公獎狀態
                 "name": person.name,
                 "employee_id": person.employee_id,
                 "lottery_number": person.lottery_number,
                 "site": person.site,
                 "dept_code": person.dept_code,
-                # (*** 新增回傳領獎狀態 ***)
-                "prize_claimed": person.prize_claimed,
-                "public_prize_claimed": person.public_prize_claimed,
+                
                 "status": person.status,
                 "check_in_time": person.check_in_time.strftime('%H:%M:%S') if person.status == 'CheckedIn' else '',
-                "prize_info": prize_info
+                
+                "prize_info": prize_info, # 這裡現在包含了中獎號碼
+                "has_won": person.has_won,
+                "has_won_public": person.has_won_public,
+                "prize_claimed": person.prize_claimed,
+                "public_prize_claimed": person.public_prize_claimed
             })
-
-        return jsonify({
-            "success": True,
-            "checked_in_count": checked_in_count,
-            "total_count": len(all_people),
-            "checkin_list": output_list
-        })
+            
+        return jsonify({"success": True, "checkin_list": output_list})
         
     except Exception as e:
+        print(e)
         return jsonify({"success": False, "message": str(e)}), 500
 
 @bp.route('/api/submit', methods=['POST'])
