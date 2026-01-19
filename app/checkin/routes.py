@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, jsonify
+from flask import Blueprint, render_template, request, jsonify, url_for
 from app import db
 from app.models import CheckinList, DrawnTailNumber, CancellationLog
 from datetime import datetime
@@ -61,9 +61,9 @@ def api_status_list():
         # 撈取所有開獎紀錄
         all_draws = DrawnTailNumber.query.all()
         
-        # 分類開獎紀錄
-        tail_draws = [d for d in all_draws if getattr(d, 'prize_type', 'tail') == 'tail']
-        public_draws = [d for d in all_draws if getattr(d, 'prize_type', 'tail') == 'public']
+        # 分類開獎紀錄 (*** 重要修正：將 None 視為 'tail' 以相容舊資料 ***)
+        tail_draws = [d for d in all_draws if (d.prize_type or 'tail') == 'tail']
+        public_draws = [d for d in all_draws if (d.prize_type or 'tail') == 'public']
 
         output_list = []
         
@@ -86,12 +86,11 @@ def api_status_list():
                     matched_draws.sort(key=lambda x: len(str(x.tail_number)), reverse=True)
                     best_match = matched_draws[0]
                     
-                    # (*** 修改這裡：格式化顯示 ***)
-                    # 格式：[獎項名稱] 尾數獎 中[幾]位([號碼])
-                    # Ex. A 尾數獎 中2位(15)
+                    # (*** 格式化顯示 ***) Ex. A 尾數獎 中2位(15)
                     digit_len = len(str(best_match.tail_number))
                     tail_prize_str = f"{best_match.prize_name} 尾數獎 中{digit_len}位({best_match.tail_number})"
                 else:
+                    # 如果 has_won=True 但找不到對應號碼，顯示預設訊息
                     tail_prize_str = "尾數中獎(未知)"
 
             # (B) 處理公獎
@@ -99,10 +98,9 @@ def api_status_list():
                 user_num = str(person.lottery_number).zfill(3) if person.lottery_number else "000"
                 p_names = []
                 for draw in public_draws:
+                    # 公獎通常是對全碼
                     if str(draw.tail_number).zfill(3) == user_num:
-                        # (*** 修改這裡：格式化顯示 ***)
-                        # 格式：[獎項名稱]([號碼])
-                        # Ex. iphone(123)
+                        # (*** 格式化顯示 ***) Ex. iphone(123)
                         p_names.append(f"{draw.prize_name}({user_num})")
                 
                 if p_names:
