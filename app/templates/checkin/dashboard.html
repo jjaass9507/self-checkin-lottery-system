@@ -124,12 +124,13 @@
     </div>
 
     <script>
+// 1. 變數宣告區
         const statTotalEl = document.getElementById('stat-total');
         const statCheckedInEl = document.getElementById('stat-checkedin');
         const statPendingEl = document.getElementById('stat-pending');
         const tableBodyEl = document.getElementById('table-body');
         const lastUpdatedEl = document.getElementById('last-updated');
-        const displayCountEl = document.getElementById('display-count');
+        const displayCountEl = document.getElementById('display-count'); // 注意這裡
         
         const searchBoxEl = document.getElementById('search-box');
         const filterStatusEl = document.getElementById('filter-status');
@@ -137,43 +138,40 @@
         const filterPrizeEl = document.getElementById('filter-prize');
         const prefixFiltersEl = document.getElementById('prefix-filters');
         
-        // 取得新篩選元素
-        const filterSiteEl = document.getElementById('filter-site'); // 修正 ID
-        const filterDeptEl = document.getElementById('filter-dept');  
+        const filterSiteEl = document.getElementById('filter-site');
+        const filterDeptEl = document.getElementById('filter-dept');
 
         let fullDataCache = [];
         let currentPrefixFilter = 'ALL';
 
+        // 2. 資料撈取函式
         async function fetchData() {
             try {
                 const response = await fetch("{{ url_for('checkin.api_status_list') }}");
-                if (!response.ok) throw new Error();
+                if (!response.ok) throw new Error("API Error");
                 const data = await response.json();
                 
                 if (data.success) {
-                    const total = data.total_count;
-                    const checkedIn = data.checked_in_count;
+                    const total = data.total_count || data.checkin_list.length; // 防呆
+                    const checkedIn = data.checked_in_count || data.checkin_list.filter(p=>p.status==='CheckedIn').length;
                     
-                    statTotalEl.innerText = total;
-                    statCheckedInEl.innerText = checkedIn;
-                    statPendingEl.innerText = total - checkedIn;
+                    if(statTotalEl) statTotalEl.innerText = total;
+                    if(statCheckedInEl) statCheckedInEl.innerText = checkedIn;
+                    if(statPendingEl) statPendingEl.innerText = total - checkedIn;
 
-                    // 僅在第一次載入或快取為空時生成下拉選單
+                    // 初始化下拉選單 (僅第一次或快取為空時)
                     if (fullDataCache.length === 0 && data.checkin_list.length > 0) {
                         generatePrefixButtons(data.checkin_list);
                         updatePrizeDropdown(data.checkin_list);
                         updateSiteAndDeptDropdowns(data.checkin_list);
-                    } else if (data.checkin_list.length > 0) {
-                         // 若有新獎項動態增加，可考慮是否要更新，這裡為求效能暫不頻繁更新
-                         // updatePrizeDropdown(data.checkin_list);
                     }
 
                     fullDataCache = data.checkin_list;
                     renderTable();
-                    lastUpdatedEl.innerText = `更新: ${new Date().toLocaleTimeString()}`;
+                    if(lastUpdatedEl) lastUpdatedEl.innerText = `更新: ${new Date().toLocaleTimeString()}`;
                 }
             } catch (e) {
-                lastUpdatedEl.innerText = "更新失敗";
+                if(lastUpdatedEl) lastUpdatedEl.innerText = "更新失敗 (請檢查資料庫)";
                 console.error(e);
             }
         }
@@ -239,22 +237,19 @@
             renderTable();
         }
         
+        // 4. 表格渲染主函式 (修正變數錯誤)
         function renderTable() {
-            // 1. 取得目前篩選條件
             const searchText = searchBoxEl.value.toLowerCase();
             const statusFilter = filterStatusEl.value;
             const winFilter = filterWinEl.value;
             const prizeFilter = filterPrizeEl.value;
             const siteFilter = filterSiteEl.value;
             const deptFilter = filterDeptEl.value;
-
-            // 2. 執行篩選邏輯
+            
             const filteredData = fullDataCache.filter(person => {
-                // 搜尋範圍：姓名、工號、Site、抽獎編號
                 const matchesSearch = person.name.toLowerCase().includes(searchText) || 
                                       person.employee_id.toLowerCase().includes(searchText) ||
-                                      (person.site && person.site.toLowerCase().includes(searchText)) ||
-                                      (person.lottery_number && person.lottery_number.includes(searchText));
+                                      (person.site && person.site.toLowerCase().includes(searchText));
                 
                 const matchesPrefix = currentPrefixFilter === 'ALL' || 
                                       person.employee_id.toUpperCase().startsWith(currentPrefixFilter);
@@ -266,94 +261,92 @@
 
                 let matchesWin = true;
                 const isWinner = person.has_won || person.has_won_public;
+
                 if (winFilter === 'WON') matchesWin = isWinner;
                 else if (winFilter === 'NOT_WON') matchesWin = !isWinner;
 
                 return matchesSearch && matchesPrefix && matchesStatus && matchesWin && matchesPrize && matchesSite && matchesDept;
             });
 
-            // 3. 更新上方統計數字 (加入防呆檢查)
-            // (A) 總人數
-            const totalCountEl = document.getElementById('count'); // 重新抓取元素最保險
-            if (totalCountEl) {
-                totalCountEl.innerText = filteredData.length;
-            }
+            // (*** 修正點：使用正確的變數名稱 displayCountEl ***)
+            if(displayCountEl) displayCountEl.innerText = filteredData.length;
 
-            // (B) 已簽到人數
-            const checkedInCount = filteredData.filter(p => p.status === 'CheckedIn').length;
-            const checkedInCountEl = document.getElementById('checked-in-count');
-            if (checkedInCountEl) {
-                checkedInCountEl.innerText = checkedInCount;
-            }
-
-            // 4. 生成表格 HTML
             let html = '';
             if (filteredData.length === 0) {
-                html = '<tr><td colspan="10" class="text-center p-5 text-muted">查無符合條件的資料</td></tr>';
+                html = '<tr><td colspan="10" class="text-center p-4 text-muted">查無符合資料</td></tr>';
             } else {
                 filteredData.forEach(person => {
-                    // 狀態徽章
                     let statusBadge = person.status === 'CheckedIn' 
                         ? `<span class="badge bg-success">已報到</span>` 
                         : `<span class="badge bg-secondary">未報到</span>`;
-                    
-                    // 獎項顯示 (紅色字體)
-                    let prizeDisplay = person.prize_info 
-                        ? `<div class="text-danger fw-bold" style="font-size:0.9rem">${person.prize_info}</div>`
-                        : '<span class="text-muted small">-</span>';
 
-                    // --- 領獎確認按鈕邏輯 ---
+                    let prizeDisplay = '';
+                    if (person.prize_info) {
+                        prizeDisplay = `<div class="text-danger fw-bold">${person.prize_info}</div>`;
+                    } else {
+                        prizeDisplay = '<span class="text-muted small">-</span>';
+                    }
+
+                    // --- 領獎按鈕邏輯 ---
                     let claimHtml = '';
-                    
-                    // A. 尾數獎按鈕
                     if (person.has_won) {
                         if (person.prize_claimed) {
-                            claimHtml += `<button class="btn btn-sm btn-success me-1 mb-1" style="font-size:0.8rem" onclick="toggleClaim(${person.id}, 'tail')"><i class="bi bi-check-circle-fill"></i> 尾數已領</button>`;
+                            claimHtml += `<button class="btn btn-sm btn-success me-1 mb-1" onclick="toggleClaim(${person.id}, 'tail')"><i class="bi bi-check-circle-fill"></i> 尾數已領</button>`;
                         } else {
-                            claimHtml += `<button class="btn btn-sm btn-outline-danger me-1 mb-1" style="font-size:0.8rem" onclick="toggleClaim(${person.id}, 'tail')">領取尾數</button>`;
+                            claimHtml += `<button class="btn btn-sm btn-outline-danger me-1 mb-1" onclick="toggleClaim(${person.id}, 'tail')">領取尾數</button>`;
                         }
                     }
 
-                    // B. 公獎按鈕
                     if (person.has_won_public) {
-                        if (claimHtml !== '') claimHtml += '<br>'; // 若同時中兩個則換行
+                        if (claimHtml !== '') claimHtml += '<br>';
                         if (person.public_prize_claimed) {
-                            claimHtml += `<button class="btn btn-sm btn-primary me-1" style="font-size:0.8rem" onclick="toggleClaim(${person.id}, 'public')"><i class="bi bi-check-circle-fill"></i> 公獎已領</button>`;
+                            claimHtml += `<button class="btn btn-sm btn-primary me-1" onclick="toggleClaim(${person.id}, 'public')"><i class="bi bi-check-circle-fill"></i> 公獎已領</button>`;
                         } else {
-                            claimHtml += `<button class="btn btn-sm btn-outline-primary me-1" style="font-size:0.8rem" onclick="toggleClaim(${person.id}, 'public')">領取公獎</button>`;
+                            claimHtml += `<button class="btn btn-sm btn-outline-primary me-1" onclick="toggleClaim(${person.id}, 'public')">領取公獎</button>`;
                         }
                     }
                     
                     if (claimHtml === '') claimHtml = '<span class="text-muted small">-</span>';
-                    // -----------------------
-
-                    // 操作按鈕 (簽到/取消)
-                    let actionBtn = '';
-                    if (person.status === 'CheckedIn') {
-                        actionBtn = `<button class="btn btn-sm btn-outline-secondary" onclick="adminCancelCheckIn(${person.id}, '${person.name}')">取消</button>`;
-                    } else {
-                        actionBtn = `<button class="btn btn-sm btn-primary" onclick="adminCheckIn(${person.id}, '${person.name}')">簽到</button>`;
-                    }
 
                     html += `<tr>
                         <td><b>${person.name}</b></td>
                         <td>${person.employee_id}</td>
                         <td>${person.site || '-'}</td>
                         <td>${person.dept_code || '-'}</td>
-                        <td class="fw-bold text-primary">${person.lottery_number || '-'}</td>
+                        <td>${person.lottery_number || '-'}</td>
                         <td>${statusBadge}</td>
                         <td>${prizeDisplay}</td>
                         <td>${claimHtml}</td>
                         <td>${person.check_in_time || ''}</td>
-                        <td class="text-end">${actionBtn}</td>
+                        <td class="text-end">
+                            <button class="btn btn-sm btn-outline-danger" onclick="adminCancelCheckIn(${person.id}, '${person.name}')">取消</button>
+                        </td>
                     </tr>`;
                 });
             }
+
+            tableBodyEl.innerHTML = html;
+        }
             
-            // 更新表格內容
-            const tableBodyEl = document.getElementById('table-body'); // 重新抓取最保險
-            if (tableBodyEl) {
-                tableBodyEl.innerHTML = html;
+
+        // 5. (*** 重要：補回遺失的 toggleClaim 函式 ***)
+        async function toggleClaim(id, type) {
+            try {
+                const res = await fetch("{{ url_for('checkin.api_toggle_claim') }}", {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ id: id, type: type })
+                });
+                const data = await res.json();
+                
+                if (data.success) {
+                    fetchData(); // 成功後刷新
+                } else {
+                    alert(data.message);
+                }
+            } catch (e) {
+                console.error(e);
+                alert("操作失敗，請檢查網路或伺服器");
             }
         }
 
