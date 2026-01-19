@@ -15,9 +15,7 @@
         .table-container { max-height: 60vh; overflow-y: auto; }
         .table thead { position: sticky; top: 0; background: #fff; z-index: 10; }
         .status-badge { padding: 0.4em 0.7em; border-radius: 0.25rem; font-size: 0.85em; font-weight: 700; }
-        .status-badge-checkedin { color: #198754; background-color: #d1e7dd; }
-        .status-badge-registered { color: #6c757d; background-color: #e9ecef; }
-        .prize-badge { background-color: #ffc107; color: #000; padding: 0.3em 0.6em; border-radius: 10px; font-size: 0.85em; font-weight: bold; box-shadow: 1px 1px 3px rgba(0,0,0,0.2); }
+        .prize-badge { background-color: #ffc107; color: #000; padding: 0.3em 0.6em; border-radius: 10px; font-size: 0.85em; font-weight: bold; }
         .filter-btn { min-width: 40px; margin-right: 5px; margin-bottom: 5px; }
         .filter-btn.active { background-color: #0d6efd; color: white; border-color: #0d6efd; }
         .filter-section { background-color: #fff; padding: 15px; border-bottom: 1px solid #dee2e6; }
@@ -25,12 +23,57 @@
 </head>
 <body>
 
-    <nav class="navbar navbar-dark bg-dark shadow-sm">
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark shadow-sm">
         <div class="container-fluid">
-            <a class="navbar-brand" href="#"><i class="bi bi-speedometer2 me-2"></i> 即時報到儀表板</a>
-            <div class="d-flex">
-                <span class="navbar-text me-3" id="last-updated"><span class="spinner-border spinner-border-sm"></span></span>
-                <a href="{{ url_for('admin.index') }}" class="btn btn-outline-light btn-sm"><i class="bi bi-house-door-fill"></i> 回後台</a>
+            <a class="navbar-brand" href="{{ url_for('admin.index') }}">
+                <i class="bi bi-speedometer2 me-2"></i> 即時報到儀表板
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#adminNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="adminNav">
+                <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                    <li class="nav-item">
+                        <a class="nav-link {{ 'active' if request.endpoint == 'admin.import_page' }}" href="{{ url_for('admin.import_page') }}">
+                            <i class="bi bi-cloud-upload-fill me-1"></i> 匯入名單
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {{ 'active' if request.endpoint == 'checkin.dashboard' }}" href="{{ url_for('checkin.dashboard') }}">
+                            <i class="bi bi-bar-chart-fill me-1"></i> 報到儀表板
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {{ 'active' if request.endpoint == 'admin.logs_page' }}" href="{{ url_for('admin.logs_page') }}">
+                            <i class="bi bi-journal-text me-1"></i> 操作紀錄
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {{ 'active' if request.endpoint == 'lottery.winners_list' }}" href="{{ url_for('lottery.winners_list') }}">
+                            <i class="bi bi-list-check me-1"></i> 中獎日誌
+                        </a>
+                    </li>
+                </ul>
+                <ul class="navbar-nav ms-auto align-items-center">
+                    <li class="nav-item me-3">
+                        <span class="navbar-text text-light small" id="last-updated">
+                            <span class="spinner-border spinner-border-sm"></span> 連線中...
+                        </span>
+                    </li>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="bi bi-display me-1"></i> 前台頁面
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end dropdown-menu-dark" aria-labelledby="navbarDropdown">
+                            <li><a class="dropdown-item" href="{{ url_for('checkin.index') }}" target="_blank">自助報到站 (Kiosk)</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="{{ url_for('lottery.lottery_screen') }}" target="_blank">幸運抽獎 (尾數)</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('lottery.public_screen') }}" target="_blank">公獎抽獎 (全碼)</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="{{ url_for('lottery.winners_carousel') }}" target="_blank">中獎輪播 (Carousel)</a></li>
+                        </ul>
+                    </li>
+                </ul>
             </div>
         </div>
     </nav>
@@ -111,12 +154,13 @@
                             <th>抽獎編號</th>
                             <th>狀態</th>
                             <th>中獎資訊</th>
-                            <th>領獎確認</th> <th>時間</th>
+                            <th>領獎確認</th>
+                            <th>時間</th>
                             <th class="text-end">操作</th>
                         </tr>
                     </thead>
                     <tbody id="table-body">
-                        <tr><td colspan="9" class="text-center p-5"><div class="spinner-border"></div></td></tr>
+                        <tr><td colspan="10" class="text-center p-5"><div class="spinner-border"></div></td></tr>
                     </tbody>
                 </table>
             </div>
@@ -124,13 +168,13 @@
     </div>
 
     <script>
-// 1. 變數宣告區
+        // 變數宣告區
         const statTotalEl = document.getElementById('stat-total');
         const statCheckedInEl = document.getElementById('stat-checkedin');
         const statPendingEl = document.getElementById('stat-pending');
         const tableBodyEl = document.getElementById('table-body');
         const lastUpdatedEl = document.getElementById('last-updated');
-        const displayCountEl = document.getElementById('display-count'); // 注意這裡
+        const displayCountEl = document.getElementById('display-count');
         
         const searchBoxEl = document.getElementById('search-box');
         const filterStatusEl = document.getElementById('filter-status');
@@ -152,14 +196,13 @@
                 const data = await response.json();
                 
                 if (data.success) {
-                    const total = data.total_count || data.checkin_list.length; // 防呆
+                    const total = data.total_count || data.checkin_list.length; 
                     const checkedIn = data.checked_in_count || data.checkin_list.filter(p=>p.status==='CheckedIn').length;
                     
                     if(statTotalEl) statTotalEl.innerText = total;
                     if(statCheckedInEl) statCheckedInEl.innerText = checkedIn;
                     if(statPendingEl) statPendingEl.innerText = total - checkedIn;
 
-                    // 初始化下拉選單 (僅第一次或快取為空時)
                     if (fullDataCache.length === 0 && data.checkin_list.length > 0) {
                         generatePrefixButtons(data.checkin_list);
                         updatePrizeDropdown(data.checkin_list);
@@ -171,14 +214,12 @@
                     if(lastUpdatedEl) lastUpdatedEl.innerText = `更新: ${new Date().toLocaleTimeString()}`;
                 }
             } catch (e) {
-                if(lastUpdatedEl) lastUpdatedEl.innerText = "更新失敗 (請檢查資料庫)";
+                if(lastUpdatedEl) lastUpdatedEl.innerText = "更新失敗";
                 console.error(e);
             }
         }
 
-        // 產生 Site 與 部門代碼 下拉選單
         function updateSiteAndDeptDropdowns(list) {
-            // 處理 Site
             const sites = [...new Set(list.map(p => p.site).filter(s => s))].sort();
             filterSiteEl.innerHTML = '<option value="ALL">所有站點</option>';
             sites.forEach(s => {
@@ -188,7 +229,6 @@
                 filterSiteEl.appendChild(opt);
             });
             
-            // 處理部門代碼
             const depts = [...new Set(list.map(p => p.dept_code).filter(d => d))].sort();
             filterDeptEl.innerHTML = '<option value="ALL">所有部門</option>';
             depts.forEach(d => {
@@ -214,8 +254,6 @@
 
         function generatePrefixButtons(list) {
             const prefixes = [...new Set(list.map(p => p.employee_id.charAt(0).toUpperCase()))].sort();
-            // 重置按鈕區，保留「全部」按鈕的結構
-            // 這裡簡單直接重繪
             prefixFiltersEl.innerHTML = `
                 <small class="text-muted me-2">工號首碼:</small>
                 <button class="btn btn-sm btn-outline-secondary filter-btn active" onclick="setPrefixFilter('ALL', this)">全部</button>
@@ -246,7 +284,6 @@
             const deptFilter = filterDeptEl.value;
             
             const filteredData = fullDataCache.filter(person => {
-                // 搜尋邏輯
                 const matchesSearch = person.name.toLowerCase().includes(searchText) || 
                                       person.employee_id.toLowerCase().includes(searchText) ||
                                       (person.site && person.site.toLowerCase().includes(searchText)) ||
@@ -259,7 +296,6 @@
                 const matchesSite = siteFilter === 'ALL' || person.site === siteFilter;
                 const matchesDept = deptFilter === 'ALL' || person.dept_code === deptFilter;
                 
-                // 獎項篩選 (搜尋合併字串)
                 const matchesPrize = prizeFilter === 'ALL' || (person.prize_info && person.prize_info.includes(prizeFilter));
 
                 let matchesWin = true;
@@ -271,7 +307,6 @@
                 return matchesSearch && matchesPrefix && matchesStatus && matchesWin && matchesPrize && matchesSite && matchesDept;
             });
 
-            // 更新人數
             if(displayCountEl) displayCountEl.innerText = filteredData.length;
 
             let html = '';
@@ -283,43 +318,23 @@
                         ? `<span class="badge bg-success">已報到</span>` 
                         : `<span class="badge bg-secondary">未報到</span>`;
 
-                    // (*** 修改：獎項分開顯示 ***)
                     let prizeHtml = '';
-                    
-                    // 1. 尾數獎 (紅色)
-                    if (person.tail_prize_info) {
-                        prizeHtml += `<div class="text-danger fw-bold small mb-1"><i class="bi bi-ticket-perforated-fill me-1"></i>${person.tail_prize_info}</div>`;
-                    }
-                    
-                    // 2. 公獎 (藍色)
-                    if (person.public_prize_info) {
-                        prizeHtml += `<div class="text-primary fw-bold small"><i class="bi bi-trophy-fill me-1"></i>${person.public_prize_info}</div>`;
-                    }
-                    
+                    if (person.tail_prize_info) prizeHtml += `<div class="text-danger fw-bold small mb-1"><i class="bi bi-ticket-perforated-fill me-1"></i>${person.tail_prize_info}</div>`;
+                    if (person.public_prize_info) prizeHtml += `<div class="text-primary fw-bold small"><i class="bi bi-trophy-fill me-1"></i>${person.public_prize_info}</div>`;
                     if (prizeHtml === '') prizeHtml = '<span class="text-muted small">-</span>';
 
-                    // 領獎按鈕邏輯
                     let claimHtml = '';
-                    // 尾數獎按鈕
                     if (person.has_won) {
-                        if (person.prize_claimed) {
-                            claimHtml += `<button class="btn btn-sm btn-success me-1 mb-1" style="font-size:0.75rem" onclick="toggleClaim(${person.id}, 'tail')"><i class="bi bi-check-circle-fill"></i> 尾數已領</button>`;
-                        } else {
-                            claimHtml += `<button class="btn btn-sm btn-outline-danger me-1 mb-1" style="font-size:0.75rem" onclick="toggleClaim(${person.id}, 'tail')">領取尾數</button>`;
-                        }
+                        if (person.prize_claimed) claimHtml += `<button class="btn btn-sm btn-success me-1 mb-1" style="font-size:0.75rem" onclick="toggleClaim(${person.id}, 'tail')"><i class="bi bi-check-circle-fill"></i> 尾數已領</button>`;
+                        else claimHtml += `<button class="btn btn-sm btn-outline-danger me-1 mb-1" style="font-size:0.75rem" onclick="toggleClaim(${person.id}, 'tail')">領取尾數</button>`;
                     }
-                    // 公獎按鈕
                     if (person.has_won_public) {
                         if (claimHtml !== '') claimHtml += '<br>';
-                        if (person.public_prize_claimed) {
-                            claimHtml += `<button class="btn btn-sm btn-primary me-1" style="font-size:0.75rem" onclick="toggleClaim(${person.id}, 'public')"><i class="bi bi-check-circle-fill"></i> 公獎已領</button>`;
-                        } else {
-                            claimHtml += `<button class="btn btn-sm btn-outline-primary me-1" style="font-size:0.75rem" onclick="toggleClaim(${person.id}, 'public')">領取公獎</button>`;
-                        }
+                        if (person.public_prize_claimed) claimHtml += `<button class="btn btn-sm btn-primary me-1" style="font-size:0.75rem" onclick="toggleClaim(${person.id}, 'public')"><i class="bi bi-check-circle-fill"></i> 公獎已領</button>`;
+                        else claimHtml += `<button class="btn btn-sm btn-outline-primary me-1" style="font-size:0.75rem" onclick="toggleClaim(${person.id}, 'public')">領取公獎</button>`;
                     }
                     if (claimHtml === '') claimHtml = '<span class="text-muted small">-</span>';
 
-                    // 操作按鈕
                     let actionBtn = '';
                     if (person.status === 'CheckedIn') {
                         actionBtn = `<button class="btn btn-sm btn-outline-secondary" onclick="adminCancelCheckIn(${person.id}, '${person.name}')">取消</button>`;
@@ -342,9 +357,7 @@
             }
             tableBodyEl.innerHTML = html;
         }
-            
 
-        // 5. (*** 重要：補回遺失的 toggleClaim 函式 ***)
         async function toggleClaim(id, type) {
             try {
                 const res = await fetch("{{ url_for('checkin.api_toggle_claim') }}", {
@@ -353,16 +366,9 @@
                     body: JSON.stringify({ id: id, type: type })
                 });
                 const data = await res.json();
-                
-                if (data.success) {
-                    fetchData(); // 成功後刷新
-                } else {
-                    alert(data.message);
-                }
-            } catch (e) {
-                console.error(e);
-                alert("操作失敗，請檢查網路或伺服器");
-            }
+                if (data.success) fetchData();
+                else alert(data.message);
+            } catch (e) { console.error(e); alert("操作失敗"); }
         }
 
         async function adminCheckIn(id, name) {
@@ -381,45 +387,28 @@
 
         async function adminCancelCheckIn(id, name) {
             const cancellerId = prompt(`【警告】\n確認要取消 [ ${name} ] 的報到狀態嗎？\n\n為了保留紀錄，請輸入「您的工號」：`);
-            
             if (cancellerId === null) return; 
-            if (!cancellerId.trim()) {
-                alert("未輸入工號，無法執行取消操作。");
-                return;
-            }
+            if (!cancellerId.trim()) return alert("未輸入工號，無法執行。");
 
             try {
                 const res = await fetch("{{ url_for('checkin.api_admin_cancel_checkin') }}", {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({
-                        id: id,
-                        canceller_id: cancellerId.trim()
-                    })
+                    body: JSON.stringify({ id: id, canceller_id: cancellerId.trim() })
                 });
                 const data = await res.json();
-                if(data.success) {
-                    alert(data.message);
-                    fetchData();
-                } else {
-                    alert(data.message);
-                }
-            } catch(e) { 
-                console.error(e);
-                alert("發生錯誤，請稍後再試"); 
-            }
+                if(data.success) { alert(data.message); fetchData(); } 
+                else alert(data.message);
+            } catch(e) { console.error(e); alert("發生錯誤"); }
         }
 
         document.addEventListener('DOMContentLoaded', () => {
             fetchData(); 
             setInterval(fetchData, 5000); 
-            
             searchBoxEl.addEventListener('input', renderTable);
             filterStatusEl.addEventListener('change', renderTable);
             filterWinEl.addEventListener('change', renderTable);
             filterPrizeEl.addEventListener('change', renderTable);
-            
-            // (*** 重要：補上 Site 與 Dept 的監聽器 ***)
             filterSiteEl.addEventListener('change', renderTable);
             filterDeptEl.addEventListener('change', renderTable);
         });
