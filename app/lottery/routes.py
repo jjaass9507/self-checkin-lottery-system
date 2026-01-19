@@ -127,3 +127,97 @@ def api_draw():
     except Exception as e:
         db.session.rollback()
         return jsonify({"success": False, "message": f"伺服器錯誤：{e}"}), 500
+    
+# --- 公獎專用 API ---
+
+@bp.route('/api/public/search', methods=['POST'])
+def api_public_search():
+    """
+    逐步搜尋符合資格的人
+    接收參數:
+    - digits: 字串，例如 "2" (只抽百位), "21" (百+十), "219" (全)
+    - step:目前階段 (1=百位, 2=十位, 3=個位)
+    """
+    data = request.get_json()
+    digits = data.get('digits', '') # 目前已抽出的數字串
+    
+    if not digits:
+        return jsonify({"success": False, "message": "無輸入數字"}), 400
+
+    # 搜尋邏輯：
+    # 假設抽獎編號是 3 位數。
+    # 如果 step=1 (百位 "2") -> 搜尋 "2%" (2開頭)
+    # 如果 step=2 (十位 "21") -> 搜尋 "21%" (21開頭)
+    # 如果 step=3 (個位 "219") -> 搜尋 "219" (完全符合)
+    
+    search_pattern = f"{digits}%"
+    
+    # 篩選條件：
+    # 1. 已報到 (CheckedIn)
+    # 2. 還沒中過「公獎」 (has_won_public == False)
+    # 3. 抽獎號碼符合樣式
+    # * 注意：這裡不檢查 has_won (尾數獎)，所以中過尾數獎的人依然可以列入
+    candidates = CheckinList.query.filter(
+        CheckinList.status == 'CheckedIn',
+        CheckinList.has_won_public == False, 
+        CheckinList.lottery_number.like(search_pattern)
+    ).all()
+
+    results = []
+    for p in candidates:
+        results.append({
+            "name": p.name,
+            "employee_id": p.employee_id,
+            "lottery_number": p.lottery_number,
+            "site": p.site
+        })
+
+    return jsonify({
+        "success": True,
+        "count": len(results),
+        "candidates": results
+    })
+
+@bp.route('/api/public/confirm', methods=['POST'])
+def api_public_confirm():
+    """
+    確認公獎中獎，寫入資料庫
+    """
+    data = request.get_json()
+    employee_id = data.get('employee_id')
+    prize_name = data.get('prize_name', '公獎')
+
+    if not employee_id:
+        return jsonify({"success": False, "message": "未指定中獎者"}), 400
+
+    try:
+        person = CheckinList.query.filter_by(employee_id=employee_id).first()
+        if not person:
+            return jsonify({"success": False, "message": "找不到此人"}), 404
+
+        if person.has_won_public:
+            return jsonify({"success": False, "message": "此人已中過公獎"}), 400
+
+        # 更新狀態
+        person.has_won_public = True
+        
+        # 寫入紀錄 (DrawnTailNumber 也可以用來記公獎，只是 tail_number 存完整號碼)
+        new_record = DrawnTailNumber(
+            tail_number=person.lottery_number,
+            prize_name=prize_name,
+            timestamp=datetime.now(),
+            is_addon=False # 公獎不算加碼，算獨立獎項
+        )
+        db.session.add(new_record)
+        db.session.commit()
+
+        return jsonify({"success": True, "message": f"恭喜 {person.name} 獲得 {prize_name}！"})
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"success": False, "message": str(e)}), 500
+
+# 記得註冊頁面路由
+@bp.route('/public_lottery')
+def public_screen():
+    return render_template('lottery/public_screen.html')

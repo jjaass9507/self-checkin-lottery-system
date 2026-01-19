@@ -18,6 +18,8 @@ class CheckinList(db.Model):
     status = db.Column(db.String(20), nullable=False, default='Registered')
     check_in_time = db.Column(db.DateTime, nullable=True)
     has_won = db.Column(db.Boolean, default=False, nullable=False, index=True) 
+    # (*** 新增：公獎狀態 ***)
+    has_won_public = db.Column(db.Boolean, default=False)
 
     def __repr__(self):
         return f'<CheckinList {self.name} ({self.employee_id})>'
