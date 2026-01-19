@@ -2,6 +2,7 @@ from flask import Blueprint, render_template, request, jsonify
 from app import db
 from app.models import CheckinList, DrawnTailNumber
 from datetime import datetime
+from sqlalchemy import or_
 
 bp = Blueprint('lottery', __name__)
 
@@ -157,11 +158,15 @@ def api_public_search():
     # 2. 還沒中過「公獎」 (has_won_public == False)
     # 3. 抽獎號碼符合樣式
     # * 注意：這裡不檢查 has_won (尾數獎)，所以中過尾數獎的人依然可以列入
+    # 使用 or_ 來同時允許 False 或 None (NULL)
     candidates = CheckinList.query.filter(
-        CheckinList.status == 'CheckedIn',
-        CheckinList.has_won_public == False, 
+        CheckinList.status == 'CheckedIn', # 必須是已報到
+        or_(CheckinList.has_won_public == False, CheckinList.has_won_public == None), 
         CheckinList.lottery_number.like(search_pattern)
     ).all()
+
+    # 建議加入 Debug print 方便除錯
+    print(f"搜尋: {digits}, Pattern: {search_pattern}, 找到: {len(candidates)} 人")
 
     results = []
     for p in candidates:
@@ -217,7 +222,48 @@ def api_public_confirm():
         db.session.rollback()
         return jsonify({"success": False, "message": str(e)}), 500
 
+# --- (新增) 查詢可用數字 API ---
+@bp.route('/api/public/available_digits', methods=['POST'])
+def api_public_available_digits():
+    """
+    根據目前的 prefix (前綴)，回傳下一位有哪些數字是有效的
+    """
+    data = request.get_json()
+    prefix = data.get('prefix', '') # 例如 "2" (已確定百位)
+    
+    # 搜尋符合 prefix 開頭的人
+    search_pattern = f"{prefix}%"
+    
+    candidates = CheckinList.query.filter(
+        CheckinList.status == 'CheckedIn',
+        or_(CheckinList.has_won_public == False, CheckinList.has_won_public == None), 
+        CheckinList.lottery_number.like(search_pattern)
+    ).all()
+    
+    # 找出下一位可用的數字
+    # 假設 lottery_number 都是 3 位數
+    # 如果 prefix 長度是 0 (還沒抽)，找第 1 碼 (index 0)
+    # 如果 prefix 長度是 1 ("2")，找第 2 碼 (index 1)
+    # 如果 prefix 長度是 2 ("21")，找第 3 碼 (index 2)
+    
+    target_index = len(prefix)
+    available_digits = set()
+    
+    for p in candidates:
+        num = str(p.lottery_number)
+        if len(num) > target_index:
+            available_digits.add(num[target_index])
+            
+    # 轉成排序好的列表
+    result_list = sorted(list(available_digits))
+    
+    return jsonify({
+        "success": True,
+        "digits": result_list
+    })
+
 # 記得註冊頁面路由
 @bp.route('/public_lottery')
 def public_screen():
     return render_template('lottery/public_screen.html')
+
