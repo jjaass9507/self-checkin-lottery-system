@@ -49,51 +49,56 @@ def api_get_data():
 
 @bp.route('/api/draw', methods=['POST'])
 def api_draw():
-    # ... (保持原樣) ...
     data = request.get_json()
-    tail_number = data.get('tail_number')
+    # (*** 修改：接收 suffix (字串) 而不是 tail_number (整數) ***)
+    suffix = data.get('suffix', '').strip() 
     prize_name = data.get('prize_name', '神秘獎項')
 
-    if tail_number is None:
-        return jsonify({"success": False, "message": "請輸入尾號"}), 400
-        
-    try:
-        tail_number = int(tail_number)
-        if not (0 <= tail_number <= 9):
-            raise ValueError
-    except ValueError:
-        return jsonify({"success": False, "message": "尾號必須是 0-9 的數字"}), 400
+    if not suffix:
+        return jsonify({"success": False, "message": "請輸入號碼"}), 400
+    
+    # 檢查是否為數字 (雖然是字串處理，但內容要是數字)
+    if not suffix.isdigit():
+        return jsonify({"success": False, "message": "號碼必須為數字"}), 400
 
     try:
-        is_drawn = DrawnTailNumber.query.filter_by(tail_number=tail_number).first()
+        # 檢查是否抽過 (直接比對字串)
+        is_drawn = DrawnTailNumber.query.filter_by(tail_number=suffix).first()
         if is_drawn:
-            return jsonify({"success": False, "message": f"尾號 {tail_number} 已經被抽過了 ({is_drawn.prize_name})！"}), 400
+            return jsonify({"success": False, "message": f"號碼 {suffix} 已經被抽過了 ({is_drawn.prize_name})！"}), 400
 
-        str_tail_number = str(tail_number)
+        # (*** 核心邏輯：比對字串結尾 ***)
+        # 不管是 1 碼 (5), 2 碼 (35), 3 碼 (135) 都可以通用 endswith
         pool = CheckinList.query.filter(
             CheckinList.status == 'CheckedIn',
             CheckinList.has_won == False,
-            CheckinList.lottery_number.endswith(str_tail_number)
+            CheckinList.lottery_number.endswith(suffix)
         ).all()
         
+        # 判斷是否為加碼 (長度 > 1 視為加碼)
+        is_addon = len(suffix) > 1
+
         if not pool:
-            message = f"尾號 {tail_number} 沒有人中獎。"
+            message = f"號碼 {suffix} 沒有人中獎。"
             winners_list_info = []
         else:
-            message = f"恭喜！尾號 {tail_number} 的中獎者！"
+            message = f"恭喜！號碼 {suffix} 的中獎者！"
             winners_list_info = []
             for person in pool:
                 person.has_won = True
                 winners_list_info.append({
                     "name": person.name,
                     "employee_id": person.employee_id,
-                    "lottery_number": person.lottery_number
+                    "lottery_number": person.lottery_number,
+                    # (*** 新增：回傳 site 讓前端分流 ***)
+                    "site": person.site
                 })
         
         new_drawn_number = DrawnTailNumber(
-            tail_number=tail_number,
+            tail_number=suffix,
             prize_name=prize_name,
-            timestamp=datetime.now()
+            timestamp=datetime.now(),
+            is_addon=is_addon # 寫入資料庫
         )
         db.session.add(new_drawn_number)
         db.session.commit()
@@ -102,7 +107,8 @@ def api_draw():
             "success": True,
             "message": message,
             "prize_name": prize_name,
-            "tail_number": tail_number,
+            "tail_number": suffix, # 回傳字串
+            "is_addon": is_addon,  # 回傳是否加碼
             "winners": winners_list_info
         })
 
