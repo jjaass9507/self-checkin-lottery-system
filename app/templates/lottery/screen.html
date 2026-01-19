@@ -8,300 +8,387 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Orbitron:wght@700;900&display=swap" rel="stylesheet">
     <style>
+        :root {
+            --card-base-size: 1.2rem; /* 用於動態調整大小的基準 */
+        }
         body {
             background: linear-gradient(270deg, #0f0c29, #302b63, #24243e);
             background-size: 600% 600%;
             animation: gradient-animation 20s ease infinite;
             color: #fff;
-            text-align: center;
             font-family: 'Noto Sans TC', sans-serif;
-            overflow-x: hidden;
             height: 100vh;
+            overflow: hidden; /* 禁止捲動 */
             display: flex;
             flex-direction: column;
         }
         @keyframes gradient-animation { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
         
-        /* 標題區 */
-        header { padding: 1rem; flex-shrink: 0; }
-        .main-title { font-family: 'Orbitron', sans-serif; font-weight: 900; font-size: 3.5rem; color: #fff; text-shadow: 0 0 10px #fff, 0 0 20px #f09; margin: 0; }
-        #status-bar { color: #aaa; background: rgba(0,0,0,0.3); padding: 0.5rem 1rem; border-radius: 20px; display: inline-block; margin-top: 10px; border: 1px solid #555; }
+        /* 1. 頂部區域 */
+        header { 
+            padding: 0.5rem 1rem; 
+            flex-shrink: 0; 
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(0,0,0,0.2);
+        }
+        .main-title { font-family: 'Orbitron', sans-serif; font-weight: 900; font-size: 2.5rem; color: #fff; text-shadow: 0 0 10px #fff, 0 0 20px #f09; margin: 0; }
+        .status-info { color: #ccc; font-size: 1rem; }
         #pool-count { color: #00ffea; font-weight: bold; }
 
-        /* 中獎顯示區 (核心修改：左右分欄) */
+        /* 2. 主顯示區 (左右分欄) */
         main { 
             flex-grow: 1; 
             display: flex; 
-            padding: 0 2rem; 
-            gap: 2rem; 
-            overflow: hidden; 
+            width: 100%;
+            height: 100%; /* 佔滿剩餘空間 */
+            overflow: hidden;
             position: relative;
+            padding: 10px;
         }
         
-        .winner-column {
+        .split-pane {
             flex: 1;
             display: flex;
             flex-direction: column;
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 15px;
+            border-radius: 10px;
+            padding: 10px;
+            margin: 0 5px;
             border: 1px solid rgba(255,255,255,0.1);
-            padding: 1rem;
-            overflow-y: auto; /* 允許捲動 */
+            background: rgba(255, 255, 255, 0.02);
+            position: relative;
         }
 
-        .col-title {
+        /* 中間分隔線 */
+        .separator {
+            width: 2px;
+            background: linear-gradient(to bottom, transparent, rgba(255,255,255,0.5), transparent);
+            margin: 10px 0;
+        }
+
+        .col-header {
+            text-align: center;
             font-size: 2rem;
             font-weight: 700;
-            margin-bottom: 1rem;
             text-transform: uppercase;
+            padding-bottom: 10px;
+            margin-bottom: 10px;
             border-bottom: 2px solid rgba(255,255,255,0.2);
-            padding-bottom: 0.5rem;
+            flex-shrink: 0; /* 標題不縮放 */
         }
-        .col-title.hr { color: #ff9ff3; }
-        .col-title.fac { color: #54a0ff; }
+        .col-header.hr { color: #ff9ff3; text-shadow: 0 0 10px rgba(255, 159, 243, 0.5); }
+        .col-header.fac { color: #54a0ff; text-shadow: 0 0 10px rgba(84, 160, 255, 0.5); }
+
+        /* 卡片容器 (自動排版) */
+        .card-container {
+            display: flex;
+            flex-wrap: wrap;
+            align-content: flex-start; /* 從上排到下 */
+            justify-content: center;
+            gap: 0.5rem;
+            width: 100%;
+            height: 100%; /* 讓它知道高度限制 */
+            overflow: hidden; /* 超出隱藏 (靠 JS 縮放) */
+        }
 
         /* 卡片樣式 */
         .winner-card {
             background: linear-gradient(145deg, #fefde8, #f8d7a0);
             color: #333;
-            padding: 0.8rem;
-            margin-bottom: 0.8rem;
-            border-radius: 10px;
-            font-size: 1.5rem;
-            font-weight: 700;
+            border-radius: 8px;
             border: 2px solid #fff;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            animation: pop-in 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+            
+            /* 關鍵：大小使用 em/rem 相對單位，由 JS 控制父層 font-size 來縮放 */
+            width: 10em; 
+            padding: 0.5em;
+            font-size: var(--card-base-size); 
+            
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            
+            animation: pop-in 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
             opacity: 0;
             transform: scale(0.5);
         }
         
-        /* (*** 加碼樣式 ***) */
-        .winner-card.addon-card {
-            background: linear-gradient(145deg, #ff9ff3, #feca57); /* 紫金配色 */
-            border: 3px solid #ff0000;
-            box-shadow: 0 0 15px #ff0000;
-            transform: scale(1.05);
-        }
-        .winner-card small { font-size: 0.9rem; font-weight: 500; display: block; opacity: 0.8; }
+        .winner-name { font-weight: 800; font-size: 1.2em; line-height: 1.2; }
+        .winner-info { font-size: 0.7em; opacity: 0.8; margin-top: 2px; }
+        .winner-num { font-family: 'Orbitron', sans-serif; font-weight: bold; color: #d63031; font-size: 0.9em; margin-top: 4px; }
 
         @keyframes pop-in { to { opacity: 1; transform: scale(1); } }
 
-        /* 控制區 */
-        footer { padding: 1.5rem; background: rgba(0,0,0,0.4); backdrop-filter: blur(10px); }
-        .controls { max-width: 900px; margin: auto; }
+        /* (*** 加碼變色樣式 ***) */
+        .winner-card.bonus-highlight {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); /* 紫色系 */
+            color: #fff;
+            border: 3px solid #ffd700; /* 金框 */
+            box-shadow: 0 0 20px rgba(255, 215, 0, 0.8);
+            transform: scale(1.1);
+            z-index: 10;
+        }
+        .winner-card.bonus-highlight .winner-num { color: #ffd700; }
+
+        /* 3. 底部控制區 */
+        footer { 
+            padding: 10px; 
+            background: rgba(0,0,0,0.6); 
+            backdrop-filter: blur(5px); 
+            flex-shrink: 0;
+        }
+        .controls { max-width: 1000px; margin: auto; }
         
-        /* 輸入框組 */
-        .digit-input-group { display: flex; gap: 10px; justify-content: center; align-items: flex-end; }
-        .digit-box { text-align: center; }
-        .digit-box label { display: block; color: #ccc; font-size: 0.8rem; margin-bottom: 5px; }
+        .digit-input-group { display: flex; gap: 5px; justify-content: center; align-items: flex-end; }
+        .digit-box label { display: block; color: #ccc; font-size: 0.7rem; margin-bottom: 2px; text-align: center; }
         .digit-box input { 
-            width: 80px; height: 80px; 
-            font-size: 2.5rem; text-align: center; 
-            background: rgba(0,0,0,0.6); color: #fff; 
-            border: 2px solid #555; border-radius: 10px;
+            width: 60px; height: 60px; 
+            font-size: 2rem; text-align: center; 
+            background: rgba(0,0,0,0.5); color: #fff; 
+            border: 2px solid #555; border-radius: 8px;
         }
-        .digit-box input:focus { border-color: #00ffea; box-shadow: 0 0 15px rgba(0,255,234,0.5); outline: none; }
+        .digit-box input:focus { border-color: #00ffea; outline: none; }
         
-        #draw-btn { 
-            height: 80px; font-size: 1.8rem; font-weight: bold; 
-            padding: 0 40px; border-radius: 10px;
-            background: linear-gradient(to right, #f12711, #f5af19); border: none; 
-        }
+        .btn-action { height: 60px; font-weight: bold; border-radius: 8px; font-size: 1.2rem; }
     </style>
 </head>
 <body>
 
     <header>
-        <h1 class="main-title">LUCKY DRAW</h1>
-        <div id="status-bar" class="h5">
-            可抽獎人數： <span id="pool-count">...</span> | 
-            已出號碼： <span id="drawn-history" style="font-size: 0.9em; max-width: 500px; overflow: hidden; text-overflow: ellipsis; vertical-align: bottom; display: inline-block; white-space: nowrap;">...</span>
+        <div>
+            <h1 class="main-title">LUCKY DRAW</h1>
+        </div>
+        <div class="text-end">
+            <div class="status-info">可抽獎: <span id="pool-count">...</span></div>
+            <div class="status-info small text-muted">已出: <span id="drawn-history">...</span></div>
         </div>
     </header>
 
-    <main>
-        <div class="winner-column">
-            <div class="col-title hr">HR 部門</div>
-            <div id="list-hr"></div>
+    <main id="display-area">
+        <div class="split-pane">
+            <div class="col-header hr">HR <small style="font-size:0.5em">行政單位</small></div>
+            <div id="list-hr" class="card-container"></div>
         </div>
         
-        <div class="winner-column">
-            <div class="col-title fac">FAC 部門</div>
-            <div id="list-fac"></div>
+        <div class="separator"></div>
+
+        <div class="split-pane">
+            <div class="col-header fac">FAC <small style="font-size:0.5em">廠務單位</small></div>
+            <div id="list-fac" class="card-container"></div>
         </div>
     </main>
     
     <footer>
         <div class="controls">
-            <form id="draw-form" class="row g-3 align-items-end justify-content-center">
+            <form id="draw-form" class="row g-2 align-items-end justify-content-center">
                 <div class="col-md-3">
-                    <label class="text-start d-block text-muted mb-1">獎項名稱</label>
-                    <input type="text" class="form-control form-control-lg" id="prize-name" placeholder="例: 加碼獎" style="height: 80px; font-size: 1.5rem;" required>
+                    <input type="text" class="form-control" id="prize-name" placeholder="輸入獎項名稱" style="height: 60px; font-size: 1.3rem; text-align:center;" required>
                 </div>
 
-                <div class="col-md-6">
+                <div class="col-md-5">
                     <div class="digit-input-group">
                         <div class="digit-box">
-                            <label>百位 (選填)</label>
-                            <input type="text" id="input-100" maxlength="1" pattern="[0-9]*" placeholder="-">
+                            <label>百 (選)</label>
+                            <input type="text" id="input-100" maxlength="1" pattern="[0-9]*">
                         </div>
                         <div class="digit-box">
-                            <label>十位 (選填)</label>
-                            <input type="text" id="input-10" maxlength="1" pattern="[0-9]*" placeholder="-">
+                            <label>十 (選)</label>
+                            <input type="text" id="input-10" maxlength="1" pattern="[0-9]*">
                         </div>
                         <div class="digit-box">
-                            <label>個位 (必填)</label>
-                            <input type="text" id="input-1" maxlength="1" pattern="[0-9]*" placeholder="0-9" required style="border-color: #f5af19;">
+                            <label>個 (必)</label>
+                            <input type="text" id="input-1" maxlength="1" pattern="[0-9]*" required style="border-color: #f5af19;">
                         </div>
                     </div>
                 </div>
 
-                <div class="col-md-3">
-                    <button type="submit" class="btn btn-warning w-100" id="draw-btn">
-                        <i class="bi bi-gift-fill me-2"></i> 抽出
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-warning w-100 btn-action" id="draw-btn">
+                        <i class="bi bi-play-fill"></i> 抽出
+                    </button>
+                </div>
+                <div class="col-md-2">
+                    <button type="button" class="btn btn-outline-info w-100 btn-action" id="bonus-btn">
+                        <i class="bi bi-stars"></i> 加碼比對
                     </button>
                 </div>
             </form>
-            
-            <div class="text-center mt-3">
-                <a href="{{ url_for('lottery.winners_list') }}" class="text-muted text-decoration-none me-3" target="_blank">
-                    <i class="bi bi-card-checklist"></i> 中獎日誌
-                </a>
-                <a href="{{ url_for('admin.index') }}" class="text-muted text-decoration-none" target="_blank">
-                    <i class="bi bi-gear-fill"></i> 後台管理
-                </a>
-            </div>
         </div>
     </footer>
 
     <script>
-        const poolCountEl = document.getElementById('pool-count');
-        const drawnHistoryEl = document.getElementById('drawn-history');
         const listHrEl = document.getElementById('list-hr');
         const listFacEl = document.getElementById('list-fac');
         const drawBtn = document.getElementById('draw-btn');
+        const bonusBtn = document.getElementById('bonus-btn');
         
-        // 輸入框
         const input100 = document.getElementById('input-100');
         const input10 = document.getElementById('input-10');
         const input1 = document.getElementById('input-1');
         const prizeInput = document.getElementById('prize-name');
 
-        document.addEventListener('DOMContentLoaded', fetchData);
-
-        // 自動跳格邏輯 (輸入百位跳十位，輸入十位跳個位)
+        // 輸入跳格
         input100.addEventListener('input', (e) => { if(e.target.value) input10.focus(); });
         input10.addEventListener('input', (e) => { if(e.target.value) input1.focus(); });
+
+        // 取得目前畫面上的所有卡片 (用於加碼比對)
+        let currentWinnerCards = []; 
+
+        document.addEventListener('DOMContentLoaded', () => {
+            fetchData();
+            window.addEventListener('resize', fitCardsToScreen); // 視窗變動時重新縮放
+        });
 
         async function fetchData() {
             try {
                 const response = await fetch("{{ url_for('lottery.api_get_data') }}");
                 const data = await response.json();
-                poolCountEl.innerText = data.available_count;
-                drawnHistoryEl.innerText = data.drawn_numbers_list.join(", ") || "無";
-                return data.drawn_numbers_list; // 回傳已抽號碼列表
-            } catch (error) {
-                console.error("Error:", error);
-                return [];
-            }
+                document.getElementById('pool-count').innerText = data.available_count;
+                document.getElementById('drawn-history').innerText = data.drawn_numbers_list.join(", ");
+                return data.drawn_numbers_list;
+            } catch (e) { console.error(e); return []; }
         }
 
+        function getFullNumber() {
+            let suffix = "";
+            if (input100.value) suffix += input100.value;
+            if (input10.value || input100.value) suffix += (input10.value || "0"); // 有百位就要補十位
+            suffix += input1.value;
+            return suffix;
+        }
+
+        // --- 功能 1: 正規抽出 (寫入 DB) ---
         document.getElementById('draw-form').addEventListener('submit', async (e) => {
             e.preventDefault();
-            
-            // 組合號碼
-            const v100 = input100.value.trim();
-            const v10 = input10.value.trim();
-            const v1 = input1.value.trim();
-            
-            if (!v1) return alert("請至少輸入個位數");
-            
-            // 組合字串：如果有百位就全組，沒百位看有沒有十位
-            let suffix = "";
-            if (v100) suffix += v100;
-            if (v10 || v100) suffix += v10; // 如果有百位，十位即使空也要補(雖然邏輯上怪怪的，但假設 user 會依序輸入)
-            suffix += v1;
-            
-            // 簡單防呆：把中間的空字元處理掉 (例如輸入 百位:1, 個位:5 -> 15? 還是不允許? 這裡假設使用者會連續輸入)
-            // 這裡直接串接，如果不連續 (如 1_5) 使用者自己負責，或者可以強迫輸入
-            
+            const suffix = getFullNumber();
             const prizeName = prizeInput.value.trim();
-            if (!prizeName) return alert("請輸入獎項名稱");
+            
+            if (!suffix) return alert("請輸入號碼");
 
-            // 檢查重複
+            // 檢查是否重複 (透過 API 檢查更準，這裡前端簡單擋)
             const drawnList = await fetchData();
-            // 注意：API回傳的可能是字串陣列
-            if (drawnList.includes(suffix)) {
-                return alert(`號碼 ${suffix} 已經抽過了！`);
-            }
+            if (drawnList.includes(suffix)) return alert(`號碼 ${suffix} 已抽過`);
 
-            if (!confirm(`確認要抽出：\n\n【 ${prizeName} 】\n\n號碼：【 ${suffix} 】\n\n確定嗎？`)) return;
-
-            // 清空畫面
             drawBtn.disabled = true;
             listHrEl.innerHTML = '';
             listFacEl.innerHTML = '';
+            resetScale(); // 重置縮放
 
             try {
-                const response = await fetch("{{ url_for('lottery.api_draw') }}", {
+                const res = await fetch("{{ url_for('lottery.api_draw') }}", {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ prize_name: prizeName, suffix: suffix })
                 });
-                
-                const result = await response.json();
+                const result = await res.json();
 
                 if (result.success) {
-                    // 根據 is_addon 決定樣式
-                    const cardClass = result.is_addon ? 'winner-card addon-card' : 'winner-card';
-                    const badgeText = result.is_addon ? '🔥 加碼中獎' : '🎉 中獎';
-
-                    if (result.winners.length > 0) {
-                        result.winners.forEach((winner, index) => {
-                            setTimeout(() => {
-                                const card = document.createElement('div');
-                                card.className = cardClass;
-                                card.innerHTML = `
-                                    <div class="d-flex justify-content-between">
-                                        <span>${winner.name}</span>
-                                        <small>${winner.employee_id}</small>
-                                    </div>
-                                    <div class="d-flex justify-content-between mt-1">
-                                        <small class="text-primary">${winner.site || '未知單位'}</small>
-                                        <small class="fw-bold text-danger">NO.${winner.lottery_number}</small>
-                                    </div>
-                                `;
-                                
-                                // (*** 核心修改：分流顯示 ***)
-                                if (winner.site === 'HR') {
-                                    listHrEl.appendChild(card);
-                                } else if (winner.site === 'FAC') {
-                                    listFacEl.appendChild(card);
-                                } else {
-                                    // 若有其他單位，預設放右邊或另作處理，這裡暫放 FAC
-                                    listFacEl.appendChild(card);
-                                }
-                            }, index * 200);
-                        });
-                    } else {
-                        alert(`號碼 ${suffix} 沒有人中獎`);
-                    }
+                    currentWinnerCards = []; // 清空緩存
                     
-                    // 不清空輸入框，方便繼續加碼 (例如抽完 5，繼續輸入 3 變 35)
+                    if (result.winners.length === 0) {
+                        alert("無人中獎");
+                    } else {
+                        // 產生卡片
+                        result.winners.forEach(w => {
+                            const card = createCard(w);
+                            // 根據 Site 分流
+                            // 假設資料庫 site 為 'HR' 或 'FAC'，若無則預設右邊
+                            if (w.site && w.site.toUpperCase().includes('HR')) {
+                                listHrEl.appendChild(card);
+                            } else {
+                                listFacEl.appendChild(card); // FAC 或其他都放右邊
+                            }
+                            currentWinnerCards.push({ element: card, data: w });
+                        });
+
+                        // **關鍵功能：自動縮放以適應螢幕**
+                        // 等待 DOM 渲染完畢後執行
+                        setTimeout(fitCardsToScreen, 100);
+                    }
                 } else {
                     alert(result.message);
                 }
-                
-                await fetchData();
-
-            } catch (error) {
-                console.error(error);
-                alert("伺服器錯誤");
+                fetchData();
+            } catch (err) {
+                alert("錯誤：" + err);
             } finally {
                 drawBtn.disabled = false;
             }
         });
+
+        // --- 功能 2: 加碼比對 (不寫入 DB，純變色) ---
+        bonusBtn.addEventListener('click', () => {
+            const suffix = getFullNumber();
+            if (!suffix) return alert("請輸入加碼號碼");
+            if (currentWinnerCards.length === 0) return alert("目前畫面上沒有名單，請先執行「抽出」");
+
+            let matchCount = 0;
+            currentWinnerCards.forEach(item => {
+                // 檢查該員的抽獎編號是否以輸入的 suffix 結尾
+                // 例如: lottery_number "135", suffix "35" -> true
+                if (item.data.lottery_number && item.data.lottery_number.endsWith(suffix)) {
+                    // 加入特效 class
+                    item.element.classList.add('bonus-highlight');
+                    matchCount++;
+                } else {
+                    // 沒中的可以變半透明 (選用)
+                    item.element.style.opacity = '0.4';
+                    item.element.classList.remove('bonus-highlight');
+                }
+            });
+
+            if (matchCount > 0) {
+                // 有人中獎，播放個音效或提示?
+                // alert(`加碼比對完成！共 ${matchCount} 人符合 ${suffix}`);
+            } else {
+                alert(`可惜！現有名單中沒有人尾號是 ${suffix}`);
+                // 復原
+                currentWinnerCards.forEach(item => item.element.style.opacity = '1');
+            }
+        });
+
+        // --- 輔助: 產生卡片 HTML ---
+        function createCard(winner) {
+            const div = document.createElement('div');
+            div.className = 'winner-card';
+            div.innerHTML = `
+                <div class="winner-name">${winner.name}</div>
+                <div class="winner-info">${winner.employee_id}</div>
+                <div class="winner-num">${winner.lottery_number || ''}</div>
+            `;
+            return div;
+        }
+
+        // --- 核心: 自動縮放邏輯 (Fit to Screen) ---
+        function resetScale() {
+            document.documentElement.style.setProperty('--card-base-size', '1.2rem');
+        }
+
+        function fitCardsToScreen() {
+            const containerHr = listHrEl;
+            const containerFac = listFacEl;
+            
+            // 取得可用高度 (扣除 header padding 等)
+            // 這裡直接檢查是否有 overflow
+            let size = 1.2; // 初始 rem
+            const minSize = 0.4; // 最小縮到多小
+            
+            // 只要任何一邊有 scrollHeight > clientHeight，就縮小
+            // 設一個迴圈嘗試 (最多跑 20 次避免當機)
+            for (let i = 0; i < 20; i++) {
+                const overflowHr = containerHr.scrollHeight > containerHr.clientHeight;
+                const overflowFac = containerFac.scrollHeight > containerFac.clientHeight;
+
+                if (!overflowHr && !overflowFac) break; // 兩邊都塞得下就停止
+
+                size -= 0.05; // 每次縮一點
+                if (size < minSize) { size = minSize; break; }
+
+                document.documentElement.style.setProperty('--card-base-size', `${size}rem`);
+            }
+        }
     </script>
 </body>
 </html>
