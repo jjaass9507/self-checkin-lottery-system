@@ -63,9 +63,14 @@ def api_draw():
         return jsonify({"success": False, "message": "號碼必須為數字"}), 400
 
     try:
-        # 1. 檢查這個號碼是否重複被抽過 (包含一般或加碼都不能重複)
-        #    例如已抽過 "19"，就不能再抽 "19"
-        is_drawn = DrawnTailNumber.query.filter_by(tail_number=suffix).first()
+        # (*** 修改檢查邏輯 ***)
+        # 只檢查「同為尾數獎 (prize_type='tail')」是否重複
+        # 這樣如果公獎已經抽過 123，這裡抽尾數 123 就不會報錯
+        is_drawn = DrawnTailNumber.query.filter_by(
+            tail_number=suffix, 
+            prize_type='tail'
+        ).first()
+        
         if is_drawn:
             return jsonify({"success": False, "message": f"號碼 {suffix} 已經被抽過了 ({is_drawn.prize_name})！"}), 400
 
@@ -107,11 +112,13 @@ def api_draw():
         # 3. 寫入紀錄 (不論有沒有人中獎，號碼都要記錄，避免重複抽)
         #    但如果沒人中獎是否要記錄？通常是要記錄「已使用過此號碼」。
         #    若希望沒人中就不記錄，可將下面移到 if pool: 內。這裡維持記錄。
+        # (*** 修改寫入邏輯 ***)
         new_drawn_number = DrawnTailNumber(
             tail_number=suffix,
             prize_name=prize_name,
             timestamp=datetime.now(),
-            is_addon=is_addon # 記錄這是否為加碼獎
+            is_addon=is_addon,
+            prize_type='tail' # 明確標記為尾數獎
         )
         db.session.add(new_drawn_number)
         db.session.commit()
@@ -187,6 +194,9 @@ def api_public_confirm():
     employee_id = data.get('employee_id')
     prize_name = data.get('prize_name', '公獎')
 
+    # 更新狀態
+    person.has_won_public = True
+
     if not employee_id:
         return jsonify({"success": False, "message": "未指定中獎者"}), 400
 
@@ -201,12 +211,14 @@ def api_public_confirm():
         # 更新狀態
         person.has_won_public = True
         
-        # 寫入紀錄 (DrawnTailNumber 也可以用來記公獎，只是 tail_number 存完整號碼)
+        # (*** 修改寫入邏輯 ***)
+        # 寫入紀錄，標記為 'public'
         new_record = DrawnTailNumber(
-            tail_number=person.lottery_number,
+            tail_number=person.lottery_number, # 這裡存的是完整號碼
             prize_name=prize_name,
             timestamp=datetime.now(),
-            is_addon=False # 公獎不算加碼，算獨立獎項
+            is_addon=False,
+            prize_type='public' # 明確標記為公獎
         )
         db.session.add(new_record)
         db.session.commit()
@@ -215,6 +227,8 @@ def api_public_confirm():
 
     except Exception as e:
         db.session.rollback()
+        # 建議印出詳細錯誤以便除錯
+        print(f"Error: {e}") 
         return jsonify({"success": False, "message": str(e)}), 500
 
 # --- (新增) 查詢可用數字 API ---

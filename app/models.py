@@ -34,18 +34,19 @@ class DrawnTailNumber(db.Model):
     
     id = db.Column(db.Integer, primary_key=True)
     
-    # (*** 修改：改為 String 以支援 "05", "35", "135" ***)
-    tail_number = db.Column(db.String(10), unique=True, nullable=False, index=True)
+    # (*** 修改 1：移除 unique=True ***)
+    tail_number = db.Column(db.String(10), nullable=False, index=True) 
     
     prize_name = db.Column(db.String(100), nullable=False, default="未命名獎項")
     timestamp = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
-
-    # (*** 新增：判斷是否為加碼 (多位數) ***)
-    # 用來在前端顯示不同顏色 (True=加碼, False=一般尾數)
     is_addon = db.Column(db.Boolean, default=False)
+    
+    # (*** 修改 2：新增獎項類型欄位，預設為 'tail' (尾數獎) ***)
+    # 類型可為: 'tail' (尾數/加碼), 'public' (公獎)
+    prize_type = db.Column(db.String(20), default='tail') 
 
     def __repr__(self):
-        return f'<DrawnTailNumber {self.tail_number}>'
+        return f'<DrawnTailNumber {self.tail_number} ({self.prize_type})>'
     
 # 3. (新增) 取消報到紀錄 (CancellationLog)
 class CancellationLog(db.Model):
