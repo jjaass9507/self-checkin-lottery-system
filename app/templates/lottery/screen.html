@@ -9,7 +9,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Orbitron:wght@700;900&display=swap" rel="stylesheet">
     <style>
         :root {
-            --card-base-size: 1.2rem; /* 用於動態調整大小的基準 */
+            --card-base-size: 1.2rem; /* 用於動態調整大小 */
         }
         body {
             background: linear-gradient(270deg, #0f0c29, #302b63, #24243e);
@@ -24,75 +24,64 @@
         }
         @keyframes gradient-animation { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
         
-        /* 1. 頂部區域 */
+        /* 頂部資訊 */
         header { 
-            padding: 0.5rem 1rem; 
-            flex-shrink: 0; 
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+            padding: 0.5rem 1.5rem; flex-shrink: 0; 
+            display: flex; justify-content: space-between; align-items: center;
             background: rgba(0,0,0,0.2);
         }
-        .main-title { font-family: 'Orbitron', sans-serif; font-weight: 900; font-size: 2.5rem; color: #fff; text-shadow: 0 0 10px #fff, 0 0 20px #f09; margin: 0; }
-        .status-info { color: #ccc; font-size: 1rem; }
+        .main-title { font-family: 'Orbitron', sans-serif; font-weight: 900; font-size: 2.2rem; color: #fff; text-shadow: 0 0 10px #fff; margin: 0; }
+        .status-info { color: #ccc; font-size: 0.9rem; text-align: right; }
         #pool-count { color: #00ffea; font-weight: bold; }
 
-        /* 2. 主顯示區 (左右分欄) */
+        /* 主顯示區 (左右分欄) */
         main { 
             flex-grow: 1; 
             display: flex; 
             width: 100%;
-            height: 100%; /* 佔滿剩餘空間 */
+            height: 100%;
             overflow: hidden;
             position: relative;
-            padding: 10px;
+            padding: 10px 20px;
+            gap: 15px;
         }
         
         .split-pane {
             flex: 1;
             display: flex;
             flex-direction: column;
-            border-radius: 10px;
+            border-radius: 12px;
             padding: 10px;
-            margin: 0 5px;
+            background: rgba(255, 255, 255, 0.03);
             border: 1px solid rgba(255,255,255,0.1);
-            background: rgba(255, 255, 255, 0.02);
-            position: relative;
-        }
-
-        /* 中間分隔線 */
-        .separator {
-            width: 2px;
-            background: linear-gradient(to bottom, transparent, rgba(255,255,255,0.5), transparent);
-            margin: 10px 0;
         }
 
         .col-header {
             text-align: center;
-            font-size: 2rem;
+            font-size: 1.8rem;
             font-weight: 700;
             text-transform: uppercase;
-            padding-bottom: 10px;
-            margin-bottom: 10px;
-            border-bottom: 2px solid rgba(255,255,255,0.2);
-            flex-shrink: 0; /* 標題不縮放 */
+            padding-bottom: 8px;
+            margin-bottom: 8px;
+            border-bottom: 2px solid rgba(255,255,255,0.15);
+            flex-shrink: 0; 
         }
-        .col-header.hr { color: #ff9ff3; text-shadow: 0 0 10px rgba(255, 159, 243, 0.5); }
-        .col-header.fac { color: #54a0ff; text-shadow: 0 0 10px rgba(84, 160, 255, 0.5); }
+        .col-header.hr { color: #ff9ff3; }
+        .col-header.fac { color: #54a0ff; }
 
-        /* 卡片容器 (自動排版) */
+        /* 卡片容器 (自動縮放區) */
         .card-container {
             display: flex;
             flex-wrap: wrap;
-            align-content: flex-start; /* 從上排到下 */
+            align-content: flex-start;
             justify-content: center;
-            gap: 0.5rem;
+            gap: 0.5em;
             width: 100%;
-            height: 100%; /* 讓它知道高度限制 */
-            overflow: hidden; /* 超出隱藏 (靠 JS 縮放) */
+            height: 100%;
+            overflow: hidden; /* 隱藏超出部分，靠JS縮小 */
         }
 
-        /* 卡片樣式 */
+        /* 卡片本體 */
         .winner-card {
             background: linear-gradient(145deg, #fefde8, #f8d7a0);
             color: #333;
@@ -100,9 +89,9 @@
             border: 2px solid #fff;
             box-shadow: 0 4px 6px rgba(0,0,0,0.2);
             
-            /* 關鍵：大小使用 em/rem 相對單位，由 JS 控制父層 font-size 來縮放 */
-            width: 10em; 
-            padding: 0.5em;
+            /* 關鍵：大小連動 CSS 變數 */
+            width: 9em; 
+            padding: 0.4em 0.2em;
             font-size: var(--card-base-size); 
             
             display: flex;
@@ -110,38 +99,39 @@
             justify-content: center;
             align-items: center;
             
-            animation: pop-in 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+            animation: pop-in 0.4s ease forwards;
             opacity: 0;
             transform: scale(0.5);
+            transition: all 0.5s ease; /* 變色動畫 */
         }
         
-        .winner-name { font-weight: 800; font-size: 1.2em; line-height: 1.2; }
+        .winner-name { font-weight: 800; font-size: 1.1em; line-height: 1.2; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; max-width: 100%; }
         .winner-info { font-size: 0.7em; opacity: 0.8; margin-top: 2px; }
-        .winner-num { font-family: 'Orbitron', sans-serif; font-weight: bold; color: #d63031; font-size: 0.9em; margin-top: 4px; }
+        .winner-num { font-family: 'Orbitron', sans-serif; font-weight: bold; color: #d63031; font-size: 0.9em; margin-top: 2px; }
 
         @keyframes pop-in { to { opacity: 1; transform: scale(1); } }
 
         /* (*** 加碼變色樣式 ***) */
         .winner-card.bonus-highlight {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); /* 紫色系 */
-            color: #fff;
-            border: 3px solid #ffd700; /* 金框 */
-            box-shadow: 0 0 20px rgba(255, 215, 0, 0.8);
-            transform: scale(1.1);
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+            color: #fff !important;
+            border: 3px solid #ffd700 !important;
+            box-shadow: 0 0 25px rgba(255, 215, 0, 0.9);
+            transform: scale(1.08);
             z-index: 10;
         }
         .winner-card.bonus-highlight .winner-num { color: #ffd700; }
 
-        /* 3. 底部控制區 */
+        /* 底部控制區 */
         footer { 
             padding: 10px; 
             background: rgba(0,0,0,0.6); 
-            backdrop-filter: blur(5px); 
+            backdrop-filter: blur(10px); 
             flex-shrink: 0;
         }
         .controls { max-width: 1000px; margin: auto; }
         
-        .digit-input-group { display: flex; gap: 5px; justify-content: center; align-items: flex-end; }
+        .digit-input-group { display: flex; gap: 8px; justify-content: center; align-items: flex-end; }
         .digit-box label { display: block; color: #ccc; font-size: 0.7rem; margin-bottom: 2px; text-align: center; }
         .digit-box input { 
             width: 60px; height: 60px; 
@@ -150,19 +140,16 @@
             border: 2px solid #555; border-radius: 8px;
         }
         .digit-box input:focus { border-color: #00ffea; outline: none; }
-        
         .btn-action { height: 60px; font-weight: bold; border-radius: 8px; font-size: 1.2rem; }
     </style>
 </head>
 <body>
 
     <header>
-        <div>
-            <h1 class="main-title">LUCKY DRAW</h1>
-        </div>
-        <div class="text-end">
-            <div class="status-info">可抽獎: <span id="pool-count">...</span></div>
-            <div class="status-info small text-muted">已出: <span id="drawn-history">...</span></div>
+        <h1 class="main-title">LUCKY DRAW</h1>
+        <div class="status-info">
+            <div>可抽獎: <span id="pool-count">...</span></div>
+            <div class="small text-muted" style="max-width: 400px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">已出: <span id="drawn-history">...</span></div>
         </div>
     </header>
 
@@ -172,8 +159,6 @@
             <div id="list-hr" class="card-container"></div>
         </div>
         
-        <div class="separator"></div>
-
         <div class="split-pane">
             <div class="col-header fac">FAC <small style="font-size:0.5em">廠務單位</small></div>
             <div id="list-fac" class="card-container"></div>
@@ -205,13 +190,13 @@
                 </div>
 
                 <div class="col-md-2">
-                    <button type="submit" class="btn btn-warning w-100 btn-action" id="draw-btn">
+                    <button type="button" class="btn btn-warning w-100 btn-action" id="btn-draw-normal">
                         <i class="bi bi-play-fill"></i> 抽出
                     </button>
                 </div>
                 <div class="col-md-2">
-                    <button type="button" class="btn btn-outline-info w-100 btn-action" id="bonus-btn">
-                        <i class="bi bi-stars"></i> 加碼比對
+                    <button type="button" class="btn btn-outline-info w-100 btn-action" id="btn-draw-addon">
+                        <i class="bi bi-stars"></i> 加碼抽出
                     </button>
                 </div>
             </form>
@@ -221,8 +206,8 @@
     <script>
         const listHrEl = document.getElementById('list-hr');
         const listFacEl = document.getElementById('list-fac');
-        const drawBtn = document.getElementById('draw-btn');
-        const bonusBtn = document.getElementById('bonus-btn');
+        const btnDrawNormal = document.getElementById('btn-draw-normal');
+        const btnDrawAddon = document.getElementById('btn-draw-addon');
         
         const input100 = document.getElementById('input-100');
         const input10 = document.getElementById('input-10');
@@ -233,12 +218,9 @@
         input100.addEventListener('input', (e) => { if(e.target.value) input10.focus(); });
         input10.addEventListener('input', (e) => { if(e.target.value) input1.focus(); });
 
-        // 取得目前畫面上的所有卡片 (用於加碼比對)
-        let currentWinnerCards = []; 
-
         document.addEventListener('DOMContentLoaded', () => {
             fetchData();
-            window.addEventListener('resize', fitCardsToScreen); // 視窗變動時重新縮放
+            window.addEventListener('resize', fitCardsToScreen);
         });
 
         async function fetchData() {
@@ -248,63 +230,81 @@
                 document.getElementById('pool-count').innerText = data.available_count;
                 document.getElementById('drawn-history').innerText = data.drawn_numbers_list.join(", ");
                 return data.drawn_numbers_list;
-            } catch (e) { console.error(e); return []; }
+            } catch (e) { return []; }
         }
 
         function getFullNumber() {
             let suffix = "";
             if (input100.value) suffix += input100.value;
-            if (input10.value || input100.value) suffix += (input10.value || "0"); // 有百位就要補十位
+            if (input10.value || input100.value) suffix += (input10.value || "0"); 
             suffix += input1.value;
             return suffix;
         }
 
-        // --- 功能 1: 正規抽出 (寫入 DB) ---
-        document.getElementById('draw-form').addEventListener('submit', async (e) => {
-            e.preventDefault();
+        // 綁定按鈕事件
+        btnDrawNormal.addEventListener('click', () => performDraw(false));
+        btnDrawAddon.addEventListener('click', () => performDraw(true));
+
+        async function performDraw(isAddon) {
             const suffix = getFullNumber();
             const prizeName = prizeInput.value.trim();
             
             if (!suffix) return alert("請輸入號碼");
+            if (!prizeName) return alert("請輸入獎項名稱");
+            if (!input1.checkValidity()) return alert("請輸入有效數字");
 
-            // 檢查是否重複 (透過 API 檢查更準，這裡前端簡單擋)
+            // 檢查是否重複
             const drawnList = await fetchData();
-            if (drawnList.includes(suffix)) return alert(`號碼 ${suffix} 已抽過`);
+            if (drawnList.includes(suffix)) return alert(`號碼 ${suffix} 已經抽過了`);
 
-            drawBtn.disabled = true;
-            listHrEl.innerHTML = '';
-            listFacEl.innerHTML = '';
-            resetScale(); // 重置縮放
+            if(isAddon) {
+                if(!confirm(`確認要【加碼抽出】：${suffix}？\n這將會記錄到資料庫，並變更目前畫面上符合者的顏色。`)) return;
+            } else {
+                if(!confirm(`確認要【一般抽出】：${suffix}？\n這將會清空畫面並抽出新名單。`)) return;
+            }
+
+            setLoading(true);
 
             try {
                 const res = await fetch("{{ url_for('lottery.api_draw') }}", {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ prize_name: prizeName, suffix: suffix })
+                    body: JSON.stringify({ 
+                        prize_name: prizeName, 
+                        suffix: suffix,
+                        is_addon: isAddon  // 傳送模式參數
+                    })
                 });
                 const result = await res.json();
 
                 if (result.success) {
-                    currentWinnerCards = []; // 清空緩存
-                    
+                    // 如果是一般抽出，先清空畫面
+                    if (!isAddon) {
+                        listHrEl.innerHTML = '';
+                        listFacEl.innerHTML = '';
+                        resetScale();
+                    }
+
                     if (result.winners.length === 0) {
-                        alert("無人中獎");
+                        alert(`號碼 ${suffix} 沒有人中獎`);
                     } else {
-                        // 產生卡片
+                        // 處理中獎者
                         result.winners.forEach(w => {
-                            const card = createCard(w);
-                            // 根據 Site 分流
-                            // 假設資料庫 site 為 'HR' 或 'FAC'，若無則預設右邊
-                            if (w.site && w.site.toUpperCase().includes('HR')) {
-                                listHrEl.appendChild(card);
+                            if (isAddon) {
+                                // 加碼模式：尋找現有卡片變色
+                                highlightExistingCard(w.employee_id);
                             } else {
-                                listFacEl.appendChild(card); // FAC 或其他都放右邊
+                                // 一般模式：建立新卡片
+                                const card = createCard(w);
+                                if (w.site && w.site.toUpperCase().includes('HR')) {
+                                    listHrEl.appendChild(card);
+                                } else {
+                                    listFacEl.appendChild(card);
+                                }
                             }
-                            currentWinnerCards.push({ element: card, data: w });
                         });
 
-                        // **關鍵功能：自動縮放以適應螢幕**
-                        // 等待 DOM 渲染完畢後執行
+                        // 執行自動縮放
                         setTimeout(fitCardsToScreen, 100);
                     }
                 } else {
@@ -312,47 +312,16 @@
                 }
                 fetchData();
             } catch (err) {
-                alert("錯誤：" + err);
+                alert("伺服器錯誤: " + err);
             } finally {
-                drawBtn.disabled = false;
+                setLoading(false);
             }
-        });
+        }
 
-        // --- 功能 2: 加碼比對 (不寫入 DB，純變色) ---
-        bonusBtn.addEventListener('click', () => {
-            const suffix = getFullNumber();
-            if (!suffix) return alert("請輸入加碼號碼");
-            if (currentWinnerCards.length === 0) return alert("目前畫面上沒有名單，請先執行「抽出」");
-
-            let matchCount = 0;
-            currentWinnerCards.forEach(item => {
-                // 檢查該員的抽獎編號是否以輸入的 suffix 結尾
-                // 例如: lottery_number "135", suffix "35" -> true
-                if (item.data.lottery_number && item.data.lottery_number.endsWith(suffix)) {
-                    // 加入特效 class
-                    item.element.classList.add('bonus-highlight');
-                    matchCount++;
-                } else {
-                    // 沒中的可以變半透明 (選用)
-                    item.element.style.opacity = '0.4';
-                    item.element.classList.remove('bonus-highlight');
-                }
-            });
-
-            if (matchCount > 0) {
-                // 有人中獎，播放個音效或提示?
-                // alert(`加碼比對完成！共 ${matchCount} 人符合 ${suffix}`);
-            } else {
-                alert(`可惜！現有名單中沒有人尾號是 ${suffix}`);
-                // 復原
-                currentWinnerCards.forEach(item => item.element.style.opacity = '1');
-            }
-        });
-
-        // --- 輔助: 產生卡片 HTML ---
         function createCard(winner) {
             const div = document.createElement('div');
             div.className = 'winner-card';
+            div.dataset.eid = winner.employee_id; // 綁定工號以便尋找
             div.innerHTML = `
                 <div class="winner-name">${winner.name}</div>
                 <div class="winner-info">${winner.employee_id}</div>
@@ -361,7 +330,22 @@
             return div;
         }
 
-        // --- 核心: 自動縮放邏輯 (Fit to Screen) ---
+        function highlightExistingCard(employeeId) {
+            // 在兩個列表中尋找該工號的卡片
+            const card = document.querySelector(`.winner-card[data-eid="${employeeId}"]`);
+            if (card) {
+                card.classList.add('bonus-highlight');
+                // 將變色的卡片移到最前面 (選用功能)
+                // card.parentElement.prepend(card);
+            }
+        }
+
+        function setLoading(isLoading) {
+            btnDrawNormal.disabled = isLoading;
+            btnDrawAddon.disabled = isLoading;
+        }
+
+        // --- 自動縮放邏輯 ---
         function resetScale() {
             document.documentElement.style.setProperty('--card-base-size', '1.2rem');
         }
@@ -369,23 +353,19 @@
         function fitCardsToScreen() {
             const containerHr = listHrEl;
             const containerFac = listFacEl;
-            
-            // 取得可用高度 (扣除 header padding 等)
-            // 這裡直接檢查是否有 overflow
-            let size = 1.2; // 初始 rem
-            const minSize = 0.4; // 最小縮到多小
-            
-            // 只要任何一邊有 scrollHeight > clientHeight，就縮小
-            // 設一個迴圈嘗試 (最多跑 20 次避免當機)
-            for (let i = 0; i < 20; i++) {
+            let size = 1.2;
+            const minSize = 0.5;
+
+            // 迴圈縮小直到兩邊都不溢出
+            for (let i = 0; i < 30; i++) {
+                // 檢查是否有捲軸或內容超出
                 const overflowHr = containerHr.scrollHeight > containerHr.clientHeight;
                 const overflowFac = containerFac.scrollHeight > containerFac.clientHeight;
 
-                if (!overflowHr && !overflowFac) break; // 兩邊都塞得下就停止
+                if (!overflowHr && !overflowFac) break;
 
-                size -= 0.05; // 每次縮一點
+                size -= 0.05;
                 if (size < minSize) { size = minSize; break; }
-
                 document.documentElement.style.setProperty('--card-base-size', `${size}rem`);
             }
         }
