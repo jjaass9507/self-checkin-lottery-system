@@ -106,11 +106,12 @@
                         <tr>
                             <th>姓名</th>
                             <th>工號</th>
-                            <th>Site</th>       <th>部門代碼</th> 
+                            <th>Site</th>
+                            <th>部門代碼</th>
                             <th>抽獎編號</th>
                             <th>狀態</th>
                             <th>中獎資訊</th>
-                            <th>時間</th>
+                            <th>領獎確認</th> <th>時間</th>
                             <th class="text-end">操作</th>
                         </tr>
                     </thead>
@@ -238,75 +239,119 @@
             renderTable();
         }
         
+    // 渲染表格主函式
         function renderTable() {
+            // 1. 取得目前篩選條件
             const searchText = searchBoxEl.value.toLowerCase();
             const statusFilter = filterStatusEl.value;
             const winFilter = filterWinEl.value;
             const prizeFilter = filterPrizeEl.value;
-            const siteFilter = filterSiteEl.value;
-            const deptFilter = filterDeptEl.value;
-
+            const siteFilter = filterSiteEl.value; // 站點篩選
+            const deptFilter = filterDeptEl.value; // 部門代碼篩選
+            
+            // 2. 執行篩選邏輯
             const filteredData = fullDataCache.filter(person => {
+                // (A) 關鍵字搜尋 (包含姓名、工號、Site)
                 const matchesSearch = person.name.toLowerCase().includes(searchText) || 
                                       person.employee_id.toLowerCase().includes(searchText) ||
-                                      (person.site && person.site.toLowerCase().includes(searchText)); 
+                                      (person.site && person.site.toLowerCase().includes(searchText));
                 
+                // (B) 工號首碼篩選 (A, B, C...)
                 const matchesPrefix = currentPrefixFilter === 'ALL' || 
                                       person.employee_id.toUpperCase().startsWith(currentPrefixFilter);
 
+                // (C) 報到狀態
                 const matchesStatus = statusFilter === 'ALL' || person.status === statusFilter;
 
-                let matchesWin = true;
-                if (winFilter === 'WON') {
-                    matchesWin = (person.prize_info && person.prize_info !== "");
-                } else if (winFilter === 'NOT_WON') {
-                    matchesWin = (!person.prize_info || person.prize_info === "");
-                }
-
-                const matchesPrize = prizeFilter === 'ALL' || person.prize_info === prizeFilter;
-                
-                // 新增篩選邏輯
+                // (D) Site 與 Dept 篩選
                 const matchesSite = siteFilter === 'ALL' || person.site === siteFilter;
                 const matchesDept = deptFilter === 'ALL' || person.dept_code === deptFilter;
 
+                // (E) 獎項名稱篩選
+                // 若 person.prize_info 有值且符合篩選，或是選 ALL
+                const matchesPrize = prizeFilter === 'ALL' || (person.prize_info && person.prize_info.includes(prizeFilter));
+
+                // (F) 中獎狀態 (邏輯：尾數獎 或 公獎 都算中獎)
+                let matchesWin = true;
+                const isWinner = person.has_won || person.has_won_public;
+
+                if (winFilter === 'WON') {
+                    matchesWin = isWinner;
+                } else if (winFilter === 'NOT_WON') {
+                    matchesWin = !isWinner;
+                }
+
+                // 綜合所有條件
                 return matchesSearch && matchesPrefix && matchesStatus && matchesWin && matchesPrize && matchesSite && matchesDept;
             });
 
-            displayCountEl.innerText = filteredData.length;
+            // 3. 更新人數統計
+            countEl.innerText = filteredData.length;
 
+            // 4. 生成 HTML
             let html = '';
             if (filteredData.length === 0) {
-                html = '<tr><td colspan="9" class="text-center p-5 text-muted">查無符合條件的資料</td></tr>';
+                html = '<tr><td colspan="10" class="text-center p-4 text-muted">查無符合資料</td></tr>';
             } else {
                 filteredData.forEach(person => {
+                    // 狀態徽章
                     let statusBadge = person.status === 'CheckedIn' 
-                        ? '<span class="status-badge status-badge-checkedin">已報到</span>'
-                        : '<span class="status-badge status-badge-registered">未報到</span>';
-                    
-                    let prizeDisplay = person.prize_info 
-                        ? `<span class="prize-badge"><i class="bi bi-trophy-fill me-1"></i>${person.prize_info}</span>`
-                        : '<span class="text-muted">-</span>';
+                        ? `<span class="badge bg-success">已報到</span>` 
+                        : `<span class="badge bg-secondary">未報到</span>`;
 
-                    let actionBtn = '';
-                    if (person.status === 'CheckedIn') {
-                        actionBtn = `<button class="btn btn-sm btn-outline-danger" onclick="adminCancelCheckIn(${person.id}, '${person.name}')" title="取消報到"><i class="bi bi-x-lg"></i></button>`;
+                    // 中獎資訊顯示
+                    let prizeDisplay = '';
+                    if (person.prize_info) {
+                        prizeDisplay = `<div class="text-danger fw-bold">${person.prize_info}</div>`;
                     } else {
-                        actionBtn = `<button class="btn btn-sm btn-primary" onclick="adminCheckIn(${person.id}, '${person.name}')">簽到</button>`;
+                        prizeDisplay = '<span class="text-muted small">-</span>';
                     }
 
+                    // --- 產生領獎按鈕 HTML 邏輯 ---
+                    let claimHtml = '';
+
+                    // (1) 尾數獎按鈕
+                    if (person.has_won) {
+                        if (person.prize_claimed) {
+                            // 已領取 (綠色實心)
+                            claimHtml += `<button class="btn btn-sm btn-success me-1 mb-1" onclick="toggleClaim(${person.id}, 'tail')"><i class="bi bi-check-circle-fill"></i> 尾數已領</button>`;
+                        } else {
+                            // 未領取 (紅色空心)
+                            claimHtml += `<button class="btn btn-sm btn-outline-danger me-1 mb-1" onclick="toggleClaim(${person.id}, 'tail')">領取尾數</button>`;
+                        }
+                    }
+
+                    // (2) 公獎按鈕
+                    if (person.has_won_public) {
+                        if (claimHtml !== '') claimHtml += '<br>'; // 如果同時中兩個，換行
+                        
+                        if (person.public_prize_claimed) {
+                            // 已領取 (藍色實心)
+                            claimHtml += `<button class="btn btn-sm btn-primary me-1" onclick="toggleClaim(${person.id}, 'public')"><i class="bi bi-check-circle-fill"></i> 公獎已領</button>`;
+                        } else {
+                            // 未領取 (藍色空心)
+                            claimHtml += `<button class="btn btn-sm btn-outline-primary me-1" onclick="toggleClaim(${person.id}, 'public')">領取公獎</button>`;
+                        }
+                    }
+                    
+                    if (claimHtml === '') claimHtml = '<span class="text-muted small">-</span>';
+                    // ------------------------------------
+
+                    // 組合表格行
                     html += `<tr>
                         <td><b>${person.name}</b></td>
                         <td>${person.employee_id}</td>
-                        <td>${person.site || '-'}</td>
-                        <td>${person.dept_code || '-'}</td>
-                        <td>${person.lottery_number || '-'}</td>
+                        <td>${person.site || '-'}</td>       <td>${person.dept_code || '-'}</td>  <td>${person.lottery_number || '-'}</td>
                         <td>${statusBadge}</td>
                         <td>${prizeDisplay}</td>
-                        <td>${person.check_in_time}</td>
-                        <td class="text-end pe-3">${actionBtn}</td>
+                        <td>${claimHtml}</td>                <td>${person.check_in_time || ''}</td>
+                        <td class="text-end">
+                            <button class="btn btn-sm btn-outline-danger" onclick="adminCancelCheckIn(${person.id}, '${person.name}')">取消</button>
+                        </td>
                     </tr>`;
                 });
             }
+
             tableBodyEl.innerHTML = html;
         }
 

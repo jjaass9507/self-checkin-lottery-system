@@ -34,11 +34,16 @@ def api_status_list():
 
             output_list.append({
                 "id": person.id,
+                "has_won": person.has_won,              # 回傳中獎狀態
+                "has_won_public": person.has_won_public,# 回傳公獎狀態
                 "name": person.name,
                 "employee_id": person.employee_id,
                 "lottery_number": person.lottery_number,
                 "site": person.site,
                 "dept_code": person.dept_code,
+                # (*** 新增回傳領獎狀態 ***)
+                "prize_claimed": person.prize_claimed,
+                "public_prize_claimed": person.public_prize_claimed,
                 "status": person.status,
                 "check_in_time": person.check_in_time.strftime('%H:%M:%S') if person.status == 'CheckedIn' else '',
                 "prize_info": prize_info
@@ -150,6 +155,47 @@ def api_admin_cancel_checkin():
         db.session.commit()
         return jsonify({"success": True, "message": f"已取消 {person.name} 的報到狀態 (操作者: {canceller_id})"})
         
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"success": False, "message": str(e)}), 500
+
+# 2. (新增) 切換領獎狀態 API (請加在檔案後方)
+@bp.route('/api/toggle_claim', methods=['POST'])
+def api_toggle_claim():
+    try:
+        data = request.get_json()
+        person_id = data.get('id')
+        prize_type = data.get('type') # 'tail' (尾數) 或 'public' (公獎)
+        
+        person = CheckinList.query.get(person_id)
+        if not person:
+            return jsonify({"success": False, "message": "找不到人員"}), 404
+
+        current_status = False
+        
+        if prize_type == 'tail':
+            # 檢查是否真的有中獎，沒中獎不能領
+            if not person.has_won:
+                return jsonify({"success": False, "message": "該員尚未獲得尾數獎，無法領取"}), 400
+            
+            person.prize_claimed = not person.prize_claimed # 切換狀態
+            current_status = person.prize_claimed
+            
+        elif prize_type == 'public':
+            if not person.has_won_public:
+                return jsonify({"success": False, "message": "該員尚未獲得公獎，無法領取"}), 400
+            
+            person.public_prize_claimed = not person.public_prize_claimed # 切換狀態
+            current_status = person.public_prize_claimed
+        
+        else:
+            return jsonify({"success": False, "message": "錯誤的獎項類型"}), 400
+
+        db.session.commit()
+        
+        status_text = "已領取" if current_status else "未領取"
+        return jsonify({"success": True, "message": f"更新成功：狀態為 {status_text}", "new_status": current_status})
+
     except Exception as e:
         db.session.rollback()
         return jsonify({"success": False, "message": str(e)}), 500

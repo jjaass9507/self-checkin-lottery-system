@@ -21,6 +21,10 @@ class CheckinList(db.Model):
     # (*** 新增：公獎狀態 ***)
     has_won_public = db.Column(db.Boolean, default=False)
 
+    # (*** 新增：領獎確認狀態 ***)
+    prize_claimed = db.Column(db.Boolean, default=False)        # 尾數獎 是否已領獎
+    public_prize_claimed = db.Column(db.Boolean, default=False) # 公獎 是否已領獎
+
     def __repr__(self):
         return f'<CheckinList {self.name} ({self.employee_id})>'
 
