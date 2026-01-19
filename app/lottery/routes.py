@@ -131,51 +131,46 @@ def api_draw():
     
 # --- 公獎專用 API ---
 
+# --- 修改：公獎搜尋 API (支援 3 位數補零) ---
 @bp.route('/api/public/search', methods=['POST'])
 def api_public_search():
     """
-    逐步搜尋符合資格的人
-    接收參數:
-    - digits: 字串，例如 "2" (只抽百位), "21" (百+十), "219" (全)
-    - step:目前階段 (1=百位, 2=十位, 3=個位)
+    逐步搜尋符合資格的人 (邏輯修正：強制視為 3 位數)
     """
     data = request.get_json()
-    digits = data.get('digits', '') # 目前已抽出的數字串
+    digits = data.get('digits', '') # 例如 "0" (代表百位數是0)
     
     if not digits:
         return jsonify({"success": False, "message": "無輸入數字"}), 400
 
-    # 搜尋邏輯：
-    # 假設抽獎編號是 3 位數。
-    # 如果 step=1 (百位 "2") -> 搜尋 "2%" (2開頭)
-    # 如果 step=2 (十位 "21") -> 搜尋 "21%" (21開頭)
-    # 如果 step=3 (個位 "219") -> 搜尋 "219" (完全符合)
-    
-    search_pattern = f"{digits}%"
-    
-    # 篩選條件：
-    # 1. 已報到 (CheckedIn)
-    # 2. 還沒中過「公獎」 (has_won_public == False)
-    # 3. 抽獎號碼符合樣式
-    # * 注意：這裡不檢查 has_won (尾數獎)，所以中過尾數獎的人依然可以列入
-    # 使用 or_ 來同時允許 False 或 None (NULL)
-    candidates = CheckinList.query.filter(
-        CheckinList.status == 'CheckedIn', # 必須是已報到
-        or_(CheckinList.has_won_public == False, CheckinList.has_won_public == None), 
-        CheckinList.lottery_number.like(search_pattern)
+    # 1. 先取出所有「已報到」且「未中公獎」的人
+    #    (不使用 SQL LIKE，改用 Python 過濾，以處理 "5" -> "005" 的邏輯)
+    candidates_db = CheckinList.query.filter(
+        CheckinList.status == 'CheckedIn',
+        or_(CheckinList.has_won_public == False, CheckinList.has_won_public == None)
     ).all()
 
-    # 建議加入 Debug print 方便除錯
-    print(f"搜尋: {digits}, Pattern: {search_pattern}, 找到: {len(candidates)} 人")
-
     results = []
-    for p in candidates:
-        results.append({
-            "name": p.name,
-            "employee_id": p.employee_id,
-            "lottery_number": p.lottery_number,
-            "site": p.site
-        })
+    
+    # 2. Python 端迴圈比對
+    for p in candidates_db:
+        # 如果欄位是空值，跳過
+        if not p.lottery_number:
+            continue
+            
+        # (*** 核心修改 ***)
+        # 將資料庫的號碼轉字串後，向左補零至 3 位數
+        # 例如: "5" -> "005", "15" -> "015", "123" -> "123"
+        normalized_num = str(p.lottery_number).zfill(3)
+        
+        # 比對開頭 (startswith)
+        if normalized_num.startswith(digits):
+            results.append({
+                "name": p.name,
+                "employee_id": p.employee_id,
+                "lottery_number": normalized_num, # 回傳補零後的號碼，讓前端顯示 "005"
+                "site": p.site
+            })
 
     return jsonify({
         "success": True,
@@ -223,36 +218,39 @@ def api_public_confirm():
         return jsonify({"success": False, "message": str(e)}), 500
 
 # --- (新增) 查詢可用數字 API ---
+# --- 修改：查詢可用數字 API (支援 3 位數補零) ---
 @bp.route('/api/public/available_digits', methods=['POST'])
 def api_public_available_digits():
     """
     根據目前的 prefix (前綴)，回傳下一位有哪些數字是有效的
+    (邏輯修正：強制視為 3 位數)
     """
     data = request.get_json()
-    prefix = data.get('prefix', '') # 例如 "2" (已確定百位)
+    prefix = data.get('prefix', '') # 例如 "0" (已確定百位是0)
     
-    # 搜尋符合 prefix 開頭的人
-    search_pattern = f"{prefix}%"
-    
-    candidates = CheckinList.query.filter(
+    # 1. 取出所有候選人
+    candidates_db = CheckinList.query.filter(
         CheckinList.status == 'CheckedIn',
-        or_(CheckinList.has_won_public == False, CheckinList.has_won_public == None), 
-        CheckinList.lottery_number.like(search_pattern)
+        or_(CheckinList.has_won_public == False, CheckinList.has_won_public == None)
     ).all()
-    
-    # 找出下一位可用的數字
-    # 假設 lottery_number 都是 3 位數
-    # 如果 prefix 長度是 0 (還沒抽)，找第 1 碼 (index 0)
-    # 如果 prefix 長度是 1 ("2")，找第 2 碼 (index 1)
-    # 如果 prefix 長度是 2 ("21")，找第 3 碼 (index 2)
     
     target_index = len(prefix)
     available_digits = set()
     
-    for p in candidates:
-        num = str(p.lottery_number)
-        if len(num) > target_index:
-            available_digits.add(num[target_index])
+    # 2. Python 端迴圈比對與提取
+    for p in candidates_db:
+        if not p.lottery_number:
+            continue
+            
+        # (*** 核心修改 ***)
+        # 同樣補零至 3 位數
+        normalized_num = str(p.lottery_number).zfill(3)
+        
+        # 檢查是否符合前綴
+        if normalized_num.startswith(prefix):
+            # 確保還有下一位數 (防止 index out of range)
+            if len(normalized_num) > target_index:
+                available_digits.add(normalized_num[target_index])
             
     # 轉成排序好的列表
     result_list = sorted(list(available_digits))
