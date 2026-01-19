@@ -13,10 +13,12 @@ def index():
 def dashboard():
     return render_template('checkin/dashboard.html')
 
-@bp.route('/api/submit', methods=['POST'])
-def api_submit():
+# (*** 修正：函式名稱改為 api_checkin_by_id 以對應模板中的 url_for ***)
+@bp.route('/api/checkin', methods=['POST'])
+def api_checkin_by_id():
     data = request.get_json()
-    input_id = data.get('input_id')
+    # (*** 修正：前端傳送的 key 是 employee_id ***)
+    input_id = data.get('employee_id')
     
     if not input_id:
         return jsonify({"success": False, "message": "請輸入工號", "status": "danger"})
@@ -61,7 +63,7 @@ def api_status_list():
         # 撈取所有開獎紀錄
         all_draws = DrawnTailNumber.query.all()
         
-        # 分類開獎紀錄 (*** 重要修正：將 None 視為 'tail' 以相容舊資料 ***)
+        # 分類開獎紀錄 (*** 將 None 視為 'tail' 以相容舊資料 ***)
         tail_draws = [d for d in all_draws if (d.prize_type or 'tail') == 'tail']
         public_draws = [d for d in all_draws if (d.prize_type or 'tail') == 'public']
 
