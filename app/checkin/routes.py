@@ -16,46 +16,61 @@ def dashboard():
 @bp.route('/api/status_list')
 def api_status_list():
     try:
-        # 1. 撈取所有人員與開獎紀錄
+        # 1. 撈取資料
         checkin_list = CheckinList.query.all()
-        all_draws = DrawnTailNumber.query.all() # 取得所有開出的號碼
+        total_count = CheckinList.query.count()
+        checked_in_count = CheckinList.query.filter_by(status='CheckedIn').count()
         
+        # 撈取所有開獎紀錄 (用於比對)
+        all_draws = DrawnTailNumber.query.all()
+        
+        # 分類開獎紀錄 (提升比對效能)
+        # 確保資料庫已有 prize_type 欄位，若無則視為舊資料歸類為 tail
+        tail_draws = [d for d in all_draws if getattr(d, 'prize_type', 'tail') == 'tail']
+        public_draws = [d for d in all_draws if getattr(d, 'prize_type', 'tail') == 'public']
+
         output_list = []
         
         for person in checkin_list:
-            # --- 建構中獎資訊字串 ---
-            prize_info_parts = []
+            tail_prize_str = ""
+            public_prize_str = ""
             
-            # (A) 處理尾數獎/加碼獎
+            # (A) 處理尾數獎 (只顯示位數最多的那一個)
             if person.has_won:
                 user_num = str(person.lottery_number).zfill(3) if person.lottery_number else "000"
-                matched_prizes = []
+                matched_draws = []
                 
-                for draw in all_draws:
-                    # 排除公獎紀錄 (通常公獎會獨立顯示)
-                    if "公獎" in draw.prize_name:
-                        continue
-                        
-                    draw_tail = str(draw.tail_number)
-                    # 比對尾數
-                    if user_num.endswith(draw_tail):
-                        # 格式：A獎(中:5)
-                        matched_prizes.append(f"{draw.prize_name}(中:{draw_tail})")
+                for draw in tail_draws:
+                    tail = str(draw.tail_number)
+                    if user_num.endswith(tail):
+                        matched_draws.append(draw)
                 
-                # 如果有比對到紀錄就顯示，沒比對到(可能資料不同步)就顯示預設文字
-                if matched_prizes:
-                    prize_info_parts.extend(matched_prizes)
+                if matched_draws:
+                    # (*** 核心邏輯：依照尾數長度由大到小排序 ***)
+                    # 例如同時中 5 (1碼) 和 15 (2碼)，排序後 15 會在前面
+                    matched_draws.sort(key=lambda x: len(str(x.tail_number)), reverse=True)
+                    
+                    # 只取第一個 (最佳獎項)
+                    best_match = matched_draws[0]
+                    tail_prize_str = f"{best_match.prize_name} (尾:{best_match.tail_number})"
                 else:
-                    prize_info_parts.append("尾數中獎")
+                    # 狀態是 has_won 但找不到對應號碼 (可能是手動修改或資料不同步)
+                    tail_prize_str = "尾數中獎"
 
-            # (B) 處理公獎
+            # (B) 處理公獎 (獨立顯示)
             if person.has_won_public:
-                # 公獎通常是全碼
-                prize_info_parts.append("公獎")
-
-            # 組合字串
-            prize_info = " | ".join(prize_info_parts)
-            # ---------------------
+                user_num = str(person.lottery_number).zfill(3) if person.lottery_number else "000"
+                # 找出這個人中的公獎名稱
+                p_names = []
+                for draw in public_draws:
+                    # 公獎通常是對全碼
+                    if str(draw.tail_number).zfill(3) == user_num:
+                        p_names.append(draw.prize_name)
+                
+                if p_names:
+                    public_prize_str = " | ".join(p_names)
+                else:
+                    public_prize_str = "公獎"
 
             output_list.append({
                 "id": person.id,
@@ -64,21 +79,30 @@ def api_status_list():
                 "lottery_number": person.lottery_number,
                 "site": person.site,
                 "dept_code": person.dept_code,
-                
                 "status": person.status,
                 "check_in_time": person.check_in_time.strftime('%H:%M:%S') if person.status == 'CheckedIn' else '',
                 
-                "prize_info": prize_info, # 這裡現在包含了中獎號碼
+                # 回傳分開的獎項資訊
+                "tail_prize_info": tail_prize_str,
+                "public_prize_info": public_prize_str,
+                # 為了相容舊篩選邏輯，也可以保留一個合併的欄位 (選用)
+                "prize_info": f"{tail_prize_str} {public_prize_str}".strip(),
+
                 "has_won": person.has_won,
                 "has_won_public": person.has_won_public,
                 "prize_claimed": person.prize_claimed,
                 "public_prize_claimed": person.public_prize_claimed
             })
             
-        return jsonify({"success": True, "checkin_list": output_list})
+        return jsonify({
+            "success": True, 
+            "checkin_list": output_list,
+            "total_count": total_count,
+            "checked_in_count": checked_in_count
+        })
         
     except Exception as e:
-        print(e)
+        print(f"API Error: {e}") # 印出錯誤到後台終端機，方便除錯
         return jsonify({"success": False, "message": str(e)}), 500
 
 @bp.route('/api/submit', methods=['POST'])
