@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>榮譽榜 - 中獎名單輪播</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700&family=Orbitron:wght@900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --card-base-size: 1.2rem; /* 用於動態縮放的基準 */
+        }
+        
+        body {
+            /* 深邃星空背景 */
+            background: radial-gradient(ellipse at bottom, #1b2735 0%, #090a0f 100%);
+            height: 100vh;
+            color: #fff;
+            overflow: hidden;
+            font-family: 'Noto Sans TC', sans-serif;
+            display: flex; flex-direction: column;
+        }
+
+        /* 標題區 */
+        header {
+            padding: 15px;
+            text-align: center;
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(5px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            flex-shrink: 0;
+            display: flex; flex-direction: column; align-items: center;
+        }
+        .main-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 2rem;
+            letter-spacing: 2px;
+            color: #fff;
+            text-shadow: 0 0 10px rgba(255,255,255,0.5);
+            margin: 0;
+            opacity: 0.7;
+        }
+        
+        /* 當前展示的獎項標題 */
+        #current-prize-title {
+            font-size: 3.5rem;
+            font-weight: 900;
+            margin-top: 5px;
+            background: linear-gradient(to right, #ffd700, #ffec8b, #ffd700);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 30px rgba(255, 215, 0, 0.6);
+            animation: glow 2s ease-in-out infinite alternate;
+        }
+        @keyframes glow { from { text-shadow: 0 0 20px rgba(255,215,0,0.4); } to { text-shadow: 0 0 40px rgba(255,215,0,0.8); } }
+
+        /* 主要內容區 (左右分欄) */
+        main {
+            flex-grow: 1;
+            padding: 20px 40px;
+            display: flex;
+            gap: 40px;
+            overflow: hidden;
+            opacity: 1;
+            transition: opacity 0.5s ease-in-out;
+        }
+        
+        .fade-out { opacity: 0; }
+
+        .split-pane {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            border-radius: 15px;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255,255,255,0.1);
+            position: relative;
+        }
+
+        .col-header {
+            text-align: center;
+            font-size: 2rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            padding-bottom: 10px;
+            margin-bottom: 15px;
+            border-bottom: 2px solid rgba(255,255,255,0.2);
+            flex-shrink: 0;
+        }
+        .col-header.hr { color: #ff9ff3; text-shadow: 0 0 10px #ff9ff3; }
+        .col-header.fac { color: #54a0ff; text-shadow: 0 0 10px #54a0ff; }
+
+        /* 卡片容器 */
+        .card-container {
+            display: flex;
+            flex-wrap: wrap;
+            align-content: flex-start;
+            justify-content: center;
+            gap: 0.8em;
+            width: 100%;
+            height: 100%;
+            overflow: hidden; /* 禁止捲動，靠 JS 縮放 */
+        }
+
+        /* 中獎卡片 */
+        .winner-card {
+            background: linear-gradient(145deg, rgba(255,255,255,0.1), rgba(255,255,255,0.05));
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 0.6em;
+            
+            /* 使用 em 單位，隨 CSS 變數縮放 */
+            width: 11em; 
+            padding: 0.6em;
+            font-size: var(--card-base-size); 
+            
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            box-shadow: 0 0.5em 1em rgba(0,0,0,0.3);
+            position: relative;
+        }
+        
+        /* 左側金線裝飾 */
+        .winner-card::before {
+            content: ''; position: absolute; left: 0; top: 0; bottom: 0;
+            width: 4px; background: linear-gradient(to bottom, #f12711, #f5af19);
+            border-top-left-radius: 0.6em; border-bottom-left-radius: 0.6em;
+        }
+
+        .winner-name { font-size: 1.4em; font-weight: 700; margin-bottom: 0.2em; color: #fff; }
+        .winner-id { font-size: 0.9em; color: #ccc; margin-bottom: 0.2em; }
+        
+        .winner-number {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.1em;
+            color: #ffd700;
+            font-weight: bold;
+        }
+
+        /* 進度條 */
+        .progress-bar-container {
+            position: fixed; bottom: 0; left: 0; width: 100%; height: 5px; background: #333;
+        }
+        .progress-bar {
+            height: 100%; background: #00ffea; width: 0%;
+        }
+        
+        .no-data {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            font-size: 2rem; color: #666;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="main-title">CONGRATULATIONS</div>
+        <div id="current-prize-title">讀取中...</div>
+    </header>
+
+    <main id="main-content">
+        <div class="split-pane">
+            <div class="col-header hr">HR 行政</div>
+            <div id="list-hr" class="card-container"></div>
+        </div>
+        
+        <div class="split-pane">
+            <div class="col-header fac">FAC 廠務</div>
+            <div id="list-fac" class="card-container"></div>
+        </div>
+    </main>
+
+    <div class="progress-bar-container">
+        <div class="progress-bar" id="page-progress"></div>
+    </div>
+
+    <script>
+        const mainContent = document.getElementById('main-content');
+        const titleEl = document.getElementById('current-prize-title');
+        const listHrEl = document.getElementById('list-hr');
+        const listFacEl = document.getElementById('list-fac');
+        const progressBar = document.getElementById('page-progress');
+        
+        // 狀態變數
+        let winnersByPrize = {}; // { "五獎": [list...], "四獎": [list...] }
+        let prizeNames = []; // ["五獎", "四獎", ...]
+        let currentIndex = 0;
+        const intervalTime = 10000; // 每個獎項展示 10 秒
+        let timer = null;
+
+        // 初始化
+        fetchData();
+        setInterval(fetchData, 60000); // 每分鐘背景更新資料
+
+        async function fetchData() {
+            try {
+                const res = await fetch("{{ url_for('lottery.api_winners_all') }}");
+                const json = await res.json();
+                
+                if (json.success) {
+                    processData(json.data);
+                    
+                    // 如果是第一次載入，開始輪播
+                    if (!timer && prizeNames.length > 0) {
+                        renderCurrentPrize();
+                        startLoop();
+                    }
+                }
+            } catch (e) { console.error(e); }
+        }
+
+        function processData(data) {
+            // 1. 分組
+            const grouped = {};
+            // 為了保持順序，我們可以用一個 Set 來記錄遇到的獎項順序
+            // 或是根據 timestamp 排序。這裡假設 API 回傳的順序是時間倒序 (最新的在最前)
+            // 我們希望輪播順序通常是：從小獎到大獎，或是從舊到新。
+            // 這裡我們把資料反轉 (reverse)，讓最早開出的獎先顯示
+            
+            const sortedData = [...data].reverse(); 
+
+            sortedData.forEach(w => {
+                const pName = w.prize_name;
+                if (!grouped[pName]) grouped[pName] = [];
+                grouped[pName].push(w);
+            });
+
+            winnersByPrize = grouped;
+            
+            // 取得所有獎項名稱 (去除重複並保持順序)
+            prizeNames = Object.keys(grouped);
+        }
+
+        function renderCurrentPrize() {
+            if (prizeNames.length === 0) {
+                titleEl.innerText = "目前無中獎名單";
+                return;
+            }
+
+            // 1. 淡出
+            mainContent.classList.add('fade-out');
+            titleEl.style.opacity = 0;
+
+            setTimeout(() => {
+                // 2. 切換資料
+                const pName = prizeNames[currentIndex];
+                const winners = winnersByPrize[pName];
+
+                titleEl.innerText = pName;
+                titleEl.style.opacity = 1;
+                
+                listHrEl.innerHTML = '';
+                listFacEl.innerHTML = '';
+                
+                // 重置縮放
+                document.documentElement.style.setProperty('--card-base-size', '1.2rem');
+
+                // 3. 產生卡片並分流
+                winners.forEach(w => {
+                    const card = createCard(w);
+                    if (w.site && w.site.toUpperCase().includes('HR')) {
+                        listHrEl.appendChild(card);
+                    } else {
+                        listFacEl.appendChild(card);
+                    }
+                });
+
+                // 4. 淡入
+                mainContent.classList.remove('fade-out');
+
+                // 5. 執行自動縮放 (等待 DOM 渲染)
+                setTimeout(fitCardsToScreen, 50);
+                
+                // 6. 重置進度條
+                resetProgressBar();
+
+                // 準備下一輪索引
+                currentIndex = (currentIndex + 1) % prizeNames.length;
+
+            }, 500);
+        }
+
+        function createCard(winner) {
+            const div = document.createElement('div');
+            div.className = 'winner-card';
+            div.innerHTML = `
+                <div class="winner-name">${winner.name}</div>
+                <div class="winner-id">${winner.employee_id}</div>
+                <div class="winner-number">NO.${winner.lottery_number}</div>
+            `;
+            return div;
+        }
+
+        function startLoop() {
+            // 設定定時器
+            if (timer) clearInterval(timer);
+            timer = setInterval(renderCurrentPrize, intervalTime);
+        }
+
+        function resetProgressBar() {
+            progressBar.style.transition = 'none';
+            progressBar.style.width = '0%';
+            void progressBar.offsetWidth; // Force reflow
+            // 減去 500ms 是為了配合淡出淡入
+            progressBar.style.transition = `width ${intervalTime}ms linear`;
+            progressBar.style.width = '100%';
+        }
+
+        // --- 自動縮放邏輯 (同 screen.html) ---
+        function fitCardsToScreen() {
+            const containerHr = listHrEl;
+            const containerFac = listFacEl;
+            
+            let size = 1.2; 
+            const minSize = 0.5;
+            
+            // 兩邊都要檢查，只要有一邊爆掉就縮小
+            for (let i = 0; i < 40; i++) {
+                const overflowHr = containerHr.scrollHeight > containerHr.clientHeight;
+                const overflowFac = containerFac.scrollHeight > containerFac.clientHeight;
+
+                if (!overflowHr && !overflowFac) break;
+
+                size -= 0.05;
+                if (size < minSize) { size = minSize; break; }
+                document.documentElement.style.setProperty('--card-base-size', `${size}rem`);
+            }
+        }
+        
+        // 視窗大小改變時也要重算
+        window.addEventListener('resize', fitCardsToScreen);
+
+    </script>
+</body>
+</html>

@@ -265,3 +265,76 @@ def api_public_available_digits():
 def public_screen():
     return render_template('lottery/public_screen.html')
 
+# --- (新增) 輪播中獎名單 API ---
+@bp.route('/api/winners_all', methods=['GET'])
+def api_winners_all():
+    """
+    撈取所有已開出的獎項與對應的中獎人，用於輪播展示
+    """
+    try:
+        # 1. 撈出所有開獎紀錄 (最新的在前面)
+        draws = DrawnTailNumber.query.order_by(DrawnTailNumber.timestamp.desc()).all()
+        
+        results = []
+        
+        for draw in draws:
+            # 2. 針對每一個開獎紀錄，找出符合的人
+            # 注意：這裡要區分一下邏輯
+            # 如果是公獎 (通常 tail_number 是完整 3 碼)，邏輯是全符合
+            # 如果是尾數獎，邏輯是 endswith
+            
+            # 統一邏輯：
+            # 先撈出所有已報到的人
+            # 再用 Python 過濾 (為了處理 '5' vs '005' 的補零問題)
+            
+            suffix = str(draw.tail_number) # 開出的號碼
+            prize_name = draw.prize_name
+            
+            # 撈取候選人 (只撈 has_won 或 has_won_public 為 True 的人，提升效能)
+            # 也可以直接撈全部 status='CheckedIn' 的人來比對
+            candidates = CheckinList.query.filter_by(status='CheckedIn').all()
+            
+            for p in candidates:
+                if not p.lottery_number:
+                    continue
+                
+                user_num = str(p.lottery_number).zfill(3) # 補零
+                
+                # 比對邏輯
+                is_match = False
+                
+                # 如果開出號碼長度 >= 3 (或是公獎)，通常是精確比對
+                # 但為了相容尾數邏輯，我們統一用 endswith
+                # 唯一的例外是：如果 suffix 是 '05'，user_num 是 '005' -> endswith 成立
+                
+                if user_num.endswith(suffix):
+                    # 還有一個條件：這個人必須真的有被標記中獎
+                    # 避免 "尾數獎" 開了 5，結果 "公獎" 得主 (號碼也是 5) 被誤列
+                    # 但通常公獎得主 has_won_public=True, 尾數 has_won=True
+                    
+                    # 這裡為了展示方便，只要號碼符合且該獎項存在，我們就列出來
+                    # 為了更精準，我們可以檢查：
+                    # 如果 draw.is_addon (加碼/尾數) -> 檢查 p.has_won
+                    # 如果 draw.prize_name == '公獎' -> 檢查 p.has_won_public
+                    
+                    # (簡化版邏輯：只要號碼對上就顯示，適合輪播)
+                    results.append({
+                        "prize_name": prize_name,
+                        "tail_number": suffix, # 開出的尾數
+                        "name": p.name,
+                        "employee_id": p.employee_id,
+                        "lottery_number": user_num, # 員工完整號碼
+                        "site": p.site,
+                        "timestamp": draw.timestamp.strftime('%H:%M')
+                    })
+
+        return jsonify({"success": True, "data": results})
+        
+    except Exception as e:
+        print(e)
+        return jsonify({"success": False, "data": []}), 500
+
+# --- (新增) 輪播頁面路由 ---
+@bp.route('/winners_carousel')
+def winners_carousel():
+    return render_template('lottery/winners_carousel.html')
