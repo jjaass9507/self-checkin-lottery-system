@@ -194,27 +194,28 @@ def api_public_confirm():
     employee_id = data.get('employee_id')
     prize_name = data.get('prize_name', '公獎')
 
-    # 更新狀態
-    person.has_won_public = True
-
     if not employee_id:
         return jsonify({"success": False, "message": "未指定中獎者"}), 400
 
     try:
+        # 1. 先從資料庫找出這個人
         person = CheckinList.query.filter_by(employee_id=employee_id).first()
         if not person:
             return jsonify({"success": False, "message": "找不到此人"}), 404
 
+        # 2. 檢查是否已經中過
         if person.has_won_public:
             return jsonify({"success": False, "message": "此人已中過公獎"}), 400
 
-        # 更新狀態
+        # 3. 更新狀態 (必須在找到 person 之後)
         person.has_won_public = True
         
-        # (*** 修改寫入邏輯 ***)
-        # 寫入紀錄，標記為 'public'
+        # 4. 寫入紀錄，標記為 'public'
+        # 注意：這裡使用 person.lottery_number，確保它是 3 位數字串
+        lottery_num = str(person.lottery_number).zfill(3) if person.lottery_number else "000"
+
         new_record = DrawnTailNumber(
-            tail_number=person.lottery_number, # 這裡存的是完整號碼
+            tail_number=lottery_num, 
             prize_name=prize_name,
             timestamp=datetime.now(),
             is_addon=False,
@@ -227,9 +228,8 @@ def api_public_confirm():
 
     except Exception as e:
         db.session.rollback()
-        # 建議印出詳細錯誤以便除錯
-        print(f"Error: {e}") 
-        return jsonify({"success": False, "message": str(e)}), 500
+        print(f"Error in api_public_confirm: {e}") 
+        return jsonify({"success": False, "message": f"系統錯誤: {str(e)}"}), 500
 
 # --- (新增) 查詢可用數字 API ---
 # --- 修改：查詢可用數字 API (支援 3 位數補零) ---
