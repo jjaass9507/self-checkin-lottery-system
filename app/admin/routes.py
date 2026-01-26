@@ -38,10 +38,20 @@ def import_page():
                     employee_id = str(row['employee_id']) 
                     lottery_number = str(row.get('lottery_number', ''))
                     
-                    # (*** 新增讀取欄位 ***)
-                    # 使用 .get() 避免 Excel 沒這欄位時報錯
+                    # 既有欄位
                     site = str(row.get('site', ''))
                     dept_code = str(row.get('dept_code', ''))
+
+                    # (*** 新增：讀取桌次 ***)
+                    table_val = str(row.get('table_number', ''))
+                    table_number = table_val if table_val and table_val.lower() != 'nan' else None
+
+                    # (*** 新增：讀取是否為公差 ***)
+                    # 支援輸入: 1, Y, yes, true, 是
+                    biz_val = str(row.get('is_business_trip', '')).strip().upper()
+                    is_business_trip = False
+                    if biz_val in ['1', 'Y', 'YES', 'TRUE', '是']:
+                        is_business_trip = True
 
                     if not employee_id:
                         continue 
@@ -53,10 +63,12 @@ def import_page():
                             name=name,
                             employee_id=employee_id,
                             lottery_number=lottery_number if lottery_number else None,
-                            # (*** 寫入資料庫 ***)
-                            # 如果讀到 'nan' (pandas 空值) 則存為 None
                             site=site if site and site.lower() != 'nan' else None,
-                            dept_code=dept_code if dept_code and dept_code.lower() != 'nan' else None
+                            dept_code=dept_code if dept_code and dept_code.lower() != 'nan' else None,
+                            
+                            # (*** 寫入新欄位 ***)
+                            table_number=table_number,
+                            is_business_trip=is_business_trip
                         )
                         db.session.add(new_item)
                         imported_count += 1

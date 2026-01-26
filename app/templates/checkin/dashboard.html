@@ -151,7 +151,7 @@
                             <th>工號</th>
                             <th>Site</th>
                             <th>部門代碼</th>
-                            <th>抽獎編號</th>
+                            <th>桌次</th> <th>公差</th> <th>抽獎編號</th>
                             <th>狀態</th>
                             <th>中獎資訊</th>
                             <th>領獎確認</th>
@@ -311,7 +311,8 @@
 
             let html = '';
             if (filteredData.length === 0) {
-                html = '<tr><td colspan="10" class="text-center p-4 text-muted">查無符合資料</td></tr>';
+                // (*** 注意：這裡將 colspan 改為 12 以配合欄位增加 ***)
+                html = '<tr><td colspan="12" class="text-center p-4 text-muted">查無符合資料</td></tr>';
             } else {
                 filteredData.forEach(person => {
                     let statusBadge = person.status === 'CheckedIn' 
@@ -341,12 +342,21 @@
                     } else {
                         actionBtn = `<button class="btn btn-sm btn-primary" onclick="adminCheckIn(${person.id}, '${person.name}')">簽到</button>`;
                     }
+                    
+                    // (*** 新增：公差標籤邏輯 ***)
+                    let bizBadge = person.is_business_trip 
+                        ? `<span class="badge rounded-pill bg-info text-dark">公差</span>` 
+                        : `-`;
 
+                    // (*** 修改：加入 table_number 與 bizBadge 欄位 ***)
                     html += `<tr>
                         <td><b>${person.name}</b></td>
                         <td>${person.employee_id}</td>
                         <td>${person.site || '-'}</td>
                         <td>${person.dept_code || '-'}</td>
+                        
+                        <td class="text-primary fw-bold">${person.table_number || '-'}</td>
+                        <td>${bizBadge}</td>
                         <td class="fw-bold text-dark">${person.lottery_number || '-'}</td>
                         <td>${statusBadge}</td>
                         <td>${prizeHtml}</td> <td>${claimHtml}</td>

@@ -25,6 +25,11 @@ class CheckinList(db.Model):
     prize_claimed = db.Column(db.Boolean, default=False)        # 尾數獎 是否已領獎
     public_prize_claimed = db.Column(db.Boolean, default=False) # 公獎 是否已領獎
 
+    # (*** 新增：桌次 (table_number) ***)
+    # (*** 新增：是否為公差 (is_business_trip) ***
+    table_number = db.Column(db.String(20), nullable=True)      # 桌次 (建議用字串，以防有 VIP-1 這種格式)
+    is_business_trip = db.Column(db.Boolean, default=False)     # 是否為公差
+
     def __repr__(self):
         return f'<CheckinList {self.name} ({self.employee_id})>'
 

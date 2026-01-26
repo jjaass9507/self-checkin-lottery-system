@@ -120,6 +120,11 @@ def api_status_list():
                 "status": person.status,
                 "check_in_time": person.check_in_time.strftime('%H:%M:%S') if person.status == 'CheckedIn' else '',
                 
+                #(*** 新增欄位 ***)
+                # Table Number and Business Trip Status
+                "table_number": person.table_number,
+                "is_business_trip": person.is_business_trip,
+
                 "tail_prize_info": tail_prize_str,
                 "public_prize_info": public_prize_str,
                 "prize_info": f"{tail_prize_str} {public_prize_str}".strip(), # 搜尋用的合併欄位
