@@ -354,14 +354,15 @@ def winners_carousel():
     return render_template('lottery/winners_carousel.html')
 
 
-# --- (新增) 取得獎項清單 API ---
-# (*** 修改這個 API ***)
+# (*** 修改：取得獎項清單 API ***)
+# 加入 prize_type 的過濾，避免 "公獎" 和 "尾數獎" 若剛好同名會算錯數量
+# (*** 修改：取得獎項清單 API (支援過濾類型) ***)
 @bp.route('/api/prizes', methods=['GET'])
 def api_get_prizes():
-    """取得獎項清單 API (回傳所有獎項，讓前端判斷剩餘數量)"""
-    p_type = request.args.get('type', 'tail')
+    """取得獎項清單 API"""
+    p_type = request.args.get('type', 'tail') # 預設 tail, 公獎前端會傳 public
     
-    # 1. 取出所有該類型的獎項設定
+    # 1. 取出該類型的獎項設定
     prizes_config = Prize.query.filter_by(prize_type=p_type)\
                         .order_by(Prize.display_order)\
                         .all()
@@ -369,17 +370,81 @@ def api_get_prizes():
     available_prizes = []
     
     for p in prizes_config:
-        # 2. 計算已抽出的次數
-        drawn_count = DrawnTailNumber.query.filter_by(prize_name=p.name).count()
+        # 2. 計算已抽出的次數 (加入 prize_type 確保精確)
+        drawn_count = DrawnTailNumber.query.filter_by(
+            prize_name=p.name, 
+            prize_type=p_type 
+        ).count()
         
-        # 3. (*** 修改：不再過濾，全部回傳，並計算剩餘數量 ***)
         remaining = p.quantity - drawn_count
         
         available_prizes.append({
             "id": p.id,
             "name": p.name,
             "quantity": p.quantity,
-            "remaining": remaining  # 這可能是負數，代表加碼了幾次
+            "remaining": remaining
         })
     
     return jsonify({"success": True, "prizes": available_prizes})
+
+# (*** 新增：查詢特定獎項的中獎資訊 API ***)
+@bp.route('/api/query_prize', methods=['POST'])
+def api_query_prize():
+    data = request.get_json()
+    prize_name = data.get('prize_name')
+
+    if not prize_name:
+        return jsonify({"success": False, "message": "Missing prize name"}), 400
+
+    # 1. 搜尋該獎項的所有開獎紀錄 (依時間倒序，最新的在前面)
+    draws = DrawnTailNumber.query.filter_by(prize_name=prize_name).order_by(DrawnTailNumber.timestamp.desc()).all()
+
+    if not draws:
+        # 該獎項還沒抽過
+        return jsonify({"success": True, "drawn": False})
+
+    # 2. 收集該獎項開出的號碼 (用於回填前端輸入框)
+    tail_numbers = [str(d.tail_number) for d in draws]
+    
+    # 3. 找出符合這些號碼且已中獎的人
+    # 邏輯：找出「已報到」且「已中獎 (has_won=True)」的人
+    candidates = CheckinList.query.filter(
+        CheckinList.status == 'CheckedIn',
+        CheckinList.has_won == True
+    ).all()
+
+    winners_data = []
+    
+    for p in candidates:
+        if not p.lottery_number:
+            continue
+            
+        user_num = str(p.lottery_number).zfill(3) # 補零以利比對
+        
+        # 4. 判斷此人是否屬於這個獎項
+        matched_draws = []
+        for d in draws:
+            # 比對尾號 (例如 draw='5', user='005' -> match)
+            if user_num.endswith(str(d.tail_number)):
+                matched_draws.append(d)
+        
+        if matched_draws:
+            # 如果一個人同時符合多個 (極少見)，取「號碼最長」或「最新」的那個來決定屬性
+            # 這裡我們取「號碼最長」的 (例如同時中 5 和 15，視為中 15)
+            matched_draws.sort(key=lambda x: len(str(x.tail_number)), reverse=True)
+            best_match = matched_draws[0]
+            
+            winners_data.append({
+                "name": p.name,
+                "employee_id": p.employee_id,
+                "lottery_number": p.lottery_number,
+                "site": p.site,
+                "is_addon": best_match.is_addon  # (關鍵) 將加碼狀態回傳給前端
+            })
+
+    return jsonify({
+        "success": True, 
+        "drawn": True,
+        "tail_numbers": tail_numbers, 
+        "winners": winners_data
+    })

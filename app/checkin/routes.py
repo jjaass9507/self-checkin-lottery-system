@@ -1,6 +1,6 @@
 from flask import Blueprint, render_template, request, jsonify, url_for
 from app import db
-from app.models import CheckinList, DrawnTailNumber, CancellationLog
+from app.models import CheckinList, DrawnTailNumber, Prize, CancellationLog
 from datetime import datetime
 
 bp = Blueprint('checkin', __name__)
@@ -14,43 +14,77 @@ def dashboard():
     return render_template('checkin/dashboard.html')
 
 # (*** 修正：函式名稱改為 api_checkin_by_id 以對應模板中的 url_for ***)
-@bp.route('/api/checkin', methods=['POST'])
+@bp.route('/api/checkin_by_id', methods=['POST'])
 def api_checkin_by_id():
     data = request.get_json()
-    # (*** 修正：前端傳送的 key 是 employee_id ***)
-    input_id = data.get('employee_id')
+    emp_id = data.get('employee_id')
     
-    if not input_id:
-        return jsonify({"success": False, "message": "請輸入工號", "status": "danger"})
-    
-    person = CheckinList.query.filter_by(employee_id=input_id).first()
+    if not emp_id:
+        return jsonify({"success": False, "message": "請輸入工號"}), 400
+        
+    # 1. 先去資料庫找人 (這行一定要在最前面！)
+    person = CheckinList.query.filter(CheckinList.employee_id.ilike(emp_id)).first()
     
     if not person:
-        return jsonify({"success": False, "message": "找不到此工號，請確認後再試。", "status": "danger"})
-    
-    if person.status == 'CheckedIn':
-        lottery_msg = f"<br>您的抽獎編號：<b>{person.lottery_number}</b>" if person.lottery_number else ""
-        return jsonify({
-            "success": False, 
-            "message": f"{person.name} ({person.employee_id}) 您已於 {person.check_in_time.strftime('%H:%M:%S')} 報到，無須重複。{lottery_msg}", 
-            "status": "warning"
-        })
-    
-    try:
-        person.status = 'CheckedIn'
-        person.check_in_time = datetime.now()
-        db.session.commit()
+        return jsonify({"success": False, "message": "找不到此工號，請聯繫工作人員。"}), 404
         
-        lottery_msg = f"<br>您的抽獎編號：<b>{person.lottery_number}</b>" if person.lottery_number else ""
+    # 2. 執行報到 (如果還沒報到)
+    if person.status != 'CheckedIn':
+        try:
+            person.status = 'CheckedIn'
+            person.check_in_time = datetime.now()
+            db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+            return jsonify({"success": False, "message": "報到失敗: 資料庫錯誤"}), 500
         
-        return jsonify({
-            "success": True, 
-            "message": f"歡迎！{person.name} ({person.employee_id}) 報到成功！{lottery_msg}", 
-            "status": "success"
-        })
-    except Exception as e:
-        db.session.rollback()
-        return jsonify({"success": False, "message": f"伺服器錯誤：{e}。請洽詢工作人員。", "status": "danger"})
+    # 3. (*** 關鍵順序 ***) 確定 person 存在後，才開始計算顯示資訊
+    
+    # 取得抽獎號碼字串 (補零)
+    lottery_num_str = str(person.lottery_number).zfill(3) if person.lottery_number else "未設定"
+    
+    # 查詢中獎資訊
+    prize_info_list = []
+    
+    if person.lottery_number:
+        # A. 檢查公獎
+        if person.has_won_public:
+            public_draws = DrawnTailNumber.query.filter_by(prize_type='public').all()
+            for d in public_draws:
+                if str(d.tail_number) == lottery_num_str:
+                    prize_info_list.append(f"【公獎】{d.prize_name}")
+        
+        # B. 檢查尾數獎
+        if person.has_won:
+            tail_draws = DrawnTailNumber.query.filter_by(prize_type='tail').all()
+            matched_prizes = []
+            for d in tail_draws:
+                if lottery_num_str.endswith(str(d.tail_number)):
+                    matched_prizes.append(d)
+            
+            if matched_prizes:
+                matched_prizes.sort(key=lambda x: len(str(x.tail_number)), reverse=True)
+                best_match = matched_prizes[0]
+                prize_info_list.append(f"【尾數獎】{best_match.prize_name}")
+
+    # 組合中獎字串
+    if prize_info_list:
+        prize_display = " & ".join(prize_info_list)
+        is_winner = True
+    else:
+        prize_display = "祝您中大獎！" # 或是 "尚未中獎"
+        is_winner = False
+
+    return jsonify({
+        "success": True, 
+        "message": f"歡迎！{person.name} 報到成功！",
+        "name": person.name,
+        "employee_id": person.employee_id,
+        "lottery_number": lottery_num_str,        # 回傳抽獎號碼
+        "table_number": person.table_number or "未分配",
+        "prize_info": prize_display,
+        "is_winner": is_winner
+    })
 
 @bp.route('/api/status_list')
 def api_status_list():

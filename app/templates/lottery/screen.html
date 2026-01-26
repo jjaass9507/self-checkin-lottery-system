@@ -258,6 +258,76 @@
             if(prizeSelect) prizeSelect.focus();
         });
 
+        // (*** 新增：監聽獎項切換事件 ***)
+        // (*** 新增：監聽獎項切換事件 ***)
+    prizeSelect.addEventListener('change', async function() {
+        const prizeName = this.value;
+        
+        // 1. 重置畫面 (清空輸入框與名單)
+        input10.value = '';
+        input1.value = '';
+        listHrEl.innerHTML = '';
+        listFacEl.innerHTML = '';
+        
+        // 強制重設版面配置 (顯示兩欄)
+        paneHr.style.display = 'flex';
+        paneFac.style.display = 'flex';
+        
+        if (!prizeName) return;
+
+        // 2. 呼叫 API 查詢該獎項歷史
+        try {
+            const res = await fetch("{{ url_for('lottery.api_query_prize') }}", {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ prize_name: prizeName })
+            });
+            const data = await res.json();
+
+            if (data.success && data.drawn) {
+                console.log(`載入獎項 [${prizeName}] 紀錄:`, data);
+
+                // A. 自動帶入號碼 (取該獎項最新開出的一組)
+                if (data.tail_numbers && data.tail_numbers.length > 0) {
+                    const latestNum = data.tail_numbers[0];
+                    const numStr = latestNum.toString();
+                    
+                    if (numStr.length === 1) {
+                        input1.value = numStr;
+                    } else if (numStr.length >= 2) {
+                        input1.value = numStr.slice(-1);       // 個位
+                        input10.value = numStr.slice(-2, -1);  // 十位
+                    }
+                }
+
+                // B. 重新渲染中獎名單
+                if (data.winners && data.winners.length > 0) {
+                    data.winners.forEach(w => {
+                        const card = createCard(w);
+                        
+                        // (*** 關鍵：如果是加碼中獎者，加上特效類別 ***)
+                        if (w.is_addon) {
+                            card.classList.add('bonus-highlight');
+                        }
+
+                        // 依照站點分流
+                        if (w.site && w.site.toUpperCase().includes('HR')) {
+                            listHrEl.appendChild(card);
+                        } else {
+                            listFacEl.appendChild(card);
+                        }
+                    });
+                    
+                    // C. 執行縮放
+                    setTimeout(fitCardsToScreen, 100);
+                }
+            }
+        } catch (e) {
+            console.error("無法載入獎項紀錄:", e);
+        }
+    });
+
+
         // 載入獎項 (含剩餘數量顯示)
         async function loadPrizes() {
             try {
