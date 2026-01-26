@@ -3,7 +3,7 @@ from flask import (
 )
 import pandas as pd
 from app import db
-from app.models import CheckinList, DrawnTailNumber, CancellationLog
+from app.models import CheckinList, DrawnTailNumber, Prize, CancellationLog
 from datetime import datetime
 
 bp = Blueprint('admin', __name__)
@@ -170,3 +170,51 @@ def logs_page():
         .all()
 
     return render_template('admin/logs.html', logs=logs)
+
+# --- (新增) 獎項管理頁面 ---
+@bp.route('/prizes', methods=['GET', 'POST'])
+# @login_required
+def manage_prizes():
+    """管理獎項清單"""
+    if request.method == 'POST':
+        action = request.form.get('action')
+        
+        if action == 'add':
+            name = request.form.get('name')
+            prize_type = request.form.get('prize_type')
+            quantity = int(request.form.get('quantity', 1))
+            display_order = int(request.form.get('display_order', 0))
+            
+            if name:
+                new_prize = Prize(
+                    name=name, 
+                    prize_type=prize_type, 
+                    quantity=quantity,
+                    display_order=display_order
+                )
+                db.session.add(new_prize)
+                flash('獎項已新增', 'success')
+
+        elif action == 'edit':
+            prize_id = request.form.get('prize_id')
+            prize = Prize.query.get(prize_id)
+            if prize:
+                prize.name = request.form.get('name')
+                prize.prize_type = request.form.get('prize_type')
+                prize.quantity = int(request.form.get('quantity', 1))
+                prize.display_order = int(request.form.get('display_order', 0))
+                flash('獎項已更新', 'success')
+                
+        elif action == 'delete':
+            prize_id = request.form.get('prize_id')
+            prize = Prize.query.get(prize_id)
+            if prize:
+                db.session.delete(prize)
+                flash('獎項已刪除', 'warning')
+
+        db.session.commit()
+        return redirect(url_for('admin.manage_prizes'))
+
+    # 讀取所有獎項並排序
+    prizes = Prize.query.order_by(Prize.prize_type, Prize.display_order).all()
+    return render_template('admin/prizes.html', prizes=prizes)

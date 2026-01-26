@@ -64,3 +64,16 @@ class CancellationLog(db.Model):
 
     def __repr__(self):
         return f'<CancellationLog Target:{self.checkin_list_id} By:{self.cancelled_by}>'
+
+# 4. (新增) 獎項設定 (Prize) 
+class Prize(db.Model):
+    __tablename__ = 'prizes'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False)      # 獎項名稱
+    prize_type = db.Column(db.String(20), default='tail') # 類型: 'tail'(尾數獎) 或 'public'(公獎)
+    quantity = db.Column(db.Integer, default=1)           # 數量 (公獎用，尾數獎通常設為 1 或不限制)
+    display_order = db.Column(db.Integer, default=0)      # 顯示排序
+    
+    def __repr__(self):
+        return f'<Prize {self.name}>'

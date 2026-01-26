@@ -1,14 +1,15 @@
 import os
+from dotenv import load_dotenv
+
 basedir = os.path.abspath(os.path.dirname(__file__))
+load_dotenv()  # 讀取 .env 檔案
 
 class Config:
-    # (關鍵修改)
-    # 優先讀取環境變數 'DATABASE_URL' (雲端用)
-    # 如果讀不到，就用原本的 sqlite (本機用)
+    SECRET_KEY = os.environ.get('SECRET_KEY') or 'you-will-never-guess'
+    
+    # (*** 修改這行 ***)
+    # 優先讀取 DATABASE_URL，如果沒有才使用本地 event.db
     SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or \
         'sqlite:///' + os.path.join(basedir, 'event.db')
-    
+        
     SQLALCHEMY_TRACK_MODIFICATIONS = False
-
-    # 設定 Secret Key (雲端部署建議要有)
-    SECRET_KEY = os.environ.get('SECRET_KEY') or 'dev-key-for-local-testing'

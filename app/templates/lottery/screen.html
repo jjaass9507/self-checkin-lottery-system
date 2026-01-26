@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>幸運抽獎</title>
+    <title>幸運抽獎 (尾數)</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Orbitron:wght@700;900&display=swap" rel="stylesheet">
@@ -26,11 +26,51 @@
         
         /* 頂部資訊 */
         header { 
-            padding: 0.5rem 1.5rem; flex-shrink: 0; 
+            padding: 0.8rem 1.5rem; flex-shrink: 0; 
             display: flex; justify-content: space-between; align-items: center;
             background: rgba(0,0,0,0.2);
+            border-bottom: 1px solid rgba(255,255,255,0.1);
         }
-        .main-title { font-family: 'Orbitron', sans-serif; font-weight: 900; font-size: 2.2rem; color: #fff; text-shadow: 0 0 10px #fff; margin: 0; }
+        
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .main-title { 
+            font-family: 'Orbitron', sans-serif; 
+            font-weight: 900; 
+            font-size: 2rem; 
+            color: #fff; 
+            text-shadow: 0 0 10px #fff; 
+            margin: 0; 
+        }
+
+        /* (*** 修改：獎項輸入框移至上方 ***) */
+        .prize-input-header {
+            background: transparent;
+            border: none;
+            border-bottom: 2px solid #ffd700;
+            color: #ffd700;
+            font-size: 2rem;
+            font-weight: bold;
+            width: 350px;
+            text-align: center;
+            padding: 0 10px;
+            font-family: 'Noto Sans TC', sans-serif;
+            transition: all 0.3s ease;
+        }
+        .prize-input-header:focus {
+            outline: none;
+            background: rgba(255, 215, 0, 0.1);
+            text-shadow: 0 0 15px rgba(255, 215, 0, 0.5);
+        }
+        .prize-input-header::placeholder {
+            color: rgba(255, 215, 0, 0.5);
+            font-size: 1.5rem;
+        }
+
         .status-info { color: #ccc; font-size: 0.9rem; text-align: right; }
         #pool-count { color: #00ffea; font-weight: bold; }
 
@@ -69,7 +109,7 @@
         .col-header.hr { color: #ff9ff3; }
         .col-header.fac { color: #54a0ff; }
 
-        /* 卡片容器 (自動縮放區) */
+        /* 卡片容器 */
         .card-container {
             display: flex;
             flex-wrap: wrap;
@@ -78,7 +118,7 @@
             gap: 0.5em;
             width: 100%;
             height: 100%;
-            overflow: hidden; /* 隱藏超出部分，靠JS縮小 */
+            overflow: hidden;
         }
 
         /* 卡片本體 */
@@ -88,21 +128,17 @@
             border-radius: 8px;
             border: 2px solid #fff;
             box-shadow: 0 4px 6px rgba(0,0,0,0.2);
-            
-            /* 關鍵：大小連動 CSS 變數 */
             width: 9em; 
             padding: 0.4em 0.2em;
             font-size: var(--card-base-size); 
-            
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            
             animation: pop-in 0.4s ease forwards;
             opacity: 0;
             transform: scale(0.5);
-            transition: all 0.5s ease; /* 變色動畫 */
+            transition: all 0.5s ease;
         }
         
         .winner-name { font-weight: 800; font-size: 1.1em; line-height: 1.2; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; max-width: 100%; }
@@ -111,7 +147,6 @@
 
         @keyframes pop-in { to { opacity: 1; transform: scale(1); } }
 
-        /* (*** 加碼變色樣式 ***) */
         .winner-card.bonus-highlight {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
             color: #fff !important;
@@ -129,24 +164,29 @@
             backdrop-filter: blur(10px); 
             flex-shrink: 0;
         }
-        .controls { max-width: 1000px; margin: auto; }
+        .controls { max-width: 800px; margin: auto; }
         
-        .digit-input-group { display: flex; gap: 8px; justify-content: center; align-items: flex-end; }
-        .digit-box label { display: block; color: #ccc; font-size: 0.7rem; margin-bottom: 2px; text-align: center; }
+        .digit-input-group { display: flex; gap: 15px; justify-content: center; align-items: flex-end; }
+        .digit-box label { display: block; color: #ccc; font-size: 0.9rem; margin-bottom: 5px; text-align: center; }
         .digit-box input { 
-            width: 60px; height: 60px; 
-            font-size: 2rem; text-align: center; 
+            width: 80px; height: 80px; 
+            font-size: 2.5rem; text-align: center; 
             background: rgba(0,0,0,0.5); color: #fff; 
-            border: 2px solid #555; border-radius: 8px;
+            border: 2px solid #555; border-radius: 12px;
+            font-family: 'Orbitron', sans-serif;
         }
-        .digit-box input:focus { border-color: #00ffea; outline: none; }
+        .digit-box input:focus { border-color: #00ffea; outline: none; box-shadow: 0 0 15px rgba(0, 255, 234, 0.3); }
         .btn-action { height: 60px; font-weight: bold; border-radius: 8px; font-size: 1.2rem; }
     </style>
 </head>
 <body>
 
     <header>
-        <h1 class="main-title">LUCKY DRAW</h1>
+        <div class="header-left">
+            <h1 class="main-title">LUCKY DRAW</h1>
+            <input type="text" id="header-prize-name" class="prize-input-header" placeholder="輸入獎項名稱" required>
+        </div>
+        
         <div class="status-info">
             <div>可抽獎: <span id="pool-count">...</span></div>
             <div class="small text-muted" style="max-width: 400px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">已出: <span id="drawn-history">...</span></div>
@@ -167,34 +207,26 @@
     
     <footer>
         <div class="controls">
-            <form id="draw-form" class="row g-2 align-items-end justify-content-center">
-                <div class="col-md-3">
-                    <input type="text" class="form-control" id="prize-name" placeholder="輸入獎項名稱" style="height: 60px; font-size: 1.3rem; text-align:center;" required>
-                </div>
-
-                <div class="col-md-5">
+            <form id="draw-form" class="row g-3 align-items-end justify-content-center">
+                <div class="col-md-6">
                     <div class="digit-input-group">
                         <div class="digit-box">
-                            <label>百 (選)</label>
-                            <input type="text" id="input-100" maxlength="1" pattern="[0-9]*">
+                            <label>十位 (選填)</label>
+                            <input type="text" id="input-10" maxlength="1" pattern="[0-9]*" placeholder="-">
                         </div>
                         <div class="digit-box">
-                            <label>十 (選)</label>
-                            <input type="text" id="input-10" maxlength="1" pattern="[0-9]*">
-                        </div>
-                        <div class="digit-box">
-                            <label>個 (必)</label>
-                            <input type="text" id="input-1" maxlength="1" pattern="[0-9]*" required style="border-color: #f5af19;">
+                            <label>個位 (必填)</label>
+                            <input type="text" id="input-1" maxlength="1" pattern="[0-9]*" required style="border-color: #f5af19;" placeholder="-">
                         </div>
                     </div>
                 </div>
 
-                <div class="col-md-2">
+                <div class="col-md-3">
                     <button type="button" class="btn btn-warning w-100 btn-action" id="btn-draw-normal">
                         <i class="bi bi-play-fill"></i> 抽出
                     </button>
                 </div>
-                <div class="col-md-2">
+                <div class="col-md-3">
                     <button type="button" class="btn btn-outline-info w-100 btn-action" id="btn-draw-addon">
                         <i class="bi bi-stars"></i> 加碼抽出
                     </button>
@@ -209,19 +241,51 @@
         const btnDrawNormal = document.getElementById('btn-draw-normal');
         const btnDrawAddon = document.getElementById('btn-draw-addon');
         
-        const input100 = document.getElementById('input-100');
+        // (*** 修改：變數移除 input100，獎項改為抓 header 的 ID ***)
         const input10 = document.getElementById('input-10');
         const input1 = document.getElementById('input-1');
-        const prizeInput = document.getElementById('prize-name');
+        const prizeInput = document.getElementById('header-prize-name');
 
-        // 輸入跳格
-        input100.addEventListener('input', (e) => { if(e.target.value) input10.focus(); });
+        const prizeSelect = document.getElementById('header-prize-name'); // 這是下拉選單
+
+        document.addEventListener('DOMContentLoaded', () => {
+            loadPrizes(); // (*** 新增：載入獎項 ***)
+            fetchData();
+            window.addEventListener('resize', fitCardsToScreen);
+        });
+
+        // 輸入跳格邏輯 (從十位跳個位)
         input10.addEventListener('input', (e) => { if(e.target.value) input1.focus(); });
 
         document.addEventListener('DOMContentLoaded', () => {
             fetchData();
             window.addEventListener('resize', fitCardsToScreen);
+            // 自動聚焦到獎項輸入框
+            prizeInput.focus();
         });
+
+        // (*** 新增：從 API 載入獎項函式 ***)
+        async function loadPrizes() {
+            try {
+                // 參數 type=tail 代表只抓尾數獎
+                const res = await fetch("{{ url_for('lottery.api_get_prizes', type='tail') }}");
+                const data = await res.json();
+                
+                if(data.success) {
+                    // 清空除了第一項以外的選項
+                    prizeSelect.innerHTML = '<option value="" disabled selected hidden>請選擇獎項</option>';
+                    
+                    data.prizes.forEach(p => {
+                        const opt = document.createElement('option');
+                        opt.value = p.name; // 這裡我們還是傳名稱給後端
+                        opt.innerText = p.name;
+                        prizeSelect.appendChild(opt);
+                    });
+                }
+            } catch (e) {
+                console.error("無法載入獎項", e);
+            }
+        }
 
         async function fetchData() {
             try {
@@ -233,10 +297,10 @@
             } catch (e) { return []; }
         }
 
+        // (*** 修改：取得完整號碼的邏輯，只剩兩位 ***)
         function getFullNumber() {
             let suffix = "";
-            if (input100.value) suffix += input100.value;
-            if (input10.value || input100.value) suffix += (input10.value || "0"); 
+            if (input10.value) suffix += input10.value;
             suffix += input1.value;
             return suffix;
         }
@@ -257,11 +321,11 @@
             const drawnList = await fetchData();
             if (drawnList.includes(suffix)) return alert(`號碼 ${suffix} 已經抽過了`);
 
-            if(isAddon) {
-                if(!confirm(`確認要【加碼抽出】：${suffix}？\n這將會記錄到資料庫，並變更目前畫面上符合者的顏色。`)) return;
-            } else {
-                if(!confirm(`確認要【一般抽出】：${suffix}？\n這將會清空畫面並抽出新名單。`)) return;
-            }
+            let confirmMsg = isAddon 
+                ? `確認要【加碼抽出】獎項：${prizeName} (尾數 ${suffix})？\n這將會記錄到資料庫。`
+                : `確認要【一般抽出】獎項：${prizeName} (尾數 ${suffix})？\n這將會清空畫面並抽出新名單。`;
+
+            if(!confirm(confirmMsg)) return;
 
             setLoading(true);
 
@@ -272,13 +336,12 @@
                     body: JSON.stringify({ 
                         prize_name: prizeName, 
                         suffix: suffix,
-                        is_addon: isAddon  // 傳送模式參數
+                        is_addon: isAddon 
                     })
                 });
                 const result = await res.json();
 
                 if (result.success) {
-                    // 如果是一般抽出，先清空畫面
                     if (!isAddon) {
                         listHrEl.innerHTML = '';
                         listFacEl.innerHTML = '';
@@ -288,13 +351,10 @@
                     if (result.winners.length === 0) {
                         alert(`號碼 ${suffix} 沒有人中獎`);
                     } else {
-                        // 處理中獎者
                         result.winners.forEach(w => {
                             if (isAddon) {
-                                // 加碼模式：尋找現有卡片變色
                                 highlightExistingCard(w.employee_id);
                             } else {
-                                // 一般模式：建立新卡片
                                 const card = createCard(w);
                                 if (w.site && w.site.toUpperCase().includes('HR')) {
                                     listHrEl.appendChild(card);
@@ -303,8 +363,6 @@
                                 }
                             }
                         });
-
-                        // 執行自動縮放
                         setTimeout(fitCardsToScreen, 100);
                     }
                 } else {
@@ -321,7 +379,7 @@
         function createCard(winner) {
             const div = document.createElement('div');
             div.className = 'winner-card';
-            div.dataset.eid = winner.employee_id; // 綁定工號以便尋找
+            div.dataset.eid = winner.employee_id;
             div.innerHTML = `
                 <div class="winner-name">${winner.name}</div>
                 <div class="winner-info">${winner.employee_id}</div>
@@ -331,12 +389,9 @@
         }
 
         function highlightExistingCard(employeeId) {
-            // 在兩個列表中尋找該工號的卡片
             const card = document.querySelector(`.winner-card[data-eid="${employeeId}"]`);
             if (card) {
                 card.classList.add('bonus-highlight');
-                // 將變色的卡片移到最前面 (選用功能)
-                // card.parentElement.prepend(card);
             }
         }
 
@@ -345,7 +400,6 @@
             btnDrawAddon.disabled = isLoading;
         }
 
-        // --- 自動縮放邏輯 ---
         function resetScale() {
             document.documentElement.style.setProperty('--card-base-size', '1.2rem');
         }
@@ -356,9 +410,7 @@
             let size = 1.2;
             const minSize = 0.5;
 
-            // 迴圈縮小直到兩邊都不溢出
             for (let i = 0; i < 30; i++) {
-                // 檢查是否有捲軸或內容超出
                 const overflowHr = containerHr.scrollHeight > containerHr.clientHeight;
                 const overflowFac = containerFac.scrollHeight > containerFac.clientHeight;
 

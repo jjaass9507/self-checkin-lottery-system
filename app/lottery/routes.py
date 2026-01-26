@@ -1,6 +1,6 @@
 from flask import Blueprint, render_template, request, jsonify
 from app import db
-from app.models import CheckinList, DrawnTailNumber
+from app.models import CheckinList, DrawnTailNumber, Prize
 from datetime import datetime
 from sqlalchemy import or_
 
@@ -352,3 +352,22 @@ def api_winners_all():
 @bp.route('/winners_carousel')
 def winners_carousel():
     return render_template('lottery/winners_carousel.html')
+
+
+# --- (新增) 取得獎項清單 API ---
+@bp.route('/api/prizes', methods=['GET'])
+def api_get_prizes():
+    """取得獎項清單 API"""
+    p_type = request.args.get('type', 'tail') # 預設抓尾數獎
+    
+    prizes = Prize.query.filter_by(prize_type=p_type)\
+                        .order_by(Prize.display_order)\
+                        .all()
+    
+    result = [{
+        "id": p.id,
+        "name": p.name,
+        "quantity": p.quantity
+    } for p in prizes]
+    
+    return jsonify({"success": True, "prizes": result})
