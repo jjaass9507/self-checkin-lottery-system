@@ -1,428 +1,392 @@
-<!DOCTYPE html>
-<html lang="zh-Hant">
-<head>
-    <meta charset="UTF-8">
-    <title>即時報到儀表板</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
-    <style>
-        body { font-family: 'Noto Sans TC', sans-serif; background-color: #f4f7f6; }
-        .stat-card { border-left: 5px solid; }
-        .stat-card.border-primary { border-color: #0d6efd; }
-        .stat-card.border-success { border-color: #198754; }
-        .stat-card.border-warning { border-color: #ffc107; }
-        .table-container { max-height: 60vh; overflow-y: auto; }
-        .table thead { position: sticky; top: 0; background: #fff; z-index: 10; }
-        .status-badge { padding: 0.4em 0.7em; border-radius: 0.25rem; font-size: 0.85em; font-weight: 700; }
-        .prize-badge { background-color: #ffc107; color: #000; padding: 0.3em 0.6em; border-radius: 10px; font-size: 0.85em; font-weight: bold; }
-        .filter-btn { min-width: 40px; margin-right: 5px; margin-bottom: 5px; }
-        .filter-btn.active { background-color: #0d6efd; color: white; border-color: #0d6efd; }
-        .filter-section { background-color: #fff; padding: 15px; border-bottom: 1px solid #dee2e6; }
-    </style>
-</head>
-<body>
+{% extends "base.html" %}
 
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark shadow-sm">
-        <div class="container-fluid">
-            <a class="navbar-brand" href="{{ url_for('admin.index') }}">
-                <i class="bi bi-speedometer2 me-2"></i> 即時報到儀表板
-            </a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#adminNav">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="adminNav">
-                <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-                    <li class="nav-item">
-                        <a class="nav-link {{ 'active' if request.endpoint == 'admin.import_page' }}" href="{{ url_for('admin.import_page') }}">
-                            <i class="bi bi-cloud-upload-fill me-1"></i> 匯入名單
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link {{ 'active' if request.endpoint == 'checkin.dashboard' }}" href="{{ url_for('checkin.dashboard') }}">
-                            <i class="bi bi-bar-chart-fill me-1"></i> 報到儀表板
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link {{ 'active' if request.endpoint == 'admin.logs_page' }}" href="{{ url_for('admin.logs_page') }}">
-                            <i class="bi bi-journal-text me-1"></i> 操作紀錄
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link {{ 'active' if request.endpoint == 'lottery.winners_list' }}" href="{{ url_for('lottery.winners_list') }}">
-                            <i class="bi bi-list-check me-1"></i> 中獎日誌
-                        </a>
-                    </li>
-                </ul>
-                <ul class="navbar-nav ms-auto align-items-center">
-                    <li class="nav-item me-3">
-                        <span class="navbar-text text-light small" id="last-updated">
-                            <span class="spinner-border spinner-border-sm"></span> 連線中...
-                        </span>
-                    </li>
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                            <i class="bi bi-display me-1"></i> 前台頁面
-                        </a>
-                        <ul class="dropdown-menu dropdown-menu-end dropdown-menu-dark" aria-labelledby="navbarDropdown">
-                            <li><a class="dropdown-item" href="{{ url_for('checkin.index') }}" target="_blank">自助報到站 (Kiosk)</a></li>
-                            <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item" href="{{ url_for('lottery.lottery_screen') }}" target="_blank">幸運抽獎 (尾數)</a></li>
-                            <li><a class="dropdown-item" href="{{ url_for('lottery.public_screen') }}" target="_blank">公獎抽獎 (全碼)</a></li>
-                            <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item" href="{{ url_for('lottery.winners_carousel') }}" target="_blank">中獎輪播 (Carousel)</a></li>
-                        </ul>
-                    </li>
-                </ul>
+{% block title %}即時報到儀表板{% endblock %}
+
+{% block styles %}
+<style>
+    .stat-card { border-left: 5px solid; }
+    .stat-card.border-primary { border-color: #0d6efd; }
+    .stat-card.border-success { border-color: #198754; }
+    .stat-card.border-warning { border-color: #ffc107; }
+    .table-container { max-height: 60vh; overflow-y: auto; }
+    .table thead { position: sticky; top: 0; background: #fff; z-index: 10; }
+    .filter-btn { min-width: 40px; margin-right: 5px; margin-bottom: 5px; }
+    .filter-btn.active { background-color: #0d6efd; color: white; border-color: #0d6efd; }
+    .filter-section { background-color: #fff; padding: 15px; border-bottom: 1px solid #dee2e6; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row g-3 mb-3">
+        <div class="col-md-4">
+            <div class="card shadow-sm stat-card border-primary">
+                <div class="card-body d-flex justify-content-between">
+                    <div><h5 class="text-primary">總人數</h5><h2 id="stat-total" class="fw-bold">...</h2></div>
+                    <i class="bi bi-people-fill fs-1 text-muted"></i>
+                </div>
             </div>
         </div>
-    </nav>
-
-    <div class="container mt-4">
-        <div class="row g-3 mb-3">
-            <div class="col-md-4"><div class="card shadow-sm stat-card border-primary"><div class="card-body d-flex justify-content-between"><div><h5 class="text-primary">總人數</h5><h2 id="stat-total" class="fw-bold">...</h2></div><i class="bi bi-people-fill fs-1 text-muted"></i></div></div></div>
-            <div class="col-md-4"><div class="card shadow-sm stat-card border-success"><div class="card-body d-flex justify-content-between"><div><h5 class="text-success">已報到</h5><h2 id="stat-checkedin" class="fw-bold">...</h2></div><i class="bi bi-person-check-fill fs-1 text-success"></i></div></div></div>
-            <div class="col-md-4"><div class="card shadow-sm stat-card border-warning"><div class="card-body d-flex justify-content-between"><div><h5 class="text-warning">未報到</h5><h2 id="stat-pending" class="fw-bold">...</h2></div><i class="bi bi-person-x-fill fs-1 text-warning"></i></div></div></div>
+        <div class="col-md-4">
+            <div class="card shadow-sm stat-card border-success">
+                <div class="card-body d-flex justify-content-between">
+                    <div><h5 class="text-success">已報到</h5><h2 id="stat-checkedin" class="fw-bold">...</h2></div>
+                    <i class="bi bi-person-check-fill fs-1 text-success"></i>
+                </div>
+            </div>
         </div>
-
-        <div class="card shadow-sm">
-            <div class="card-header bg-light">
-                <div class="d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0">報到名單與篩選 (<span id="display-count">0</span> 人)</h5>
+        <div class="col-md-4">
+            <div class="card shadow-sm stat-card border-warning">
+                <div class="card-body d-flex justify-content-between">
+                    <div><h5 class="text-warning">未報到</h5><h2 id="stat-pending" class="fw-bold">...</h2></div>
+                    <i class="bi bi-person-x-fill fs-1 text-warning"></i>
                 </div>
-            </div>
-            
-            <div class="filter-section">
-                <div class="row g-2 mb-2">
-                    <div class="col-md-3">
-                        <label class="form-label small text-muted">關鍵字</label>
-                        <input type="text" class="form-control" id="search-box" placeholder="工號/姓名/站點...">
-                    </div>
-                    <div class="col-md-3">
-                        <label class="form-label small text-muted">報到狀態</label>
-                        <select class="form-select" id="filter-status">
-                            <option value="ALL">所有狀態</option>
-                            <option value="CheckedIn">已報到</option>
-                            <option value="Registered">未報到</option>
-                        </select>
-                    </div>
-                    <div class="col-md-3">
-                        <label class="form-label small text-muted">站點 (Site)</label>
-                        <select class="form-select" id="filter-site">
-                            <option value="ALL">所有站點</option>
-                        </select>
-                    </div>
-                    <div class="col-md-3">
-                        <label class="form-label small text-muted">部門代碼</label>
-                        <select class="form-select" id="filter-dept">
-                            <option value="ALL">所有部門</option>
-                        </select>
-                    </div>
-                </div>
-                
-                <div class="row g-2">
-                    <div class="col-md-3">
-                        <label class="form-label small text-muted">中獎狀態</label>
-                        <select class="form-select" id="filter-win">
-                            <option value="ALL">所有情形</option>
-                            <option value="WON">已中獎</option>
-                            <option value="NOT_WON">未中獎</option>
-                        </select>
-                    </div>
-                    <div class="col-md-3">
-                        <label class="form-label small text-muted">特定獎項</label>
-                        <select class="form-select" id="filter-prize">
-                            <option value="ALL">所有獎項</option>
-                        </select>
-                    </div>
-                </div>
-                
-                <div class="mt-3 pt-2 border-top" id="prefix-filters">
-                    <small class="text-muted me-2">工號首碼:</small>
-                    <button class="btn btn-sm btn-outline-secondary filter-btn active" data-prefix="ALL">全部</button>
-                </div>
-            </div>
-
-            <div class="card-body p-0 table-container">
-                <table class="table table-hover table-striped mb-0 align-middle">
-                    <thead>
-                        <tr>
-                            <th>姓名</th>
-                            <th>工號</th>
-                            <th>Site</th>
-                            <th>部門代碼</th>
-                            <th>桌次</th> <th>公差</th> <th>抽獎編號</th>
-                            <th>狀態</th>
-                            <th>中獎資訊</th>
-                            <th>領獎確認</th>
-                            <th>時間</th>
-                            <th class="text-end">操作</th>
-                        </tr>
-                    </thead>
-                    <tbody id="table-body">
-                        <tr><td colspan="10" class="text-center p-5"><div class="spinner-border"></div></td></tr>
-                    </tbody>
-                </table>
             </div>
         </div>
     </div>
 
-    <script>
-        // 變數宣告區
-        const statTotalEl = document.getElementById('stat-total');
-        const statCheckedInEl = document.getElementById('stat-checkedin');
-        const statPendingEl = document.getElementById('stat-pending');
-        const tableBodyEl = document.getElementById('table-body');
-        const lastUpdatedEl = document.getElementById('last-updated');
-        const displayCountEl = document.getElementById('display-count');
+    <div class="card shadow-sm">
+        <div class="card-header bg-light">
+            <div class="d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    報到名單與篩選 (<span id="display-count">0</span> 人)
+                </h5>
+                <span class="text-muted small" id="last-updated">
+                    <span class="spinner-border spinner-border-sm"></span> 連線中...
+                </span>
+            </div>
+        </div>
         
-        const searchBoxEl = document.getElementById('search-box');
-        const filterStatusEl = document.getElementById('filter-status');
-        const filterWinEl = document.getElementById('filter-win');
-        const filterPrizeEl = document.getElementById('filter-prize');
-        const prefixFiltersEl = document.getElementById('prefix-filters');
-        
-        const filterSiteEl = document.getElementById('filter-site');
-        const filterDeptEl = document.getElementById('filter-dept');
-
-        let fullDataCache = [];
-        let currentPrefixFilter = 'ALL';
-
-        // 2. 資料撈取函式
-        async function fetchData() {
-            try {
-                const response = await fetch("{{ url_for('checkin.api_status_list') }}");
-                if (!response.ok) throw new Error("API Error");
-                const data = await response.json();
-                
-                if (data.success) {
-                    const total = data.total_count || data.checkin_list.length; 
-                    const checkedIn = data.checked_in_count || data.checkin_list.filter(p=>p.status==='CheckedIn').length;
-                    
-                    if(statTotalEl) statTotalEl.innerText = total;
-                    if(statCheckedInEl) statCheckedInEl.innerText = checkedIn;
-                    if(statPendingEl) statPendingEl.innerText = total - checkedIn;
-
-                    if (fullDataCache.length === 0 && data.checkin_list.length > 0) {
-                        generatePrefixButtons(data.checkin_list);
-                        updatePrizeDropdown(data.checkin_list);
-                        updateSiteAndDeptDropdowns(data.checkin_list);
-                    }
-
-                    fullDataCache = data.checkin_list;
-                    renderTable();
-                    if(lastUpdatedEl) lastUpdatedEl.innerText = `更新: ${new Date().toLocaleTimeString()}`;
-                }
-            } catch (e) {
-                if(lastUpdatedEl) lastUpdatedEl.innerText = "更新失敗";
-                console.error(e);
-            }
-        }
-
-        function updateSiteAndDeptDropdowns(list) {
-            const sites = [...new Set(list.map(p => p.site).filter(s => s))].sort();
-            filterSiteEl.innerHTML = '<option value="ALL">所有站點</option>';
-            sites.forEach(s => {
-                const opt = document.createElement('option');
-                opt.value = s;
-                opt.innerText = s;
-                filterSiteEl.appendChild(opt);
-            });
+        <div class="filter-section">
+            <div class="row g-2 mb-2">
+                <div class="col-md-3">
+                    <label class="form-label small text-muted">關鍵字</label>
+                    <input type="text" class="form-control" id="search-box" placeholder="工號/姓名/站點...">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label small text-muted">報到狀態</label>
+                    <select class="form-select" id="filter-status">
+                        <option value="ALL">所有狀態</option>
+                        <option value="CheckedIn">已報到</option>
+                        <option value="Registered">未報到</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label small text-muted">站點 (Site)</label>
+                    <select class="form-select" id="filter-site">
+                        <option value="ALL">所有站點</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label small text-muted">部門代碼</label>
+                    <select class="form-select" id="filter-dept">
+                        <option value="ALL">所有部門</option>
+                    </select>
+                </div>
+            </div>
             
-            const depts = [...new Set(list.map(p => p.dept_code).filter(d => d))].sort();
-            filterDeptEl.innerHTML = '<option value="ALL">所有部門</option>';
-            depts.forEach(d => {
-                const opt = document.createElement('option');
-                opt.value = d;
-                opt.innerText = d;
-                filterDeptEl.appendChild(opt);
-            });
-        }
-
-        function updatePrizeDropdown(list) {
-            const prizes = [...new Set(list.map(p => p.prize_info).filter(p => p && p !== ""))].sort();
-            const currentVal = filterPrizeEl.value;
-            filterPrizeEl.innerHTML = '<option value="ALL">所有獎項</option>';
-            prizes.forEach(prize => {
-                const option = document.createElement('option');
-                option.value = prize;
-                option.innerText = prize;
-                filterPrizeEl.appendChild(option);
-            });
-            if (prizes.includes(currentVal)) filterPrizeEl.value = currentVal;
-        }
-
-        function generatePrefixButtons(list) {
-            const prefixes = [...new Set(list.map(p => p.employee_id.charAt(0).toUpperCase()))].sort();
-            prefixFiltersEl.innerHTML = `
+            <div class="row g-2">
+                <div class="col-md-3">
+                    <label class="form-label small text-muted">中獎狀態</label>
+                    <select class="form-select" id="filter-win">
+                        <option value="ALL">所有情形</option>
+                        <option value="WON">已中獎</option>
+                        <option value="NOT_WON">未中獎</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label small text-muted">特定獎項</label>
+                    <select class="form-select" id="filter-prize">
+                        <option value="ALL">所有獎項</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="mt-3 pt-2 border-top" id="prefix-filters">
                 <small class="text-muted me-2">工號首碼:</small>
-                <button class="btn btn-sm btn-outline-secondary filter-btn active" onclick="setPrefixFilter('ALL', this)">全部</button>
-            `;
+                <button class="btn btn-sm btn-outline-secondary filter-btn active" data-prefix="ALL">全部</button>
+            </div>
+        </div>
 
-            prefixes.forEach(char => {
-                const btn = document.createElement('button');
-                btn.className = 'btn btn-sm btn-outline-secondary filter-btn';
-                btn.innerText = char;
-                btn.onclick = () => setPrefixFilter(char, btn);
-                prefixFiltersEl.appendChild(btn);
-            });
-        }
+        <div class="card-body p-0 table-container">
+            <table class="table table-hover table-striped mb-0 align-middle">
+                <thead>
+                    <tr>
+                        <th>姓名</th>
+                        <th>工號</th>
+                        <th>Site</th>
+                        <th>部門代碼</th>
+                        <th>桌次</th> <th>公差</th> <th>抽獎編號</th>
+                        <th>狀態</th>
+                        <th>中獎資訊</th>
+                        <th>領獎確認</th>
+                        <th>時間</th>
+                        <th class="text-end">操作</th>
+                    </tr>
+                </thead>
+                <tbody id="table-body">
+                    <tr><td colspan="12" class="text-center p-5"><div class="spinner-border"></div></td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
 
-        function setPrefixFilter(val, btn) {
-            document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-            currentPrefixFilter = val;
-            renderTable();
-        }
-        
-        function renderTable() {
-            const searchText = searchBoxEl.value.toLowerCase();
-            const statusFilter = filterStatusEl.value;
-            const winFilter = filterWinEl.value;
-            const prizeFilter = filterPrizeEl.value;
-            const siteFilter = filterSiteEl.value;
-            const deptFilter = filterDeptEl.value;
+{% block scripts %}
+<script>
+    // 變數宣告區
+    const statTotalEl = document.getElementById('stat-total');
+    const statCheckedInEl = document.getElementById('stat-checkedin');
+    const statPendingEl = document.getElementById('stat-pending');
+    const tableBodyEl = document.getElementById('table-body');
+    const lastUpdatedEl = document.getElementById('last-updated');
+    const displayCountEl = document.getElementById('display-count');
+    
+    const searchBoxEl = document.getElementById('search-box');
+    const filterStatusEl = document.getElementById('filter-status');
+    const filterWinEl = document.getElementById('filter-win');
+    const filterPrizeEl = document.getElementById('filter-prize');
+    const prefixFiltersEl = document.getElementById('prefix-filters');
+    
+    const filterSiteEl = document.getElementById('filter-site');
+    const filterDeptEl = document.getElementById('filter-dept');
+
+    let fullDataCache = [];
+    let currentPrefixFilter = 'ALL';
+
+    // 2. 資料撈取函式
+    async function fetchData() {
+        try {
+            const response = await fetch("{{ url_for('checkin.api_status_list') }}");
+            if (!response.ok) throw new Error("API Error");
+            const data = await response.json();
             
-            const filteredData = fullDataCache.filter(person => {
-                const matchesSearch = person.name.toLowerCase().includes(searchText) || 
-                                      person.employee_id.toLowerCase().includes(searchText) ||
-                                      (person.site && person.site.toLowerCase().includes(searchText)) ||
-                                      (person.lottery_number && person.lottery_number.includes(searchText));
+            if (data.success) {
+                const total = data.total_count || data.checkin_list.length; 
+                const checkedIn = data.checked_in_count || data.checkin_list.filter(p=>p.status==='CheckedIn').length;
                 
-                const matchesPrefix = currentPrefixFilter === 'ALL' || 
-                                      person.employee_id.toUpperCase().startsWith(currentPrefixFilter);
+                if(statTotalEl) statTotalEl.innerText = total;
+                if(statCheckedInEl) statCheckedInEl.innerText = checkedIn;
+                if(statPendingEl) statPendingEl.innerText = total - checkedIn;
 
-                const matchesStatus = statusFilter === 'ALL' || person.status === statusFilter;
-                const matchesSite = siteFilter === 'ALL' || person.site === siteFilter;
-                const matchesDept = deptFilter === 'ALL' || person.dept_code === deptFilter;
-                
-                const matchesPrize = prizeFilter === 'ALL' || (person.prize_info && person.prize_info.includes(prizeFilter));
+                if (fullDataCache.length === 0 && data.checkin_list.length > 0) {
+                    generatePrefixButtons(data.checkin_list);
+                    updatePrizeDropdown(data.checkin_list);
+                    updateSiteAndDeptDropdowns(data.checkin_list);
+                }
 
-                let matchesWin = true;
-                const isWinner = person.has_won || person.has_won_public;
-
-                if (winFilter === 'WON') matchesWin = isWinner;
-                else if (winFilter === 'NOT_WON') matchesWin = !isWinner;
-
-                return matchesSearch && matchesPrefix && matchesStatus && matchesWin && matchesPrize && matchesSite && matchesDept;
-            });
-
-            if(displayCountEl) displayCountEl.innerText = filteredData.length;
-
-            let html = '';
-            if (filteredData.length === 0) {
-                // (*** 注意：這裡將 colspan 改為 12 以配合欄位增加 ***)
-                html = '<tr><td colspan="12" class="text-center p-4 text-muted">查無符合資料</td></tr>';
-            } else {
-                filteredData.forEach(person => {
-                    let statusBadge = person.status === 'CheckedIn' 
-                        ? `<span class="badge bg-success">已報到</span>` 
-                        : `<span class="badge bg-secondary">未報到</span>`;
-
-                    let prizeHtml = '';
-                    if (person.tail_prize_info) prizeHtml += `<div class="text-danger fw-bold small mb-1"><i class="bi bi-ticket-perforated-fill me-1"></i>${person.tail_prize_info}</div>`;
-                    if (person.public_prize_info) prizeHtml += `<div class="text-primary fw-bold small"><i class="bi bi-trophy-fill me-1"></i>${person.public_prize_info}</div>`;
-                    if (prizeHtml === '') prizeHtml = '<span class="text-muted small">-</span>';
-
-                    let claimHtml = '';
-                    if (person.has_won) {
-                        if (person.prize_claimed) claimHtml += `<button class="btn btn-sm btn-success me-1 mb-1" style="font-size:0.75rem" onclick="toggleClaim(${person.id}, 'tail')"><i class="bi bi-check-circle-fill"></i> 尾數已領</button>`;
-                        else claimHtml += `<button class="btn btn-sm btn-outline-danger me-1 mb-1" style="font-size:0.75rem" onclick="toggleClaim(${person.id}, 'tail')">領取尾數</button>`;
-                    }
-                    if (person.has_won_public) {
-                        if (claimHtml !== '') claimHtml += '<br>';
-                        if (person.public_prize_claimed) claimHtml += `<button class="btn btn-sm btn-primary me-1" style="font-size:0.75rem" onclick="toggleClaim(${person.id}, 'public')"><i class="bi bi-check-circle-fill"></i> 公獎已領</button>`;
-                        else claimHtml += `<button class="btn btn-sm btn-outline-primary me-1" style="font-size:0.75rem" onclick="toggleClaim(${person.id}, 'public')">領取公獎</button>`;
-                    }
-                    if (claimHtml === '') claimHtml = '<span class="text-muted small">-</span>';
-
-                    let actionBtn = '';
-                    if (person.status === 'CheckedIn') {
-                        actionBtn = `<button class="btn btn-sm btn-outline-secondary" onclick="adminCancelCheckIn(${person.id}, '${person.name}')">取消</button>`;
-                    } else {
-                        actionBtn = `<button class="btn btn-sm btn-primary" onclick="adminCheckIn(${person.id}, '${person.name}')">簽到</button>`;
-                    }
-                    
-                    // (*** 新增：公差標籤邏輯 ***)
-                    let bizBadge = person.is_business_trip 
-                        ? `<span class="badge rounded-pill bg-info text-dark">公差</span>` 
-                        : `-`;
-
-                    // (*** 修改：加入 table_number 與 bizBadge 欄位 ***)
-                    html += `<tr>
-                        <td><b>${person.name}</b></td>
-                        <td>${person.employee_id}</td>
-                        <td>${person.site || '-'}</td>
-                        <td>${person.dept_code || '-'}</td>
-                        
-                        <td class="text-primary fw-bold">${person.table_number || '-'}</td>
-                        <td>${bizBadge}</td>
-                        <td class="fw-bold text-dark">${person.lottery_number || '-'}</td>
-                        <td>${statusBadge}</td>
-                        <td>${prizeHtml}</td> <td>${claimHtml}</td>
-                        <td>${person.check_in_time || ''}</td>
-                        <td class="text-end">${actionBtn}</td>
-                    </tr>`;
-                });
+                fullDataCache = data.checkin_list;
+                renderTable();
+                if(lastUpdatedEl) lastUpdatedEl.innerText = `更新: ${new Date().toLocaleTimeString()}`;
             }
-            tableBodyEl.innerHTML = html;
+        } catch (e) {
+            if(lastUpdatedEl) lastUpdatedEl.innerText = "更新失敗";
+            console.error(e);
         }
+    }
 
-        async function toggleClaim(id, type) {
-            try {
-                const res = await fetch("{{ url_for('checkin.api_toggle_claim') }}", {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ id: id, type: type })
-                });
-                const data = await res.json();
-                if (data.success) fetchData();
-                else alert(data.message);
-            } catch (e) { console.error(e); alert("操作失敗"); }
-        }
-
-        async function adminCheckIn(id, name) {
-            if (!confirm(`確認幫 [ ${name} ] 簽到？`)) return;
-            try {
-                const res = await fetch("{{ url_for('checkin.api_admin_checkin') }}", {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({id: id})
-                });
-                const data = await res.json();
-                if(data.success) fetchData();
-                else alert(data.message);
-            } catch(e) { alert("Error"); }
-        }
-
-        async function adminCancelCheckIn(id, name) {
-            const cancellerId = prompt(`【警告】\n確認要取消 [ ${name} ] 的報到狀態嗎？\n\n為了保留紀錄，請輸入「您的工號」：`);
-            if (cancellerId === null) return; 
-            if (!cancellerId.trim()) return alert("未輸入工號，無法執行。");
-
-            try {
-                const res = await fetch("{{ url_for('checkin.api_admin_cancel_checkin') }}", {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ id: id, canceller_id: cancellerId.trim() })
-                });
-                const data = await res.json();
-                if(data.success) { alert(data.message); fetchData(); } 
-                else alert(data.message);
-            } catch(e) { console.error(e); alert("發生錯誤"); }
-        }
-
-        document.addEventListener('DOMContentLoaded', () => {
-            fetchData(); 
-            setInterval(fetchData, 5000); 
-            searchBoxEl.addEventListener('input', renderTable);
-            filterStatusEl.addEventListener('change', renderTable);
-            filterWinEl.addEventListener('change', renderTable);
-            filterPrizeEl.addEventListener('change', renderTable);
-            filterSiteEl.addEventListener('change', renderTable);
-            filterDeptEl.addEventListener('change', renderTable);
+    function updateSiteAndDeptDropdowns(list) {
+        const sites = [...new Set(list.map(p => p.site).filter(s => s))].sort();
+        filterSiteEl.innerHTML = '<option value="ALL">所有站點</option>';
+        sites.forEach(s => {
+            const opt = document.createElement('option');
+            opt.value = s;
+            opt.innerText = s;
+            filterSiteEl.appendChild(opt);
         });
-    </script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-</body>
-</html>
+        
+        const depts = [...new Set(list.map(p => p.dept_code).filter(d => d))].sort();
+        filterDeptEl.innerHTML = '<option value="ALL">所有部門</option>';
+        depts.forEach(d => {
+            const opt = document.createElement('option');
+            opt.value = d;
+            opt.innerText = d;
+            filterDeptEl.appendChild(opt);
+        });
+    }
+
+    function updatePrizeDropdown(list) {
+        const prizes = [...new Set(list.map(p => p.prize_info).filter(p => p && p !== ""))].sort();
+        const currentVal = filterPrizeEl.value;
+        filterPrizeEl.innerHTML = '<option value="ALL">所有獎項</option>';
+        prizes.forEach(prize => {
+            const option = document.createElement('option');
+            option.value = prize;
+            option.innerText = prize;
+            filterPrizeEl.appendChild(option);
+        });
+        if (prizes.includes(currentVal)) filterPrizeEl.value = currentVal;
+    }
+
+    function generatePrefixButtons(list) {
+        const prefixes = [...new Set(list.map(p => p.employee_id.charAt(0).toUpperCase()))].sort();
+        prefixFiltersEl.innerHTML = `
+            <small class="text-muted me-2">工號首碼:</small>
+            <button class="btn btn-sm btn-outline-secondary filter-btn active" onclick="setPrefixFilter('ALL', this)">全部</button>
+        `;
+
+        prefixes.forEach(char => {
+            const btn = document.createElement('button');
+            btn.className = 'btn btn-sm btn-outline-secondary filter-btn';
+            btn.innerText = char;
+            btn.onclick = () => setPrefixFilter(char, btn);
+            prefixFiltersEl.appendChild(btn);
+        });
+    }
+
+    function setPrefixFilter(val, btn) {
+        document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        currentPrefixFilter = val;
+        renderTable();
+    }
+    
+    function renderTable() {
+        const searchText = searchBoxEl.value.toLowerCase();
+        const statusFilter = filterStatusEl.value;
+        const winFilter = filterWinEl.value;
+        const prizeFilter = filterPrizeEl.value;
+        const siteFilter = filterSiteEl.value;
+        const deptFilter = filterDeptEl.value;
+        
+        const filteredData = fullDataCache.filter(person => {
+            const matchesSearch = person.name.toLowerCase().includes(searchText) || 
+                                  person.employee_id.toLowerCase().includes(searchText) ||
+                                  (person.site && person.site.toLowerCase().includes(searchText)) ||
+                                  (person.lottery_number && person.lottery_number.includes(searchText));
+            
+            const matchesPrefix = currentPrefixFilter === 'ALL' || 
+                                  person.employee_id.toUpperCase().startsWith(currentPrefixFilter);
+
+            const matchesStatus = statusFilter === 'ALL' || person.status === statusFilter;
+            const matchesSite = siteFilter === 'ALL' || person.site === siteFilter;
+            const matchesDept = deptFilter === 'ALL' || person.dept_code === deptFilter;
+            
+            const matchesPrize = prizeFilter === 'ALL' || (person.prize_info && person.prize_info.includes(prizeFilter));
+
+            let matchesWin = true;
+            const isWinner = person.has_won || person.has_won_public;
+
+            if (winFilter === 'WON') matchesWin = isWinner;
+            else if (winFilter === 'NOT_WON') matchesWin = !isWinner;
+
+            return matchesSearch && matchesPrefix && matchesStatus && matchesWin && matchesPrize && matchesSite && matchesDept;
+        });
+
+        if(displayCountEl) displayCountEl.innerText = filteredData.length;
+
+        let html = '';
+        if (filteredData.length === 0) {
+            html = '<tr><td colspan="12" class="text-center p-4 text-muted">查無符合資料</td></tr>';
+        } else {
+            filteredData.forEach(person => {
+                let statusBadge = person.status === 'CheckedIn' 
+                    ? `<span class="badge bg-success">已報到</span>` 
+                    : `<span class="badge bg-secondary">未報到</span>`;
+
+                let prizeHtml = '';
+                if (person.tail_prize_info) prizeHtml += `<div class="text-danger fw-bold small mb-1"><i class="bi bi-ticket-perforated-fill me-1"></i>${person.tail_prize_info}</div>`;
+                if (person.public_prize_info) prizeHtml += `<div class="text-primary fw-bold small"><i class="bi bi-trophy-fill me-1"></i>${person.public_prize_info}</div>`;
+                if (prizeHtml === '') prizeHtml = '<span class="text-muted small">-</span>';
+
+                let claimHtml = '';
+                if (person.has_won) {
+                    if (person.prize_claimed) claimHtml += `<button class="btn btn-sm btn-success me-1 mb-1" style="font-size:0.75rem" onclick="toggleClaim(${person.id}, 'tail')"><i class="bi bi-check-circle-fill"></i> 尾數已領</button>`;
+                    else claimHtml += `<button class="btn btn-sm btn-outline-danger me-1 mb-1" style="font-size:0.75rem" onclick="toggleClaim(${person.id}, 'tail')">領取尾數</button>`;
+                }
+                if (person.has_won_public) {
+                    if (claimHtml !== '') claimHtml += '<br>';
+                    if (person.public_prize_claimed) claimHtml += `<button class="btn btn-sm btn-primary me-1" style="font-size:0.75rem" onclick="toggleClaim(${person.id}, 'public')"><i class="bi bi-check-circle-fill"></i> 公獎已領</button>`;
+                    else claimHtml += `<button class="btn btn-sm btn-outline-primary me-1" style="font-size:0.75rem" onclick="toggleClaim(${person.id}, 'public')">領取公獎</button>`;
+                }
+                if (claimHtml === '') claimHtml = '<span class="text-muted small">-</span>';
+
+                let actionBtn = '';
+                if (person.status === 'CheckedIn') {
+                    actionBtn = `<button class="btn btn-sm btn-outline-secondary" onclick="adminCancelCheckIn(${person.id}, '${person.name}')">取消</button>`;
+                } else {
+                    actionBtn = `<button class="btn btn-sm btn-primary" onclick="adminCheckIn(${person.id}, '${person.name}')">簽到</button>`;
+                }
+
+                // (*** 新增：公差標籤邏輯 ***)
+                let bizBadge = person.is_business_trip 
+                    ? `<span class="badge rounded-pill bg-info text-dark">公差</span>` 
+                    : `-`;
+
+                html += `<tr>
+                    <td><b>${person.name}</b></td>
+                    <td>${person.employee_id}</td>
+                    <td>${person.site || '-'}</td>
+                    <td>${person.dept_code || '-'}</td>
+                    
+                    <td class="text-primary fw-bold">${person.table_number || '-'}</td>
+                    <td>${bizBadge}</td>
+                    
+                    <td class="fw-bold text-dark">${person.lottery_number || '-'}</td>
+                    <td>${statusBadge}</td>
+                    <td>${prizeHtml}</td> <td>${claimHtml}</td>
+                    <td>${person.check_in_time || ''}</td>
+                    <td class="text-end">${actionBtn}</td>
+                </tr>`;
+            });
+        }
+        tableBodyEl.innerHTML = html;
+    }
+
+    async function toggleClaim(id, type) {
+        try {
+            const res = await fetch("{{ url_for('checkin.api_toggle_claim') }}", {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ id: id, type: type })
+            });
+            const data = await res.json();
+            if (data.success) fetchData();
+            else alert(data.message);
+        } catch (e) { console.error(e); alert("操作失敗"); }
+    }
+
+    async function adminCheckIn(id, name) {
+        if (!confirm(`確認幫 [ ${name} ] 簽到？`)) return;
+        try {
+            const res = await fetch("{{ url_for('checkin.api_admin_checkin') }}", {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({id: id})
+            });
+            const data = await res.json();
+            if(data.success) fetchData();
+            else alert(data.message);
+        } catch(e) { alert("Error"); }
+    }
+
+    async function adminCancelCheckIn(id, name) {
+        const cancellerId = prompt(`【警告】\n確認要取消 [ ${name} ] 的報到狀態嗎？\n\n為了保留紀錄，請輸入「您的工號」：`);
+        if (cancellerId === null) return; 
+        if (!cancellerId.trim()) return alert("未輸入工號，無法執行。");
+
+        try {
+            const res = await fetch("{{ url_for('checkin.api_admin_cancel_checkin') }}", {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ id: id, canceller_id: cancellerId.trim() })
+            });
+            const data = await res.json();
+            if(data.success) { alert(data.message); fetchData(); } 
+            else alert(data.message);
+        } catch(e) { console.error(e); alert("發生錯誤"); }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        fetchData(); 
+        setInterval(fetchData, 5000); 
+        searchBoxEl.addEventListener('input', renderTable);
+        filterStatusEl.addEventListener('change', renderTable);
+        filterWinEl.addEventListener('change', renderTable);
+        filterPrizeEl.addEventListener('change', renderTable);
+        filterSiteEl.addEventListener('change', renderTable);
+        filterDeptEl.addEventListener('change', renderTable);
+    });
+</script>
+{% endblock %}

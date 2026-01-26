@@ -355,19 +355,31 @@ def winners_carousel():
 
 
 # --- (新增) 取得獎項清單 API ---
+# (*** 修改這個 API ***)
 @bp.route('/api/prizes', methods=['GET'])
 def api_get_prizes():
-    """取得獎項清單 API"""
-    p_type = request.args.get('type', 'tail') # 預設抓尾數獎
+    """取得獎項清單 API (回傳所有獎項，讓前端判斷剩餘數量)"""
+    p_type = request.args.get('type', 'tail')
     
-    prizes = Prize.query.filter_by(prize_type=p_type)\
+    # 1. 取出所有該類型的獎項設定
+    prizes_config = Prize.query.filter_by(prize_type=p_type)\
                         .order_by(Prize.display_order)\
                         .all()
     
-    result = [{
-        "id": p.id,
-        "name": p.name,
-        "quantity": p.quantity
-    } for p in prizes]
+    available_prizes = []
     
-    return jsonify({"success": True, "prizes": result})
+    for p in prizes_config:
+        # 2. 計算已抽出的次數
+        drawn_count = DrawnTailNumber.query.filter_by(prize_name=p.name).count()
+        
+        # 3. (*** 修改：不再過濾，全部回傳，並計算剩餘數量 ***)
+        remaining = p.quantity - drawn_count
+        
+        available_prizes.append({
+            "id": p.id,
+            "name": p.name,
+            "quantity": p.quantity,
+            "remaining": remaining  # 這可能是負數，代表加碼了幾次
+        })
+    
+    return jsonify({"success": True, "prizes": available_prizes})

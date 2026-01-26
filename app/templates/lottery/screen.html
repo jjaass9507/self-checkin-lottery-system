@@ -9,7 +9,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Orbitron:wght@700;900&display=swap" rel="stylesheet">
     <style>
         :root {
-            --card-base-size: 1.2rem; /* 用於動態調整大小 */
+            --card-base-size: 1.2rem; /* JS 會動態調整這個數值 */
         }
         body {
             background: linear-gradient(270deg, #0f0c29, #302b63, #24243e);
@@ -18,7 +18,7 @@
             color: #fff;
             font-family: 'Noto Sans TC', sans-serif;
             height: 100vh;
-            overflow: hidden; /* 禁止捲動 */
+            overflow: hidden; /* 禁止捲動，由卡片容器自己處理溢位 */
             display: flex;
             flex-direction: column;
         }
@@ -32,22 +32,15 @@
             border-bottom: 1px solid rgba(255,255,255,0.1);
         }
         
-        .header-left {
-            display: flex;
-            align-items: center;
-            gap: 20px;
-        }
+        .header-left { display: flex; align-items: center; gap: 20px; }
 
         .main-title { 
             font-family: 'Orbitron', sans-serif; 
-            font-weight: 900; 
-            font-size: 2rem; 
-            color: #fff; 
-            text-shadow: 0 0 10px #fff; 
-            margin: 0; 
+            font-weight: 900; font-size: 2rem; 
+            color: #fff; text-shadow: 0 0 10px #fff; margin: 0; 
         }
 
-        /* (*** 修改：獎項輸入框移至上方 ***) */
+        /* 下拉選單樣式 */
         .prize-input-header {
             background: transparent;
             border: none;
@@ -55,31 +48,30 @@
             color: #ffd700;
             font-size: 2rem;
             font-weight: bold;
-            width: 350px;
+            width: 450px;
             text-align: center;
             padding: 0 10px;
             font-family: 'Noto Sans TC', sans-serif;
             transition: all 0.3s ease;
+            cursor: pointer;
+            text-align-last: center; 
+            appearance: none; -webkit-appearance: none;
+            background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23FFD700%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E");
+            background-repeat: no-repeat;
+            background-position: right 10px top 50%;
+            background-size: 15px auto;
         }
-        .prize-input-header:focus {
-            outline: none;
-            background: rgba(255, 215, 0, 0.1);
-            text-shadow: 0 0 15px rgba(255, 215, 0, 0.5);
-        }
-        .prize-input-header::placeholder {
-            color: rgba(255, 215, 0, 0.5);
-            font-size: 1.5rem;
-        }
+        .prize-input-header:focus { outline: none; background: rgba(255, 215, 0, 0.1); }
+        .prize-input-header option { background-color: #302b63; color: #fff; font-size: 1.2rem; padding: 10px; }
 
         .status-info { color: #ccc; font-size: 0.9rem; text-align: right; }
         #pool-count { color: #00ffea; font-weight: bold; }
 
-        /* 主顯示區 (左右分欄) */
+        /* 主顯示區 */
         main { 
             flex-grow: 1; 
             display: flex; 
-            width: 100%;
-            height: 100%;
+            width: 100%; height: 100%;
             overflow: hidden;
             position: relative;
             padding: 10px 20px;
@@ -87,14 +79,18 @@
         }
         
         .split-pane {
-            flex: 1;
+            flex: 1; /* 預設平分 */
             display: flex;
             flex-direction: column;
             border-radius: 12px;
             padding: 10px;
             background: rgba(255, 255, 255, 0.03);
             border: 1px solid rgba(255,255,255,0.1);
+            transition: all 0.5s ease; /* 加入過渡效果 */
         }
+        
+        /* 當某個區塊隱藏時，另一個會自動 flex-grow 佔滿 */
+        .split-pane[style*="display: none"] { flex: 0; padding: 0; border: 0; }
 
         .col-header {
             text-align: center;
@@ -113,12 +109,12 @@
         .card-container {
             display: flex;
             flex-wrap: wrap;
-            align-content: flex-start;
-            justify-content: center;
+            align-content: flex-start; /* 讓內容從上面開始排 */
+            justify-content: center;   /* 水平置中 */
             gap: 0.5em;
             width: 100%;
             height: 100%;
-            overflow: hidden;
+            overflow: hidden; /* 超出隱藏，由 JS 控制字體大小來適應 */
         }
 
         /* 卡片本體 */
@@ -127,23 +123,25 @@
             color: #333;
             border-radius: 8px;
             border: 2px solid #fff;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            
+            /* 關鍵：寬度與內距都跟著字體大小縮放 */
             width: 9em; 
-            padding: 0.4em 0.2em;
+            padding: 0.5em 0.2em;
+            
+            /* 字體大小由 CSS 變數控制 */
             font-size: var(--card-base-size); 
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            animation: pop-in 0.4s ease forwards;
-            opacity: 0;
-            transform: scale(0.5);
-            transition: all 0.5s ease;
+            
+            display: flex; flex-direction: column;
+            justify-content: center; align-items: center;
+            
+            animation: pop-in 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+            opacity: 0; transform: scale(0.5);
         }
         
-        .winner-name { font-weight: 800; font-size: 1.1em; line-height: 1.2; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; max-width: 100%; }
-        .winner-info { font-size: 0.7em; opacity: 0.8; margin-top: 2px; }
-        .winner-num { font-family: 'Orbitron', sans-serif; font-weight: bold; color: #d63031; font-size: 0.9em; margin-top: 2px; }
+        .winner-name { font-weight: 800; font-size: 1.2em; line-height: 1.2; width: 100%; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .winner-info { font-size: 0.7em; opacity: 0.8; margin-top: 0.1em; }
+        .winner-num { font-family: 'Orbitron', sans-serif; font-weight: bold; color: #d63031; font-size: 0.9em; margin-top: 0.1em; }
 
         @keyframes pop-in { to { opacity: 1; transform: scale(1); } }
 
@@ -151,8 +149,8 @@
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
             color: #fff !important;
             border: 3px solid #ffd700 !important;
-            box-shadow: 0 0 25px rgba(255, 215, 0, 0.9);
-            transform: scale(1.08);
+            box-shadow: 0 0 30px rgba(255, 215, 0, 0.8);
+            transform: scale(1.05);
             z-index: 10;
         }
         .winner-card.bonus-highlight .winner-num { color: #ffd700; }
@@ -184,7 +182,9 @@
     <header>
         <div class="header-left">
             <h1 class="main-title">LUCKY DRAW</h1>
-            <input type="text" id="header-prize-name" class="prize-input-header" placeholder="輸入獎項名稱" required>
+            <select id="header-prize-name" class="prize-input-header" required>
+                <option value="" disabled selected hidden>請選擇獎項</option>
+            </select>
         </div>
         
         <div class="status-info">
@@ -194,12 +194,12 @@
     </header>
 
     <main id="display-area">
-        <div class="split-pane">
+        <div id="pane-hr" class="split-pane">
             <div class="col-header hr">HR <small style="font-size:0.5em">行政單位</small></div>
             <div id="list-hr" class="card-container"></div>
         </div>
         
-        <div class="split-pane">
+        <div id="pane-fac" class="split-pane">
             <div class="col-header fac">FAC <small style="font-size:0.5em">廠務單位</small></div>
             <div id="list-fac" class="card-container"></div>
         </div>
@@ -238,53 +238,63 @@
     <script>
         const listHrEl = document.getElementById('list-hr');
         const listFacEl = document.getElementById('list-fac');
+        const paneHr = document.getElementById('pane-hr');
+        const paneFac = document.getElementById('pane-fac');
+        
         const btnDrawNormal = document.getElementById('btn-draw-normal');
         const btnDrawAddon = document.getElementById('btn-draw-addon');
         
-        // (*** 修改：變數移除 input100，獎項改為抓 header 的 ID ***)
         const input10 = document.getElementById('input-10');
         const input1 = document.getElementById('input-1');
-        const prizeInput = document.getElementById('header-prize-name');
-
-        const prizeSelect = document.getElementById('header-prize-name'); // 這是下拉選單
-
-        document.addEventListener('DOMContentLoaded', () => {
-            loadPrizes(); // (*** 新增：載入獎項 ***)
-            fetchData();
-            window.addEventListener('resize', fitCardsToScreen);
-        });
+        const prizeSelect = document.getElementById('header-prize-name');
 
         // 輸入跳格邏輯 (從十位跳個位)
         input10.addEventListener('input', (e) => { if(e.target.value) input1.focus(); });
 
         document.addEventListener('DOMContentLoaded', () => {
+            loadPrizes();
             fetchData();
             window.addEventListener('resize', fitCardsToScreen);
-            // 自動聚焦到獎項輸入框
-            prizeInput.focus();
+            if(prizeSelect) prizeSelect.focus();
         });
 
-        // (*** 新增：從 API 載入獎項函式 ***)
+        // 載入獎項 (含剩餘數量顯示)
         async function loadPrizes() {
             try {
-                // 參數 type=tail 代表只抓尾數獎
                 const res = await fetch("{{ url_for('lottery.api_get_prizes', type='tail') }}");
                 const data = await res.json();
                 
                 if(data.success) {
-                    // 清空除了第一項以外的選項
+                    const currentVal = prizeSelect.value;
                     prizeSelect.innerHTML = '<option value="" disabled selected hidden>請選擇獎項</option>';
                     
-                    data.prizes.forEach(p => {
+                    if (data.prizes.length === 0) {
                         const opt = document.createElement('option');
-                        opt.value = p.name; // 這裡我們還是傳名稱給後端
-                        opt.innerText = p.name;
+                        opt.innerText = "(後台未設定獎項)";
+                        opt.disabled = true;
                         prizeSelect.appendChild(opt);
-                    });
+                    } else {
+                        data.prizes.forEach(p => {
+                            const opt = document.createElement('option');
+                            opt.value = p.name;
+                            opt.dataset.remaining = p.remaining; 
+
+                            if (p.remaining > 0) {
+                                opt.innerText = `${p.name} (剩 ${p.remaining})`;
+                            } else {
+                                const over = Math.abs(p.remaining);
+                                opt.innerText = `${p.name} (已滿${over > 0 ? ' + 加碼'+over : ''})`;
+                            }
+                            prizeSelect.appendChild(opt);
+                        });
+                    }
+
+                    if (currentVal) {
+                        const exists = Array.from(prizeSelect.options).some(o => o.value === currentVal);
+                        if (exists) prizeSelect.value = currentVal;
+                    }
                 }
-            } catch (e) {
-                console.error("無法載入獎項", e);
-            }
+            } catch (e) { console.error("無法載入獎項", e); }
         }
 
         async function fetchData() {
@@ -297,7 +307,6 @@
             } catch (e) { return []; }
         }
 
-        // (*** 修改：取得完整號碼的邏輯，只剩兩位 ***)
         function getFullNumber() {
             let suffix = "";
             if (input10.value) suffix += input10.value;
@@ -305,19 +314,25 @@
             return suffix;
         }
 
-        // 綁定按鈕事件
         btnDrawNormal.addEventListener('click', () => performDraw(false));
         btnDrawAddon.addEventListener('click', () => performDraw(true));
 
         async function performDraw(isAddon) {
             const suffix = getFullNumber();
-            const prizeName = prizeInput.value.trim();
+            const prizeName = prizeSelect.value;
             
             if (!suffix) return alert("請輸入號碼");
-            if (!prizeName) return alert("請輸入獎項名稱");
+            if (!prizeName) return alert("請選擇獎項");
             if (!input1.checkValidity()) return alert("請輸入有效數字");
 
-            // 檢查是否重複
+            // 檢查數量 (若非加碼)
+            const selectedOption = prizeSelect.options[prizeSelect.selectedIndex];
+            const remaining = parseInt(selectedOption.dataset.remaining || 0);
+
+            if (!isAddon && remaining <= 0) {
+                return alert(`【${prizeName}】數量已全數抽出！\n\n如欲加碼，請點擊右側藍色的「加碼抽出」按鈕。`);
+            }
+
             const drawnList = await fetchData();
             if (drawnList.includes(suffix)) return alert(`號碼 ${suffix} 已經抽過了`);
 
@@ -345,7 +360,6 @@
                     if (!isAddon) {
                         listHrEl.innerHTML = '';
                         listFacEl.innerHTML = '';
-                        resetScale();
                     }
 
                     if (result.winners.length === 0) {
@@ -363,8 +377,10 @@
                                 }
                             }
                         });
-                        setTimeout(fitCardsToScreen, 100);
+                        // 確保畫面更新後再執行縮放
+                        setTimeout(fitCardsToScreen, 50);
                     }
+                    await loadPrizes(); 
                 } else {
                     alert(result.message);
                 }
@@ -390,9 +406,7 @@
 
         function highlightExistingCard(employeeId) {
             const card = document.querySelector(`.winner-card[data-eid="${employeeId}"]`);
-            if (card) {
-                card.classList.add('bonus-highlight');
-            }
+            if (card) card.classList.add('bonus-highlight');
         }
 
         function setLoading(isLoading) {
@@ -400,24 +414,41 @@
             btnDrawAddon.disabled = isLoading;
         }
 
-        function resetScale() {
-            document.documentElement.style.setProperty('--card-base-size', '1.2rem');
-        }
-
+        // --- 核心縮放邏輯 ---
         function fitCardsToScreen() {
-            const containerHr = listHrEl;
-            const containerFac = listFacEl;
-            let size = 1.2;
-            const minSize = 0.5;
+            // 1. 偵測單欄/雙欄模式
+            const hrCount = listHrEl.children.length;
+            const facCount = listFacEl.children.length;
 
-            for (let i = 0; i < 30; i++) {
-                const overflowHr = containerHr.scrollHeight > containerHr.clientHeight;
-                const overflowFac = containerFac.scrollHeight > containerFac.clientHeight;
+            // 預設全部顯示
+            paneHr.style.display = 'flex';
+            paneFac.style.display = 'flex';
 
-                if (!overflowHr && !overflowFac) break;
+            // 若某一邊完全沒人，隱藏它，讓另一邊獨佔
+            if (hrCount === 0 && facCount > 0) {
+                paneHr.style.display = 'none';
+            } else if (facCount === 0 && hrCount > 0) {
+                paneFac.style.display = 'none';
+            }
 
-                size -= 0.05;
-                if (size < minSize) { size = minSize; break; }
+            // 2. 由大到小嘗試字體大小
+            // 我們從 4rem (非常大) 開始，每次減小 0.1rem，直到畫面不出現捲軸
+            let size = 4.0; 
+            const minSize = 0.5; // 最小字體
+            
+            // 強制重設為最大，準備開始測量
+            document.documentElement.style.setProperty('--card-base-size', `${size}rem`);
+
+            while (size > minSize) {
+                let hasOverflow = false;
+
+                // 檢查顯示中的區塊是否溢位
+                if (paneHr.style.display !== 'none' && listHrEl.scrollHeight > listHrEl.clientHeight) hasOverflow = true;
+                if (paneFac.style.display !== 'none' && listFacEl.scrollHeight > listFacEl.clientHeight) hasOverflow = true;
+
+                if (!hasOverflow) break; // 塞得下，停止縮小
+
+                size -= 0.1;
                 document.documentElement.style.setProperty('--card-base-size', `${size}rem`);
             }
         }

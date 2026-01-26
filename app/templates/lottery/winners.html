@@ -1,64 +1,67 @@
-<!DOCTYPE html>
-<html lang="zh-Hant">
-<head>
-    <meta charset="UTF-8">
-    <title>中獎日誌</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
-    <style>
-        body { font-family: 'Noto Sans TC', sans-serif; background: #f8f9fa; }
-        .filter-btn { min-width: 40px; margin-right: 5px; margin-bottom: 5px; }
-        .filter-btn.active { background-color: #198754; color: white; border-color: #198754; }
-        .prize-tag { font-weight: bold; color: #b45309; background-color: #fef3c7; padding: 2px 8px; border-radius: 4px; }
-    </style>
-</head>
-<body class="bg-light">
-    <div class="container mt-5 mb-5">
-        <h1 class="mb-4">完整中獎名單 (日誌)</h1>
-        <a href="{{ url_for('lottery.lottery_screen') }}" class="btn btn-primary mb-3">&larr; 返回抽獎</a>
-        
-        <div class="row">
-            <!-- 左側：已抽尾號 -->
-            <div class="col-md-4">
-                <div class="card shadow-sm mb-4">
-                    <div class="card-header bg-dark text-white">
-                        <h4 class="mb-0">已抽出獎項與尾號</h4>
-                    </div>
-                    <ul class="list-group list-group-flush">
-                        {% for num in drawn_numbers %}
-                            <li class="list-group-item d-flex justify-content-between align-items-center">
-                                <div>
-                                    <span class="badge bg-warning text-dark me-2">{{ num.tail_number }}</span>
-                                    <span class="fw-bold">{{ num.prize_name }}</span>
-                                </div>
-                                <small class="text-muted">{{ num.timestamp.strftime('%H:%M:%S') }}</small>
-                            </li>
-                        {% else %}
-                            <li class="list-group-item text-muted">尚無紀錄</li>
-                        {% endfor %}
-                    </ul>
+{% extends "base.html" %}
+
+{% block title %}中獎名單日誌{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-4">
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="bi bi-clock-history me-2"></i>開獎號碼紀錄</h5>
                 </div>
+                <ul class="list-group list-group-flush">
+                    {% for draw in drawn_numbers %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <div>
+                            <span class="badge bg-warning text-dark me-2">{{ draw.tail_number }}</span>
+                            <span class="fw-bold">{{ draw.prize_name }}</span>
+                            {% if draw.is_addon %}
+                                <span class="badge bg-danger ms-1">加碼</span>
+                            {% endif %}
+                            {% if draw.prize_type == 'public' %}
+                                <span class="badge bg-info text-dark ms-1">公獎</span>
+                            {% endif %}
+                        </div>
+                        <small class="text-muted">{{ draw.timestamp.strftime('%H:%M:%S') }}</small>
+                    </li>
+                    {% else %}
+                    <li class="list-group-item text-center text-muted">尚未開出任何號碼</li>
+                    {% endfor %}
+                </ul>
             </div>
-            
-            <!-- 右側：總中獎名單 -->
-            <div class="col-md-8">
-                <div class="card shadow-sm mb-4">
-                    <div class="card-header bg-success text-white">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <h4 class="mb-0">總中獎人員 (<span id="winner-count">0</span> 人)</h4>
-                            <div class="w-50">
-                                <input type="text" class="form-control form-control-sm" id="search-box" placeholder="搜尋工號或姓名...">
-                            </div>
-                        </div>
-                        <div class="mt-2" id="prefix-filters">
-                            <button class="btn btn-sm btn-outline-light filter-btn active" data-prefix="ALL">全部</button>
-                        </div>
-                    </div>
-                    <div class="card-body p-0" style="max-height: 70vh; overflow-y: auto;">
-                        <table class="table table-striped mb-0 align-middle">
-                            <thead><tr><th>姓名</th><th>工號</th><th>抽獎號碼</th><th>所中獎項</th></tr></thead>
-                            <tbody id="table-body">
-                                <!-- JS 渲染區 -->
+        </div>
+
+        <div class="col-md-8">
+            <div class="card shadow-sm">
+                <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="bi bi-trophy-fill me-2"></i>已中獎人員名單</h5>
+                    <span class="badge bg-light text-dark">{{ winners_data|length }} 人</span>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive" style="max-height: 70vh; overflow-y: auto;">
+                        <table class="table table-hover mb-0 align-middle">
+                            <thead class="table-light sticky-top">
+                                <tr>
+                                    <th>姓名</th>
+                                    <th>工號</th>
+                                    <th>抽獎編號</th>
+                                    <th>獎項</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for w in winners_data %}
+                                <tr>
+                                    <td class="fw-bold">{{ w.name }}</td>
+                                    <td>{{ w.employee_id }}</td>
+                                    <td>{{ w.lottery_number }}</td>
+                                    <td class="text-danger fw-bold">{{ w.prize_name }}</td>
+                                </tr>
+                                {% else %}
+                                <tr>
+                                    <td colspan="4" class="text-center p-5 text-muted">目前尚未產生中獎者</td>
+                                </tr>
+                                {% endfor %}
                             </tbody>
                         </table>
                     </div>
@@ -66,99 +69,5 @@
             </div>
         </div>
     </div>
-
-    <!-- (*** 關鍵修正：使用 JSON 格式的 Script 標籤 ***) -->
-    <!-- 這種寫法對 VS Code 來說是合法的 JSON/HTML，不會報錯 -->
-    <script id="winners-data" type="application/json">
-        {{ winners_data | default([]) | tojson | safe }}
-    </script>
-
-    <script>
-        // 1. 從上方的 hidden script 標籤中讀取純文字內容
-        const dataElement = document.getElementById('winners-data');
-        // 2. 將純文字解析為 JSON 物件
-        const fullWinnersData = JSON.parse(dataElement.textContent);
-        
-        const tableBodyEl = document.getElementById('table-body');
-        const searchBoxEl = document.getElementById('search-box');
-        const prefixFiltersEl = document.getElementById('prefix-filters');
-        const winnerCountEl = document.getElementById('winner-count');
-        
-        let currentPrefixFilter = 'ALL';
-
-        // 初始化
-        document.addEventListener('DOMContentLoaded', () => {
-            if (fullWinnersData && fullWinnersData.length > 0) {
-                generatePrefixButtons(fullWinnersData);
-                renderTable();
-            } else {
-                tableBodyEl.innerHTML = '<tr><td colspan="4" class="text-center p-4 text-muted">無中獎資料</td></tr>';
-            }
-        });
-
-        // 生成按鈕邏輯
-        function generatePrefixButtons(list) {
-            if (!list || list.length === 0) return;
-
-            const prefixes = [...new Set(list.map(p => p.employee_id.charAt(0).toUpperCase()))].sort();
-            const resetBtn = prefixFiltersEl.firstElementChild;
-            
-            prefixFiltersEl.innerHTML = '';
-            prefixFiltersEl.appendChild(resetBtn);
-
-            prefixes.forEach(char => {
-                const btn = document.createElement('button');
-                btn.className = 'btn btn-sm btn-outline-light filter-btn';
-                btn.innerText = char;
-                btn.onclick = () => {
-                    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-                    btn.classList.add('active');
-                    currentPrefixFilter = char;
-                    renderTable();
-                };
-                prefixFiltersEl.appendChild(btn);
-            });
-
-            resetBtn.onclick = () => {
-                document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-                resetBtn.classList.add('active');
-                currentPrefixFilter = 'ALL';
-                renderTable();
-            };
-        }
-
-        // 渲染表格邏輯
-        function renderTable() {
-            const searchText = searchBoxEl.value.toLowerCase();
-            
-            const filteredData = fullWinnersData.filter(person => {
-                const matchesSearch = person.name.toLowerCase().includes(searchText) || 
-                                      person.employee_id.toLowerCase().includes(searchText);
-                const matchesPrefix = currentPrefixFilter === 'ALL' || 
-                                      person.employee_id.toUpperCase().startsWith(currentPrefixFilter);
-                return matchesSearch && matchesPrefix;
-            });
-
-            winnerCountEl.innerText = filteredData.length;
-
-            let html = '';
-            if (filteredData.length === 0) {
-                html = '<tr><td colspan="4" class="text-center p-4 text-muted">無符合資料</td></tr>';
-            } else {
-                filteredData.forEach(person => {
-                    html += `
-                        <tr>
-                            <td><b>${person.name}</b></td>
-                            <td>${person.employee_id}</td>
-                            <td>${person.lottery_number || '-'}</td>
-                            <td><span class="prize-tag">${person.prize_name}</span></td>
-                        </tr>`;
-                });
-            }
-            tableBodyEl.innerHTML = html;
-        }
-
-        searchBoxEl.addEventListener('input', renderTable);
-    </script>
-</body>
-</html>
+</div>
+{% endblock %}
