@@ -466,9 +466,17 @@
             const div = document.createElement('div');
             div.className = 'winner-card';
             div.dataset.eid = winner.employee_id;
+            
+            // (*** 修改：加入公差標示邏輯 ***)
+            let bizHtml = '';
+            if (winner.is_business_trip) {
+                // 使用深藍色或對比色顯示
+                bizHtml = '<div style="font-size:0.6em; color:#0056b3; font-weight:bold; margin-bottom:2px;">(公差)</div>';
+            }
+
             div.innerHTML = `
                 <div class="winner-name">${winner.name}</div>
-                <div class="winner-info">${winner.employee_id}</div>
+                ${bizHtml} <div class="winner-info">${winner.employee_id}</div>
                 <div class="winner-num">${winner.lottery_number || ''}</div>
             `;
             return div;

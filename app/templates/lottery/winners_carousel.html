@@ -284,8 +284,15 @@
         function createCard(winner) {
             const div = document.createElement('div');
             div.className = 'winner-card';
+            
+            // (*** 新增：公差文字判斷 ***)
+            let nameDisplay = winner.name;
+            if (winner.is_business_trip) {
+                nameDisplay += ' <span style="font-size:0.6em; color:#54a0ff;">(公差)</span>';
+            }
+
             div.innerHTML = `
-                <div class="winner-name">${winner.name}</div>
+                <div class="winner-name">${nameDisplay}</div>
                 <div class="winner-id">${winner.employee_id}</div>
                 <div class="winner-number">NO.${winner.lottery_number}</div>
             `;

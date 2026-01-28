@@ -29,12 +29,13 @@ def winners_list():
             "name": w.name,
             "employee_id": w.employee_id,
             "lottery_number": w.lottery_number,
-            "prize_name": prize_name
+            "prize_name": prize_name,
+            "is_business_trip": w.is_business_trip  # (*** 新增此行 ***)
         })
 
     return render_template('lottery/winners.html', 
-                           drawn_numbers=drawn_numbers, 
-                           winners_data=winners_data) # 這裡必須傳遞 winners_data
+                        drawn_numbers=drawn_numbers, 
+                        winners_data=winners_data)
 
 # (API 部分保持不變)
 @bp.route('/api/get_data')
@@ -114,7 +115,8 @@ def api_draw():
                     "name": person.name,
                     "employee_id": person.employee_id,
                     "lottery_number": person.lottery_number,
-                    "site": person.site  # 用於前端分流
+                    "site": person.site,  # 用於前端分流
+                    "is_business_trip": person.is_business_trip  # (*** 新增此行 ***)
                 })
         
         # 3. 寫入紀錄
@@ -182,7 +184,8 @@ def api_public_search():
                 "name": p.name,
                 "employee_id": p.employee_id,
                 "lottery_number": normalized_num, # 回傳補零後的號碼，讓前端顯示 "005"
-                "site": p.site
+                "site": p.site,
+                "is_business_trip": p.is_business_trip  # (*** 新增此行 ***)
             })
 
     return jsonify({
@@ -340,12 +343,13 @@ def api_winners_all():
                     # (簡化版邏輯：只要號碼對上就顯示，適合輪播)
                     results.append({
                         "prize_name": prize_name,
-                        "tail_number": suffix, # 開出的尾數
+                        "tail_number": suffix,
                         "name": p.name,
                         "employee_id": p.employee_id,
-                        "lottery_number": user_num, # 員工完整號碼
+                        "lottery_number": user_num,
                         "site": p.site,
-                        "timestamp": draw.timestamp.strftime('%H:%M')
+                        "timestamp": draw.timestamp.strftime('%H:%M'),
+                        "is_business_trip": p.is_business_trip # (*** 新增此行 ***)
                     })
 
         return jsonify({"success": True, "data": results})
@@ -445,7 +449,8 @@ def api_query_prize():
                 "employee_id": p.employee_id,
                 "lottery_number": p.lottery_number,
                 "site": p.site,
-                "is_addon": best_match.is_addon  # (關鍵) 將加碼狀態回傳給前端
+                "is_addon": best_match.is_addon,  # (關鍵) 將加碼狀態回傳給前端
+                "is_business_trip": p.is_business_trip  # (*** 新增此行 ***)   
             })
 
     return jsonify({

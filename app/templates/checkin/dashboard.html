@@ -281,6 +281,7 @@
             html = '<tr><td colspan="12" class="text-center p-4 text-muted">查無符合資料</td></tr>';
         } else {
             filteredData.forEach(person => {
+                // (既有程式碼) 狀態徽章
                 let statusBadge = person.status === 'CheckedIn' 
                     ? `<span class="badge bg-success">已報到</span>` 
                     : `<span class="badge bg-secondary">未報到</span>`;
@@ -303,7 +304,12 @@
                 if (claimHtml === '') claimHtml = '<span class="text-muted small">-</span>';
 
                 let actionBtn = '';
-                if (person.status === 'CheckedIn') {
+                // 如果是公差，不顯示任何按鈕，改顯示文字
+                if (person.is_business_trip) {
+                    actionBtn = `<span class="badge bg-info text-dark">公差視同報到</span>`;
+                } 
+                // 非公差，維持原有邏輯
+                else if (person.status === 'CheckedIn') {
                     actionBtn = `<button class="btn btn-sm btn-outline-secondary" onclick="adminCancelCheckIn(${person.id}, '${person.name}')">取消</button>`;
                 } else {
                     actionBtn = `<button class="btn btn-sm btn-primary" onclick="adminCheckIn(${person.id}, '${person.name}')">簽到</button>`;

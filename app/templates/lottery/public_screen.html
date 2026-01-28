@@ -300,8 +300,15 @@
             list.forEach(p => {
                 const div = document.createElement('div');
                 div.className = 'candidate-card';
+                
+                // (*** 修改：加入公差標示 ***)
+                let bizTag = '';
+                if (p.is_business_trip) {
+                    bizTag = '<span style="color:#d63031; font-size:0.7em; margin-left:5px;">(公差)</span>';
+                }
+
                 div.innerHTML = `
-                    <h4>${p.name}</h4>
+                    <h4>${p.name}${bizTag}</h4>
                     <div class="candidate-info">${p.site || '未知單位'}</div>
                     <span>${p.lottery_number}</span>
                     <div class="candidate-info">${p.employee_id}</div>
@@ -346,6 +353,13 @@
         }
 
         function showConfirmModal(winner) {
+
+            let nameDisplay = winner.name;
+                    
+            // (*** 修改：加入公差文字 ***)
+            if (winner.is_business_trip) {
+                nameDisplay += " (公差)";
+            }
             document.getElementById('final-winner-name').innerText = winner.name;
             document.getElementById('final-winner-id').innerText = winner.employee_id;
             document.getElementById('final-winner-num').innerText = winner.lottery_number;

@@ -59,6 +59,10 @@ def import_page():
                     exists = CheckinList.query.filter_by(employee_id=employee_id).first()
                     
                     if not exists:
+                        # (*** 修改：如果是公差，預設狀態直接設為 CheckedIn ***)
+                        initial_status = 'CheckedIn' if is_business_trip else 'Registered'
+                        initial_time = datetime.now() if is_business_trip else None
+
                         new_item = CheckinList(
                             name=name,
                             employee_id=employee_id,
@@ -68,7 +72,11 @@ def import_page():
                             
                             # (*** 寫入新欄位 ***)
                             table_number=table_number,
-                            is_business_trip=is_business_trip
+                            is_business_trip=is_business_trip,
+                            
+                            # (*** 設定初始狀態 ***)
+                            status=initial_status,
+                            check_in_time=initial_time
                         )
                         db.session.add(new_item)
                         imported_count += 1

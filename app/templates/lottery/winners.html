@@ -52,7 +52,12 @@
                             <tbody>
                                 {% for w in winners_data %}
                                 <tr>
-                                    <td class="fw-bold">{{ w.name }}</td>
+                                    <td class="fw-bold">
+                                        {{ w.name }}
+                                        {% if w.is_business_trip %}
+                                            <span class="text-primary small">(公差)</span>
+                                        {% endif %}
+                                    </td>
                                     <td>{{ w.employee_id }}</td>
                                     <td>{{ w.lottery_number }}</td>
                                     <td class="text-danger fw-bold">{{ w.prize_name }}</td>
