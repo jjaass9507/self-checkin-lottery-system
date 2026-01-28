@@ -65,7 +65,6 @@ def api_draw():
     try:
         # (*** 修改檢查邏輯 ***)
         # 只檢查「同為尾數獎 (prize_type='tail')」是否重複
-        # 這樣如果公獎已經抽過 123，這裡抽尾數 123 就不會報錯
         is_drawn = DrawnTailNumber.query.filter_by(
             tail_number=suffix, 
             prize_type='tail'
@@ -74,23 +73,32 @@ def api_draw():
         if is_drawn:
             return jsonify({"success": False, "message": f"號碼 {suffix} 已經被抽過了 ({is_drawn.prize_name})！"}), 400
 
-        # 2. 篩選中獎者邏輯
-        base_query = CheckinList.query.filter(
-            CheckinList.status == 'CheckedIn',
-            CheckinList.lottery_number.endswith(suffix)
-        )
-
+        # 2. 篩選中獎者邏輯 (*** 修改：改用 Python 邏輯補零篩選，以支援 1 匹配 01 的情況 ***)
+        
+        # A. 根據模式先撈出候選人池
         if is_addon:
-            # 【加碼抽出模式】
-            # 針對「已經中獎」的人進行篩選 (has_won=True)
-            # 例如：第一階段抽 "9" (已中獎)，第二階段抽 "19" (從中獎者中找 19)
-            pool = base_query.filter(CheckinList.has_won == True).all()
+            # 【加碼抽出模式】針對「已經中獎」的人進行篩選
+            candidates = CheckinList.query.filter(
+                CheckinList.status == 'CheckedIn',
+                CheckinList.has_won == True
+            ).all()
             message = f"【加碼】號碼 {suffix} 的幸運得主！"
         else:
-            # 【一般抽出模式】
-            # 針對「尚未中獎」的人進行篩選 (has_won=False)
-            pool = base_query.filter(CheckinList.has_won == False).all()
+            # 【一般抽出模式】針對「尚未中獎」的人進行篩選
+            candidates = CheckinList.query.filter(
+                CheckinList.status == 'CheckedIn',
+                CheckinList.has_won == False
+            ).all()
             message = f"恭喜！號碼 {suffix} 的中獎者！"
+
+        # B. 進行補零比對 (Ex. suffix='01', user='1' -> '001' -> Match)
+        pool = []
+        for person in candidates:
+            if person.lottery_number:
+                # 強制轉為 3 位數字串 (e.g. "1" -> "001")
+                normalized_num = str(person.lottery_number).zfill(3)
+                if normalized_num.endswith(suffix):
+                    pool.append(person)
 
         winners_list_info = []
         if not pool:
@@ -98,7 +106,7 @@ def api_draw():
         else:
             for person in pool:
                 # 一般模式才需要標記為已中獎
-                # 加碼模式下，他們本來就是 True，不需改變，但為了保險起見設為 True 也無妨
+                # 加碼模式下，他們本來就是 True，不需改變
                 if not is_addon:
                     person.has_won = True
                 
@@ -109,9 +117,7 @@ def api_draw():
                     "site": person.site  # 用於前端分流
                 })
         
-        # 3. 寫入紀錄 (不論有沒有人中獎，號碼都要記錄，避免重複抽)
-        #    但如果沒人中獎是否要記錄？通常是要記錄「已使用過此號碼」。
-        #    若希望沒人中就不記錄，可將下面移到 if pool: 內。這裡維持記錄。
+        # 3. 寫入紀錄
         # (*** 修改寫入邏輯 ***)
         new_drawn_number = DrawnTailNumber(
             tail_number=suffix,

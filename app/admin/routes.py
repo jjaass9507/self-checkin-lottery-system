@@ -138,6 +138,80 @@ def reset_lottery():
         flash(f"重置中獎失敗：{e}", 'danger')
     return redirect(url_for('admin.import_page'))
 
+# --- (新功能) 4. 單獨清除特定獎項的中獎紀錄 ---
+@bp.route('/reset/prize', methods=['POST'])
+def reset_prize():
+    prize_name = request.form.get('prize_name')
+    prize_type = request.form.get('prize_type')
+    
+    if not prize_name:
+        flash('未指定獎項名稱', 'danger')
+        return redirect(url_for('admin.manage_prizes'))
+
+    try:
+        # 1. 找出相關的開獎紀錄 (DrawnTailNumber)
+        draws = DrawnTailNumber.query.filter_by(
+            prize_name=prize_name, 
+            prize_type=prize_type
+        ).all()
+        
+        if not draws:
+            flash(f"找不到「{prize_name}」的開獎紀錄，可能尚未抽出。", 'info')
+            return redirect(url_for('admin.manage_prizes'))
+
+        draw_count = len(draws)
+        updated_users = 0
+        
+        # 2. 針對每一筆開獎，還原中獎者狀態
+        for draw in draws:
+            suffix = str(draw.tail_number)
+            
+            if prize_type == 'tail':
+                # 尾數獎邏輯
+                # 只有 "非加碼 (is_addon=False)" 的紀錄，才代表該次抽獎造成了人員 "從未中獎變成已中獎"。
+                # 如果是 "加碼"，代表該人員在抽之前就已經中獎了，所以刪除加碼紀錄不應影響他的 has_won 狀態。
+                
+                if not draw.is_addon:
+                    # 找出符合該尾數 且 has_won=True 的人
+                    candidates = CheckinList.query.filter(
+                        CheckinList.has_won == True,
+                        CheckinList.lottery_number.endswith(suffix)
+                    ).all()
+                    
+                    for p in candidates:
+                        p.has_won = False
+                        p.prize_claimed = False
+                        updated_users += 1
+                
+                # 若是加碼紀錄，我們只刪除 DrawnTailNumber，不把人改回未中獎，因為他可能還有其他一般獎項
+
+            elif prize_type == 'public':
+                # 公獎邏輯 (通常無加碼，直接比對)
+                # 公獎號碼比對需要補零至3位數
+                target = str(draw.tail_number).zfill(3)
+                
+                # 找出所有中公獎的人
+                candidates = CheckinList.query.filter_by(has_won_public=True).all()
+                for p in candidates:
+                    p_num = str(p.lottery_number).zfill(3) if p.lottery_number else "000"
+                    
+                    if p_num == target:
+                        p.has_won_public = False
+                        p.public_prize_claimed = False
+                        updated_users += 1
+
+            # 3. 刪除該筆開獎紀錄
+            db.session.delete(draw)
+        
+        db.session.commit()
+        flash(f"已重置「{prize_name}」 (清除 {draw_count} 筆開獎紀錄，還原 {updated_users} 人為未中獎)。", 'success')
+
+    except Exception as e:
+        db.session.rollback()
+        flash(f"重置失敗：{e}", 'danger')
+
+    return redirect(url_for('admin.manage_prizes'))
+
 # --- 測試用一鍵簽到 ---
 @bp.route('/test_checkin_all', methods=['POST'])
 def test_checkin_all():

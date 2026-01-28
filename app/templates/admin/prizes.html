@@ -35,13 +35,23 @@
                         <td>{{ prize.display_order }}</td>
                         <td>
                             <button class="btn btn-sm btn-outline-secondary me-1" 
-                                onclick="openEditModal('{{ prize.id }}', '{{ prize.name }}', '{{ prize.prize_type }}', '{{ prize.quantity }}', '{{ prize.display_order }}')">
+                                onclick="openEditModal('{{ prize.id }}', '{{ prize.name }}', '{{ prize.prize_type }}', '{{ prize.quantity }}', '{{ prize.display_order }}')"
+                                title="編輯">
                                 <i class="bi bi-pencil"></i>
                             </button>
-                            <form method="POST" action="{{ url_for('admin.manage_prizes') }}" class="d-inline" onsubmit="return confirm('確定刪除？');">
+                            
+                            <form method="POST" action="{{ url_for('admin.reset_prize') }}" class="d-inline" onsubmit="return confirm('【警告】\n確定要清除「{{ prize.name }}」的所有中獎紀錄嗎？\n\n這將會：\n1. 刪除該獎項的已抽出號碼\n2. 將該獎項得主恢復為未中獎狀態\n\n此操作無法復原！');">
+                                <input type="hidden" name="prize_name" value="{{ prize.name }}">
+                                <input type="hidden" name="prize_type" value="{{ prize.prize_type }}">
+                                <button type="submit" class="btn btn-sm btn-outline-warning me-1" title="清除中獎紀錄(重抽)">
+                                    <i class="bi bi-arrow-counterclockwise"></i>
+                                </button>
+                            </form>
+
+                            <form method="POST" action="{{ url_for('admin.manage_prizes') }}" class="d-inline" onsubmit="return confirm('確定要刪除「{{ prize.name }}」這個獎項設定嗎？\n(這不會刪除已中獎的紀錄)');">
                                 <input type="hidden" name="action" value="delete">
                                 <input type="hidden" name="prize_id" value="{{ prize.id }}">
-                                <button type="submit" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+                                <button type="submit" class="btn btn-sm btn-outline-danger" title="刪除獎項"><i class="bi bi-trash"></i></button>
                             </form>
                         </td>
                     </tr>

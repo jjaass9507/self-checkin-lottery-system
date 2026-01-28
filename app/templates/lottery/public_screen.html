@@ -45,7 +45,7 @@
         .prize-select:focus { outline: none; background-color: rgba(255, 215, 0, 0.1); }
         .prize-select option { background-color: #1a2a6c; color: #fff; font-size: 1.2rem; }
 
-        /* ... (保留原本的卡片樣式) ... */
+        /* 卡片顯示區 */
         .digit-stage { display: flex; justify-content: center; gap: 15px; margin: 10px 0; flex-shrink: 0; }
         .digit-card {
             width: 120px; height: 160px; background: rgba(0,0,0,0.5);
@@ -53,6 +53,7 @@
             display: flex; flex-direction: column; align-items: center; justify-content: center;
             position: relative; transition: all 0.3s; box-shadow: 0 0 15px rgba(0,0,0,0.5);
         }
+        /* 當輸入數字時亮起 */
         .digit-card.active { border-color: #00ffea; box-shadow: 0 0 30px #00ffea; background: rgba(0,0,0,0.8); transform: scale(1.05); }
         .digit-value { font-family: 'Orbitron', sans-serif; font-size: 5rem; font-weight: 900; color: #fff; }
         .digit-label { position: absolute; top: 8px; font-size: 0.8rem; color: #aaa; text-transform: uppercase; }
@@ -112,10 +113,10 @@
             <div class="input-group input-group-lg">
                 <span class="input-group-text bg-dark text-white border-secondary">輸入號碼</span>
                 <input type="text" class="form-control bg-dark text-white border-secondary text-center fw-bold" 
-                       style="font-size: 1.5rem;" id="digit-input" placeholder="0-9" maxlength="1">
+                       style="font-size: 1.5rem;" id="digit-input" placeholder="000-999" maxlength="3">
                 <button class="btn btn-warning fw-bold px-4" id="btn-reveal">揭曉</button>
             </div>
-            <div class="available-hints" id="hint-area">正在讀取可用號碼...</div>
+            <div class="available-hints" id="hint-area">請輸入 3 位數抽獎編號</div>
         </div>
     </div>
 
@@ -141,8 +142,6 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        let currentStep = 1; 
-        let confirmedDigits = ""; 
         let currentCandidates = []; 
         let finalWinner = null;
 
@@ -151,7 +150,7 @@
         const listEl = document.getElementById('result-list');
         const hintArea = document.getElementById('hint-area');
         const countInfoEl = document.getElementById('count-info');
-        const prizeSelect = document.getElementById('prize-select'); // 取得選單
+        const prizeSelect = document.getElementById('prize-select');
 
         const card100 = document.getElementById('card-100');
         const card10 = document.getElementById('card-10');
@@ -161,40 +160,46 @@
         const btnSave = document.getElementById('btn-confirm-save');
 
         // 初始化
-        updateActiveCard();
-        fetchAvailableDigits(""); 
-        loadPublicPrizes(); // (1) 載入獎項
-
+        loadPublicPrizes();
         inputEl.focus();
         window.addEventListener('resize', fitCardsToScreen);
 
+        // (新增) 監聽輸入框：即時將數字同步到上方卡片
+        inputEl.addEventListener('input', (e) => {
+            // 限制只能輸入數字
+            e.target.value = e.target.value.replace(/[^0-9]/g, '');
+            const val = e.target.value;
+
+            // 更新卡片文字
+            card100.querySelector('.digit-value').innerText = val[0] || '?';
+            card10.querySelector('.digit-value').innerText = val[1] || '?';
+            card1.querySelector('.digit-value').innerText = val[2] || '?';
+            
+            // 更新卡片亮起特效
+            card100.classList.toggle('active', !!val[0]);
+            card10.classList.toggle('active', !!val[1]);
+            card1.classList.toggle('active', !!val[2]);
+        });
+
+        // 監聽 Enter
         inputEl.addEventListener('keyup', (e) => {
             if (e.key === 'Enter') btnReveal.click();
         });
         
-        inputEl.addEventListener('input', (e) => {
-            e.target.value = e.target.value.replace(/[^0-9]/g, '');
-        });
-
-        // (2) 監聽選單變更 -> 只做 resetScreen
+        // 選單變更時重置
         prizeSelect.addEventListener('change', function() {
             resetScreen();
-            // 這裡不呼叫後端查詢，直接讓主持人開始新的一輪
         });
 
         function resetScreen() {
-            // 清空變數
-            currentStep = 1;
-            confirmedDigits = "";
             currentCandidates = [];
             finalWinner = null;
             
-            // 重置 UI 卡片
+            // 重置卡片
             card100.querySelector('.digit-value').innerText = '?';
             card10.querySelector('.digit-value').innerText = '?';
             card1.querySelector('.digit-value').innerText = '?';
-            
-            updateActiveCard(); // 回到百位數 active
+            document.querySelectorAll('.digit-card').forEach(c => c.classList.remove('active'));
             
             listEl.innerHTML = '<div class="text-center w-100 text-white-50 mt-5" style="font-size: 1.5rem;">等待開始抽獎...</div>';
             countInfoEl.innerText = '';
@@ -203,16 +208,13 @@
             inputEl.disabled = false;
             btnReveal.disabled = false;
             btnReveal.innerText = "揭曉";
-            hintArea.innerText = "正在讀取可用號碼...";
+            hintArea.innerText = "請輸入 3 位數抽獎編號";
             
-            fetchAvailableDigits(""); 
             inputEl.focus();
         }
 
-        // (*** 修改：載入公獎列表函式 ***)
         async function loadPublicPrizes() {
             try {
-                // type=public 確保只撈到公獎
                 const res = await fetch("{{ url_for('lottery.api_get_prizes', type='public') }}");
                 const data = await res.json();
                 
@@ -222,15 +224,12 @@
                     data.prizes.forEach(p => {
                         const opt = document.createElement('option');
                         opt.value = p.name;
-                        
-                        // 顯示：獎項 (剩 1 / 1)
                         if (p.remaining > 0) {
                             opt.innerText = `${p.name} (剩 ${p.remaining} / ${p.quantity})`;
                         } else {
-                            // (*** 修改關鍵：數量歸零時鎖定選項 ***)
                             opt.innerText = `${p.name} (已全數抽出)`;
-                            opt.disabled = true; // 禁止選擇
-                            opt.style.color = "#aaa"; // 視覺上變灰 (雖然 disabled 本身會有樣式，但加上這個更保險)
+                            opt.disabled = true;
+                            opt.style.color = "#aaa";
                         }
                         prizeSelect.appendChild(opt);
                     });
@@ -243,29 +242,8 @@
             }
         }
 
-        async function fetchAvailableDigits(prefix) {
-            hintArea.innerHTML = '<span class="text-muted small">查詢中...</span>';
-            try {
-                const res = await fetch("{{ url_for('lottery.api_public_available_digits') }}", {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ prefix: prefix })
-                });
-                const data = await res.json();
-                
-                if (data.success && data.digits) {
-                    if (data.digits.length === 0) {
-                        hintArea.innerHTML = '<span class="text-danger">⚠️ 無符合號碼</span>';
-                    } else {
-                        const badges = data.digits.map(d => `<span class="hint-badge">${d}</span>`).join('');
-                        hintArea.innerHTML = `可抽號碼：${badges}`;
-                    }
-                }
-            } catch (e) { console.error(e); }
-        }
-
+        // (核心修改) 揭曉按鈕邏輯
         btnReveal.addEventListener('click', async () => {
-            // (3) 防呆：確保已選擇獎項
             if (!prizeSelect.value) {
                 alert("請先選擇要抽出的「公獎獎項」！");
                 prizeSelect.focus();
@@ -273,60 +251,41 @@
             }
 
             const val = inputEl.value;
-            if (val === "") return alert("請輸入號碼");
+            // 強制檢查 3 碼
+            if (val.length !== 3) {
+                alert("請輸入完整的 3 位數號碼！");
+                inputEl.focus();
+                return;
+            }
 
-            const nextDigit = val;
-            const tempSearchStr = confirmedDigits + nextDigit;
+            hintArea.innerHTML = '<span class="text-muted small">查詢中...</span>';
 
             try {
+                // 直接送出完整 3 碼給後端 API
                 const res = await fetch("{{ url_for('lottery.api_public_search') }}", {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ digits: tempSearchStr })
+                    body: JSON.stringify({ digits: val })
                 });
                 const data = await res.json();
 
                 if (data.success) {
                     if (data.count === 0) {
-                        alert(`輸入 ${nextDigit} 後找不到符合的人！請參考提示重抽。`);
-                        inputEl.value = '';
-                        inputEl.focus();
+                        hintArea.innerHTML = '<span class="text-danger">❌ 查無此號</span>';
+                        alert(`輸入 ${val} 找不到符合資格的人員！`);
+                        inputEl.select(); // 選取文字方便重打
                         return;
                     }
 
-                    confirmedDigits += nextDigit;
+                    // 找到人，顯示並鎖定
                     currentCandidates = data.candidates;
-                    
-                    updateDigitDisplay(nextDigit);
                     renderCandidates(data.candidates);
-
-                    if (currentStep < 3) {
-                        currentStep++;
-                        inputEl.value = '';
-                        updateActiveCard();
-                        inputEl.focus();
-                        fetchAvailableDigits(confirmedDigits);
-                    } else {
-                        finishDraw();
-                    }
+                    finishDraw(); // 進入結算流程
                 } else {
                     alert(data.message);
                 }
             } catch (e) { alert("API 錯誤"); }
         });
-
-        function updateActiveCard() {
-            document.querySelectorAll('.digit-card').forEach(c => c.classList.remove('active'));
-            if (currentStep === 1) card100.classList.add('active');
-            else if (currentStep === 2) card10.classList.add('active');
-            else if (currentStep === 3) card1.classList.add('active');
-        }
-
-        function updateDigitDisplay(digit) {
-            if (currentStep === 1) card100.querySelector('.digit-value').innerText = digit;
-            else if (currentStep === 2) card10.querySelector('.digit-value').innerText = digit;
-            else if (currentStep === 3) card1.querySelector('.digit-value').innerText = digit;
-        }
 
         function renderCandidates(list) {
             listEl.innerHTML = '';
@@ -372,11 +331,15 @@
             btnReveal.innerText = "抽獎完成";
             hintArea.innerHTML = '<span class="text-success">🎉 鎖定中獎者</span>';
             
+            // 確保卡片保持亮起
+            document.querySelectorAll('.digit-card').forEach(c => c.classList.add('active'));
+
             if (currentCandidates.length === 1) {
                 finalWinner = currentCandidates[0];
                 setTimeout(() => { showConfirmModal(finalWinner); }, 800);
             } else if (currentCandidates.length > 1) {
-                alert(`注意：仍有 ${currentCandidates.length} 人符合！系統自動選取第一位。`);
+                // 若有多人 (例如同號，雖然不常見)，預設選第一位
+                alert(`注意：系統找到 ${currentCandidates.length} 位符合者，將自動選取第一位。`);
                 finalWinner = currentCandidates[0];
                 setTimeout(() => { showConfirmModal(finalWinner); }, 1000);
             }
@@ -386,7 +349,6 @@
             document.getElementById('final-winner-name').innerText = winner.name;
             document.getElementById('final-winner-id').innerText = winner.employee_id;
             document.getElementById('final-winner-num').innerText = winner.lottery_number;
-            // (4) Modal 顯示選單的值
             document.getElementById('final-prize-display').innerText = `【 ${prizeSelect.value} 】`;
             confirmModal.show();
         }
@@ -399,7 +361,7 @@
                     headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify({ 
                         employee_id: finalWinner.employee_id,
-                        prize_name: prizeSelect.value  // (5) 送出選單的值
+                        prize_name: prizeSelect.value
                     })
                 });
                 const data = await res.json();
