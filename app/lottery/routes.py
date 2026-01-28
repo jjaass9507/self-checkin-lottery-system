@@ -188,6 +188,9 @@ def api_public_search():
                 "is_business_trip": p.is_business_trip  # (*** 新增此行 ***)
             })
 
+    # (*** 修改：回傳前依照抽獎編號排序 ***)
+    results.sort(key=lambda x: x['lottery_number'])
+
     return jsonify({
         "success": True,
         "count": len(results),
@@ -349,7 +352,9 @@ def api_winners_all():
                         "lottery_number": user_num,
                         "site": p.site,
                         "timestamp": draw.timestamp.strftime('%H:%M'),
-                        "is_business_trip": p.is_business_trip # (*** 新增此行 ***)
+                        "is_business_trip": p.is_business_trip, # (*** 新增此行 ***)
+                        "is_addon": draw.is_addon,       # (*** 修改：加入 is_addon ***)
+                        "prize_type": draw.prize_type    # (*** 修改：加入 prize_type 方便前端判斷 ***)
                     })
 
         return jsonify({"success": True, "data": results})
@@ -452,6 +457,9 @@ def api_query_prize():
                 "is_addon": best_match.is_addon,  # (關鍵) 將加碼狀態回傳給前端
                 "is_business_trip": p.is_business_trip  # (*** 新增此行 ***)   
             })
+
+    # (*** 修改：回傳前依照抽獎編號排序 ***)
+    winners_data.sort(key=lambda x: str(x['lottery_number']).zfill(3))
 
     return jsonify({
         "success": True, 

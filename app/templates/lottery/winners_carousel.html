@@ -8,11 +8,10 @@
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700&family=Orbitron:wght@900&display=swap" rel="stylesheet">
     <style>
         :root {
-            --card-base-size: 1.2rem; /* 用於動態縮放的基準 */
+            --card-base-size: 1.2rem;
         }
         
         body {
-            /* 深邃星空背景 */
             background: radial-gradient(ellipse at bottom, #1b2735 0%, #090a0f 100%);
             height: 100vh;
             color: #fff;
@@ -21,7 +20,6 @@
             display: flex; flex-direction: column;
         }
 
-        /* 標題區 */
         header {
             padding: 15px;
             text-align: center;
@@ -41,7 +39,6 @@
             opacity: 0.7;
         }
         
-        /* 當前展示的獎項標題 */
         #current-prize-title {
             font-size: 3.5rem;
             font-weight: 900;
@@ -54,7 +51,6 @@
         }
         @keyframes glow { from { text-shadow: 0 0 20px rgba(255,215,0,0.4); } to { text-shadow: 0 0 40px rgba(255,215,0,0.8); } }
 
-        /* 主要內容區 (左右分欄) */
         main {
             flex-grow: 1;
             padding: 20px 40px;
@@ -91,7 +87,6 @@
         .col-header.hr { color: #ff9ff3; text-shadow: 0 0 10px #ff9ff3; }
         .col-header.fac { color: #54a0ff; text-shadow: 0 0 10px #54a0ff; }
 
-        /* 卡片容器 */
         .card-container {
             display: flex;
             flex-wrap: wrap;
@@ -100,20 +95,16 @@
             gap: 0.8em;
             width: 100%;
             height: 100%;
-            overflow: hidden; /* 禁止捲動，靠 JS 縮放 */
+            overflow: hidden;
         }
 
-        /* 中獎卡片 */
         .winner-card {
             background: linear-gradient(145deg, rgba(255,255,255,0.1), rgba(255,255,255,0.05));
             border: 1px solid rgba(255,255,255,0.2);
             border-radius: 0.6em;
-            
-            /* 使用 em 單位，隨 CSS 變數縮放 */
             width: 11em; 
             padding: 0.6em;
             font-size: var(--card-base-size); 
-            
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -121,12 +112,25 @@
             position: relative;
         }
         
-        /* 左側金線裝飾 */
         .winner-card::before {
             content: ''; position: absolute; left: 0; top: 0; bottom: 0;
             width: 4px; background: linear-gradient(to bottom, #f12711, #f5af19);
             border-top-left-radius: 0.6em; border-bottom-left-radius: 0.6em;
         }
+
+        /* (*** 新增：加碼獎項的高亮樣式，跟抽獎頁面一致 ***) */
+        .winner-card.bonus-highlight {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+            color: #fff !important;
+            border: 3px solid #ffd700 !important;
+            box-shadow: 0 0 30px rgba(255, 215, 0, 0.8);
+            transform: scale(1.05);
+            z-index: 10;
+        }
+        .winner-card.bonus-highlight .winner-number { color: #ffd700; }
+        /* 移除加碼卡片的左側紅線，以免衝突 */
+        .winner-card.bonus-highlight::before { content: none; }
+
 
         .winner-name { font-size: 1.4em; font-weight: 700; margin-bottom: 0.2em; color: #fff; }
         .winner-id { font-size: 0.9em; color: #ccc; margin-bottom: 0.2em; }
@@ -138,7 +142,6 @@
             font-weight: bold;
         }
 
-        /* 進度條 */
         .progress-bar-container {
             position: fixed; bottom: 0; left: 0; width: 100%; height: 5px; background: #333;
         }
@@ -146,9 +149,12 @@
             height: 100%; background: #00ffea; width: 0%;
         }
         
-        .no-data {
-            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            font-size: 2rem; color: #666;
+        /* 避免標題過長時跑版 */
+        #current-prize-title {
+            max-width: 90vw;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
     </style>
 </head>
@@ -182,16 +188,15 @@
         const listFacEl = document.getElementById('list-fac');
         const progressBar = document.getElementById('page-progress');
         
-        // 狀態變數
-        let winnersByPrize = {}; // { "五獎": [list...], "四獎": [list...] }
-        let prizeNames = []; // ["五獎", "四獎", ...]
+        let winnersGroups = {}; // 存放分組後的資料 { "三獎": [winners...] }
+        let groupKeys = [];     // 存放獎項名稱的順序
         let currentIndex = 0;
-        const intervalTime = 10000; // 每個獎項展示 10 秒
+        const intervalTime = 10000; 
         let timer = null;
 
         // 初始化
         fetchData();
-        setInterval(fetchData, 60000); // 每分鐘背景更新資料
+        setInterval(fetchData, 60000); 
 
         async function fetchData() {
             try {
@@ -201,9 +206,8 @@
                 if (json.success) {
                     processData(json.data);
                     
-                    // 如果是第一次載入，開始輪播
-                    if (!timer && prizeNames.length > 0) {
-                        renderCurrentPrize();
+                    if (!timer && groupKeys.length > 0) {
+                        renderCurrentGroup();
                         startLoop();
                     }
                 }
@@ -211,52 +215,65 @@
         }
 
         function processData(data) {
-            // 1. 分組
+            // 1. 分組邏輯：純粹依照「獎項名稱」分組
+            // 這樣同一個獎項的所有尾號、加碼都會在同一頁
             const grouped = {};
-            // 為了保持順序，我們可以用一個 Set 來記錄遇到的獎項順序
-            // 或是根據 timestamp 排序。這裡假設 API 回傳的順序是時間倒序 (最新的在最前)
-            // 我們希望輪播順序通常是：從小獎到大獎，或是從舊到新。
-            // 這裡我們把資料反轉 (reverse)，讓最早開出的獎先顯示
-            
-            const sortedData = [...data].reverse(); 
+            const sortedData = [...data].reverse(); // 依照抽出順序 (舊->新)
 
             sortedData.forEach(w => {
-                const pName = w.prize_name;
-                if (!grouped[pName]) grouped[pName] = [];
-                grouped[pName].push(w);
+                const key = w.prize_name;
+                
+                if (!grouped[key]) grouped[key] = [];
+                
+                // 去重：避免同一個人重複出現在清單中 (如果 API 有重複的話)
+                // 這裡簡單用 employee_id 檢查
+                const exists = grouped[key].some(item => item.employee_id === w.employee_id);
+                if (!exists) {
+                    grouped[key].push(w);
+                }
             });
 
-            winnersByPrize = grouped;
-            
-            // 取得所有獎項名稱 (去除重複並保持順序)
-            prizeNames = Object.keys(grouped);
+            winnersGroups = grouped;
+            groupKeys = Object.keys(grouped);
         }
 
-        function renderCurrentPrize() {
-            if (prizeNames.length === 0) {
+        function renderCurrentGroup() {
+            if (groupKeys.length === 0) {
                 titleEl.innerText = "目前無中獎名單";
                 return;
             }
 
-            // 1. 淡出
             mainContent.classList.add('fade-out');
             titleEl.style.opacity = 0;
 
             setTimeout(() => {
-                // 2. 切換資料
-                const pName = prizeNames[currentIndex];
-                const winners = winnersByPrize[pName];
+                // 2. 取出當前獎項
+                const currentPrizeName = groupKeys[currentIndex];
+                const winners = winnersGroups[currentPrizeName];
 
-                titleEl.innerText = pName;
+                // (*** 標題邏輯：收集該獎項的所有尾號 ***)
+                // 篩選出獨特的尾號 (排除公獎那種很長的號碼，或者全部顯示)
+                const uniqueTails = [...new Set(winners.map(w => w.tail_number))].sort();
+                
+                // 組合標題
+                let titleText = currentPrizeName;
+                if (uniqueTails.length > 0) {
+                    titleText += ` (尾號 ${uniqueTails.join(', ')})`;
+                }
+                titleEl.innerText = titleText;
                 titleEl.style.opacity = 1;
                 
                 listHrEl.innerHTML = '';
                 listFacEl.innerHTML = '';
                 
-                // 重置縮放
                 document.documentElement.style.setProperty('--card-base-size', '1.2rem');
 
-                // 3. 產生卡片並分流
+                // (*** 排序邏輯：依照抽獎編號排序 ***)
+                winners.sort((a, b) => {
+                    return a.lottery_number.localeCompare(b.lottery_number);
+                });
+
+                // 3. 產生卡片
                 winners.forEach(w => {
                     const card = createCard(w);
                     if (w.site && w.site.toUpperCase().includes('HR')) {
@@ -266,17 +283,11 @@
                     }
                 });
 
-                // 4. 淡入
                 mainContent.classList.remove('fade-out');
-
-                // 5. 執行自動縮放 (等待 DOM 渲染)
                 setTimeout(fitCardsToScreen, 50);
-                
-                // 6. 重置進度條
                 resetProgressBar();
 
-                // 準備下一輪索引
-                currentIndex = (currentIndex + 1) % prizeNames.length;
+                currentIndex = (currentIndex + 1) % groupKeys.length;
 
             }, 500);
         }
@@ -285,7 +296,11 @@
             const div = document.createElement('div');
             div.className = 'winner-card';
             
-            // (*** 新增：公差文字判斷 ***)
+            // (*** 如果是加碼，加上高亮樣式 ***)
+            if (winner.is_addon) {
+                div.classList.add('bonus-highlight');
+            }
+
             let nameDisplay = winner.name;
             if (winner.is_business_trip) {
                 nameDisplay += ' <span style="font-size:0.6em; color:#54a0ff;">(公差)</span>';
@@ -300,42 +315,34 @@
         }
 
         function startLoop() {
-            // 設定定時器
             if (timer) clearInterval(timer);
-            timer = setInterval(renderCurrentPrize, intervalTime);
+            timer = setInterval(renderCurrentGroup, intervalTime);
         }
 
         function resetProgressBar() {
             progressBar.style.transition = 'none';
             progressBar.style.width = '0%';
-            void progressBar.offsetWidth; // Force reflow
-            // 減去 500ms 是為了配合淡出淡入
+            void progressBar.offsetWidth; 
             progressBar.style.transition = `width ${intervalTime}ms linear`;
             progressBar.style.width = '100%';
         }
 
-        // --- 自動縮放邏輯 (同 screen.html) ---
         function fitCardsToScreen() {
             const containerHr = listHrEl;
             const containerFac = listFacEl;
-            
             let size = 1.2; 
             const minSize = 0.5;
             
-            // 兩邊都要檢查，只要有一邊爆掉就縮小
             for (let i = 0; i < 40; i++) {
                 const overflowHr = containerHr.scrollHeight > containerHr.clientHeight;
                 const overflowFac = containerFac.scrollHeight > containerFac.clientHeight;
-
                 if (!overflowHr && !overflowFac) break;
-
                 size -= 0.05;
                 if (size < minSize) { size = minSize; break; }
                 document.documentElement.style.setProperty('--card-base-size', `${size}rem`);
             }
         }
         
-        // 視窗大小改變時也要重算
         window.addEventListener('resize', fitCardsToScreen);
 
     </script>
