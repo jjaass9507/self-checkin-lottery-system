@@ -271,3 +271,68 @@ def api_toggle_claim():
     except Exception as e:
         db.session.rollback()
         return jsonify({"success": False, "message": str(e)}), 500
+    
+# --- 新增：純查詢頁面路由 ---
+@bp.route('/query')
+def query_page():
+    return render_template('checkin/self_query.html')
+
+# --- 新增：純查詢 API (不修改報到狀態) ---
+@bp.route('/api/search_by_id', methods=['POST'])
+def api_search_by_id():
+    data = request.get_json()
+    emp_id = data.get('employee_id')
+    
+    if not emp_id:
+        return jsonify({"success": False, "message": "請輸入工號"}), 400
+        
+    # 1. 找人
+    person = CheckinList.query.filter(CheckinList.employee_id.ilike(emp_id)).first()
+    
+    if not person:
+        return jsonify({"success": False, "message": "找不到此工號，請聯繫工作人員。"}), 404
+        
+    # 2. (重要) 這裡 不執行 報到寫入 (db.session.commit)，僅讀取資料
+    
+    # 3. 計算顯示資訊 (邏輯同報到 API)
+    lottery_num_str = str(person.lottery_number).zfill(3) if person.lottery_number else "未設定"
+    
+    prize_info_list = []
+    if person.lottery_number:
+        # A. 檢查公獎
+        if person.has_won_public:
+            public_draws = DrawnTailNumber.query.filter_by(prize_type='public').all()
+            for d in public_draws:
+                if str(d.tail_number) == lottery_num_str:
+                    prize_info_list.append(f"【公獎】{d.prize_name}")
+        
+        # B. 檢查尾數獎
+        if person.has_won:
+            tail_draws = DrawnTailNumber.query.filter_by(prize_type='tail').all()
+            matched_prizes = []
+            for d in tail_draws:
+                if lottery_num_str.endswith(str(d.tail_number)):
+                    matched_prizes.append(d)
+            if matched_prizes:
+                matched_prizes.sort(key=lambda x: len(str(x.tail_number)), reverse=True)
+                best_match = matched_prizes[0]
+                prize_info_list.append(f"【尾數獎】{best_match.prize_name}")
+
+    if prize_info_list:
+        prize_display = " & ".join(prize_info_list)
+        is_winner = True
+    else:
+        prize_display = "尚未中獎" # 查詢模式顯示較中性的文字
+        is_winner = False
+
+    return jsonify({
+        "success": True, 
+        "message": f"查詢成功：{person.name}", # 訊息改為查詢成功
+        "name": person.name,
+        "employee_id": person.employee_id,
+        "lottery_number": lottery_num_str,
+        "table_number": person.table_number or "未分配",
+        "prize_info": prize_display,
+        "is_winner": is_winner,
+        "status": person.status # 回傳狀態，讓前端可以額外標示(選用)
+    })
