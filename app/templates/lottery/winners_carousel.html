@@ -118,7 +118,7 @@
             border-top-left-radius: 0.6em; border-bottom-left-radius: 0.6em;
         }
 
-        /* (*** 新增：加碼獎項的高亮樣式，跟抽獎頁面一致 ***) */
+        /* (新增) 加碼獎項的高亮樣式：紫色漸層 + 金色邊框 + 發光 */
         .winner-card.bonus-highlight {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
             color: #fff !important;
@@ -127,9 +127,16 @@
             transform: scale(1.05);
             z-index: 10;
         }
-        .winner-card.bonus-highlight .winner-number { color: #ffd700; }
-        /* 移除加碼卡片的左側紅線，以免衝突 */
-        .winner-card.bonus-highlight::before { content: none; }
+
+        /* 加碼卡片內的數字改為金色 */
+        .winner-card.bonus-highlight .winner-number { 
+            color: #ffd700; 
+        }
+
+        /* 移除原本卡片左側的紅橘色裝飾線，避免顏色衝突 */
+        .winner-card.bonus-highlight::before { 
+            content: none; 
+        }
 
 
         .winner-name { font-size: 1.4em; font-weight: 700; margin-bottom: 0.2em; color: #fff; }
@@ -215,21 +222,29 @@
         }
 
         function processData(data) {
-            // 1. 分組邏輯：純粹依照「獎項名稱」分組
-            // 這樣同一個獎項的所有尾號、加碼都會在同一頁
             const grouped = {};
-            const sortedData = [...data].reverse(); // 依照抽出順序 (舊->新)
+            // 保持由舊到新，這樣獎項輪播順序才符合時間軸 (A獎 -> B獎)
+            const sortedData = [...data].reverse(); 
 
             sortedData.forEach(w => {
                 const key = w.prize_name;
                 
                 if (!grouped[key]) grouped[key] = [];
                 
-                // 去重：避免同一個人重複出現在清單中 (如果 API 有重複的話)
-                // 這裡簡單用 employee_id 檢查
-                const exists = grouped[key].some(item => item.employee_id === w.employee_id);
-                if (!exists) {
+                // 檢查此人是否已在該獎項名單中
+                //findIndex 回傳索引，若無則回傳 -1
+                const existingIndex = grouped[key].findIndex(item => item.employee_id === w.employee_id);
+                
+                if (existingIndex === -1) {
+                    // 1. 如果沒出現過，直接加入
                     grouped[key].push(w);
+                } else {
+                    // 2. 如果出現過 (重複中獎紀錄)，檢查是否為「加碼」
+                    // 如果原本是「一般」，但現在這筆是「加碼」，我們希望能顯示加碼的樣式 (紫色)
+                    // 所以要用這筆資料「覆蓋」掉原本的舊資料
+                    if (w.is_addon) {
+                        grouped[key][existingIndex] = w;
+                    }
                 }
             });
 
@@ -251,9 +266,12 @@
                 const currentPrizeName = groupKeys[currentIndex];
                 const winners = winnersGroups[currentPrizeName];
 
-                // (*** 標題邏輯：收集該獎項的所有尾號 ***)
-                // 篩選出獨特的尾號 (排除公獎那種很長的號碼，或者全部顯示)
-                const uniqueTails = [...new Set(winners.map(w => w.tail_number))].sort();
+                // ---【修正重點 2：標題只顯示個位數】---
+                // 收集該獎項的所有尾號，並強制只取最後一位 (slice(-1))
+                const uniqueTails = [...new Set(winners.map(w => {
+                    const t = String(w.tail_number);
+                    return t.slice(-1); 
+                }))].sort();
                 
                 // 組合標題
                 let titleText = currentPrizeName;
@@ -296,11 +314,12 @@
             const div = document.createElement('div');
             div.className = 'winner-card';
             
-            // (*** 如果是加碼，加上高亮樣式 ***)
+            // (新增) 判斷是否為加碼 (is_addon)，若是則加上高亮樣式類別
             if (winner.is_addon) {
                 div.classList.add('bonus-highlight');
             }
 
+            // 處理公差顯示文字
             let nameDisplay = winner.name;
             if (winner.is_business_trip) {
                 nameDisplay += ' <span style="font-size:0.6em; color:#54a0ff;">(公差)</span>';
