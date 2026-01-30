@@ -266,18 +266,25 @@
                 const currentPrizeName = groupKeys[currentIndex];
                 const winners = winnersGroups[currentPrizeName];
 
-                // ---【修正重點 2：標題只顯示個位數】---
-                // 收集該獎項的所有尾號，並強制只取最後一位 (slice(-1))
-                const uniqueTails = [...new Set(winners.map(w => {
-                    const t = String(w.tail_number);
-                    return t.slice(-1); 
-                }))].sort();
-                
-                // 組合標題
+                // --- 檢查是否為公獎 ---
+                const isPublic = winners.length > 0 && winners[0].prize_type === 'public';
+
                 let titleText = currentPrizeName;
-                if (uniqueTails.length > 0) {
-                    titleText += ` (尾號 ${uniqueTails.join(', ')})`;
+
+                // 若「不是公獎」，才顯示尾號提示
+                if (!isPublic) {
+                    // ---【修正重點 2：標題只顯示個位數】---
+                    // 收集該獎項的所有尾號，並強制只取最後一位 (slice(-1))
+                    const uniqueTails = [...new Set(winners.map(w => {
+                        const t = String(w.tail_number);
+                        return t.slice(-1); 
+                    }))].sort();
+
+                    if (uniqueTails.length > 0) {
+                        titleText += ` (尾號 ${uniqueTails.join(', ')})`;
+                    }
                 }
+
                 titleEl.innerText = titleText;
                 titleEl.style.opacity = 1;
                 
