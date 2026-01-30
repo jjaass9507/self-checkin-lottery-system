@@ -9,19 +9,35 @@
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700&family=Orbitron:wght@900&display=swap" rel="stylesheet">
     <style>
         :root { --card-base-size: 1rem; }
+        /* 修改後的公獎背景樣式 */
         body {
-            background: radial-gradient(circle at center, #1a2a6c, #b21f1f, #fdbb2d); 
-            height: 100vh; color: #fff; display: flex; flex-direction: column; overflow: hidden;
+            /* 使用深紅到亮紅的放射漸層，並帶一點金色的光輝感 */
+            background: radial-gradient(circle at center, #ff4b2b, #ff416c, #8b0000); 
+            background-attachment: fixed;
+            height: 100vh; 
+            color: #fff; 
+            display: flex; 
+            flex-direction: column; 
+            overflow: hidden;
             font-family: 'Noto Sans TC', sans-serif;
         }
-        
-        /* Header 與下拉選單樣式 */
-        header { 
-            padding: 15px; text-align: center; flex-shrink: 0; 
-            background: rgba(0,0,0,0.2);
-            display: flex; flex-direction: column; align-items: center; gap: 10px;
+
+        /* 為了搭配紅色背景，建議將控制區的背景調深 */
+        .controls { 
+            padding: 10px; 
+            text-align: center; 
+            background: rgba(0, 0, 0, 0.6); /* 增加遮罩感 */
+            backdrop-filter: blur(5px); 
+            flex-shrink: 0; 
         }
-        .main-title { font-family: 'Orbitron', sans-serif; font-size: 2.2rem; text-shadow: 0 0 20px rgba(255,215,0,0.8); margin: 0; }
+
+        /* 標題的光暈可以調成偏金黃色 */
+        .main-title { 
+            font-family: 'Orbitron', sans-serif; 
+            font-size: 2.2rem; 
+            text-shadow: 0 0 20px rgba(255, 215, 0, 1); /* 金色強光 */
+            margin: 0; 
+        }
         
         .prize-select-group { position: relative; width: 400px; max-width: 90vw; }
         .prize-select {

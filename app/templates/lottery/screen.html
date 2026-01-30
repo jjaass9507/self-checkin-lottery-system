@@ -11,25 +11,35 @@
         :root {
             --card-base-size: 1.2rem; /* JS 會動態調整這個數值 */
         }
+        /* 修改後的尾數獎背景樣式 */
         body {
-            background: linear-gradient(270deg, #0f0c29, #302b63, #24243e);
-            background-size: 600% 600%;
-            animation: gradient-animation 20s ease infinite;
+            background: linear-gradient(270deg, #8b0000, #d32f2f, #b71c1c, #fdb931);
+            background-size: 400% 400%;
+            animation: gradient-animation 15s ease infinite;
             color: #fff;
             font-family: 'Noto Sans TC', sans-serif;
             height: 100vh;
-            overflow: hidden; /* 禁止捲動，由卡片容器自己處理溢位 */
+            overflow: hidden;
             display: flex;
             flex-direction: column;
         }
-        @keyframes gradient-animation { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
-        
-        /* 頂部資訊 */
+
+        /* 讓漸層流動感更平滑 */
+        @keyframes gradient-animation {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        /* 建議同步微調 header 背景透明度，讓紅色透出來 */
         header { 
-            padding: 0.8rem 1.5rem; flex-shrink: 0; 
-            display: flex; justify-content: space-between; align-items: center;
-            background: rgba(0,0,0,0.2);
-            border-bottom: 1px solid rgba(255,255,255,0.1);
+            padding: 0.8rem 1.5rem; 
+            flex-shrink: 0; 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center;
+            background: rgba(0, 0, 0, 0.3); /* 加深一點透明黑 */
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
         }
         
         .header-left { display: flex; align-items: center; gap: 20px; }
