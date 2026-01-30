@@ -13,15 +13,11 @@
         }
         /* 修改後的尾數獎背景樣式 */
         body {
-            background: linear-gradient(270deg, #8b0000, #d32f2f, #b71c1c, #fdb931);
+            /* 改為深紅到亮紅的流動漸層 */
+            background: linear-gradient(270deg, #8b0000, #d32f2f, #b71c1c, #210002);
             background-size: 400% 400%;
             animation: gradient-animation 15s ease infinite;
             color: #fff;
-            font-family: 'Noto Sans TC', sans-serif;
-            height: 100vh;
-            overflow: hidden;
-            display: flex;
-            flex-direction: column;
         }
 
         /* 讓漸層流動感更平滑 */
@@ -44,32 +40,16 @@
         
         .header-left { display: flex; align-items: center; gap: 20px; }
 
-        .main-title { 
-            font-family: 'Orbitron', sans-serif; 
-            font-weight: 900; font-size: 2rem; 
-            color: #fff; text-shadow: 0 0 10px #fff; margin: 0; 
+        .main-title {
+            color: #ffd700; /* 金色標題 */
+            text-shadow: 0 0 15px rgba(255, 215, 0, 0.8), 2px 2px 4px rgba(0,0,0,0.5);
         }
 
         /* 下拉選單樣式 */
         .prize-input-header {
-            background: transparent;
-            border: none;
-            border-bottom: 2px solid #ffd700;
+            border-bottom: 3px solid #ffd700;
             color: #ffd700;
-            font-size: 2rem;
-            font-weight: bold;
-            width: 450px;
-            text-align: center;
-            padding: 0 10px;
-            font-family: 'Noto Sans TC', sans-serif;
-            transition: all 0.3s ease;
-            cursor: pointer;
-            text-align-last: center; 
-            appearance: none; -webkit-appearance: none;
-            background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23FFD700%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E");
-            background-repeat: no-repeat;
-            background-position: right 10px top 50%;
-            background-size: 15px auto;
+            text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
         }
         .prize-input-header:focus { outline: none; background: rgba(255, 215, 0, 0.1); }
         .prize-input-header option { background-color: #302b63; color: #fff; font-size: 1.2rem; padding: 10px; }
@@ -129,29 +109,16 @@
 
         /* 卡片本體 */
         .winner-card {
-            background: linear-gradient(145deg, #fefde8, #f8d7a0);
-            color: #333;
-            border-radius: 8px;
-            border: 2px solid #fff;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-            
-            /* 關鍵：寬度與內距都跟著字體大小縮放 */
-            width: 9em; 
-            padding: 0.5em 0.2em;
-            
-            /* 字體大小由 CSS 變數控制 */
-            font-size: var(--card-base-size); 
-            
-            display: flex; flex-direction: column;
-            justify-content: center; align-items: center;
-            
-            animation: pop-in 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
-            opacity: 0; transform: scale(0.5);
+            background: linear-gradient(145deg, #ffffff, #f0f0f0);
+            border: 2px solid #ffd700; /* 金邊 */
+            box-shadow: 0 10px 20px rgba(0,0,0,0.4);
         }
         
         .winner-name { font-weight: 800; font-size: 1.2em; line-height: 1.2; width: 100%; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .winner-info { font-size: 0.7em; opacity: 0.8; margin-top: 0.1em; }
-        .winner-num { font-family: 'Orbitron', sans-serif; font-weight: bold; color: #d63031; font-size: 0.9em; margin-top: 0.1em; }
+        .winner-num {
+            color: #d32f2f; /* 卡片內的數字改為醒目的紅色 */
+        }
 
         @keyframes pop-in { to { opacity: 1; transform: scale(1); } }
 
