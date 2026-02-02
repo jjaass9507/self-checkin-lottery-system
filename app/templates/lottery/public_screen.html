@@ -11,8 +11,15 @@
         :root { --card-base-size: 1rem; }
         /* 修改後的公獎背景樣式 */
         body {
-            /* 使用放射漸層模擬聚光燈效果 */
-            background: radial-gradient(circle at center, #ff4b2b 0%, #8b0000 70%, #210002 100%);
+            /* 使用深紅到亮紅的放射漸層，並帶一點金色的光輝感 */
+            background: radial-gradient(circle at center, #ff4b2b, #ff416c, #8b0000); 
+            background-attachment: fixed;
+            height: 100vh; 
+            color: #fff; 
+            display: flex; 
+            flex-direction: column; 
+            overflow: hidden;
+            font-family: 'Noto Sans TC', sans-serif;
         }
 
         /* 為了搭配紅色背景，建議將控制區的背景調深 */
@@ -57,16 +64,13 @@
         /* 卡片顯示區 */
         .digit-stage { display: flex; justify-content: center; gap: 15px; margin: 10px 0; flex-shrink: 0; }
         .digit-card {
-            background: rgba(0, 0, 0, 0.6);
-            border: 4px solid #ffd700; /* 改為厚實的金框 */
-            box-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
+            width: 120px; height: 160px; background: rgba(0,0,0,0.5);
+            border: 4px solid #FFD700; border-radius: 12px;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            position: relative; transition: all 0.3s; box-shadow: 0 0 15px rgba(0,0,0,0.5);
         }
         /* 當輸入數字時亮起 */
-        .digit-card.active {
-            border-color: #ffffff;
-            box-shadow: 0 0 40px #ffd700;
-            background: rgba(255, 215, 0, 0.2);
-        }
+        .digit-card.active { border-color: #00ffea; box-shadow: 0 0 30px #00ffea; background: rgba(0,0,0,0.8); transform: scale(1.05); }
         .digit-value { font-family: 'Orbitron', sans-serif; font-size: 5rem; font-weight: 900; color: #fff; }
         .digit-label { position: absolute; top: 8px; font-size: 0.8rem; color: #aaa; text-transform: uppercase; }
 
@@ -93,15 +97,6 @@
         .hint-badge { display: inline-block; padding: 2px 8px; border: 1px solid #00ffea; border-radius: 4px; margin: 0 2px; color: #fff; background: rgba(0, 255, 234, 0.2); }
         .modal-content { border: 2px solid #FFD700; background: #222; color: #fff;}
         .info-bar { width: 100%; text-align: center; color: #fff; margin-bottom: 5px; font-weight: bold; font-size: 1.2rem; flex-shrink: 0; }
-
-
-        .btn-reveal {
-            background: linear-gradient(90deg, #ffd700, #fdb931);
-            color: #8b0000;
-            font-weight: 900;
-            border: none;
-            box-shadow: 0 0 15px rgba(255, 215, 0, 0.6);
-        }
     </style>
 </head>
 <body>
