@@ -199,8 +199,10 @@
 
         <div id="result-area" class="result-box">
             <h3 id="res-name" class="fw-bold text-white mb-1"></h3>
-            <div id="res-id" class="text-white-50 small mb-3"></div>
+            <div id="res-id" class="text-white-50 small mb-2"></div>
             
+            <div id="res-status" class="mb-3"></div>
+
             <div class="lottery-badge-container">
                 <div class="res-label" style="color: #00ffea;">抽獎編號</div>
                 <div class="lottery-num-display" id="res-lottery-num">---</div>
@@ -222,6 +224,7 @@
         const resultArea = document.getElementById('result-area');
         const resName = document.getElementById('res-name');
         const resId = document.getElementById('res-id');
+        const resStatus = document.getElementById('res-status'); // 取得狀態 DOM
         const resTable = document.getElementById('res-table');
         const prizeContainer = document.getElementById('prize-container');
         const resLotteryNum = document.getElementById('res-lottery-num');
@@ -265,6 +268,13 @@
                     resLotteryNum.innerText = data.lottery_number || "---"; 
                     resTable.innerText = data.table_number || "未分配";
 
+                    // (*** 新增：顯示報到狀態 ***)
+                    if (data.status === 'CheckedIn') {
+                        resStatus.innerHTML = '<span class="badge rounded-pill bg-success px-3 py-2"><i class="bi bi-check-circle-fill me-1"></i> 已報到</span>';
+                    } else {
+                        resStatus.innerHTML = '<span class="badge rounded-pill bg-secondary px-3 py-2"><i class="bi bi-hourglass-split me-1"></i> 未報到</span>';
+                    }
+
                     // 處理中獎顯示
                     if (data.is_winner) {
                         prizeContainer.innerHTML = `
@@ -282,7 +292,7 @@
                     // 顯示結果區
                     resultArea.style.display = 'block';
                     
-                    // 查詢模式下顯示 8 秒，比報到稍微長一點點 (方便閱讀)
+                    // 查詢模式下顯示 10 秒
                     setTimeout(() => {
                         resetForm();
                     }, 10000);
@@ -303,6 +313,8 @@
             empInput.value = '';
             resultArea.style.display = 'none';
             msgArea.innerText = '';
+            // 清空狀態欄
+            if(resStatus) resStatus.innerHTML = '';
             resetBtn();
             empInput.focus();
         }
@@ -314,7 +326,6 @@
 
         function shakeInput() {
             empInput.classList.add('is-invalid');
-            // 自訂 shake 動畫效果可選，這裡沿用 bootstrap is-invalid 紅框
             setTimeout(() => empInput.classList.remove('is-invalid'), 500);
         }
     </script>
