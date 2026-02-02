@@ -118,6 +118,10 @@ def api_draw():
                     "site": person.site,  # 用於前端分流
                     "is_business_trip": person.is_business_trip  # (*** 新增此行 ***)
                 })
+
+            # (*** 修改：依照抽獎編號排序 (由小到大) ***)
+            # 使用 zfill(3) 確保字串數字排序正確 (例如 "2" 會排在 "10" 前面)
+            winners_list_info.sort(key=lambda x: str(x['lottery_number']).zfill(3))
         
         # 3. 寫入紀錄
         # (*** 修改寫入邏輯 ***)
