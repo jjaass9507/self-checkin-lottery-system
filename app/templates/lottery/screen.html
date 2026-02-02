@@ -252,7 +252,7 @@
         
         if (!prizeName) return;
 
-        // 2. 呼叫 API 查詢該獎項歷史
+        // 2. 呼叫 API 查詢該獎項歷史 
         try {
             const res = await fetch("{{ url_for('lottery.api_query_prize') }}", {
                 method: 'POST',
