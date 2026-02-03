@@ -13,3 +13,6 @@ class Config:
         'sqlite:///' + os.path.join(basedir, 'event.db')
         
     SQLALCHEMY_TRACK_MODIFICATIONS = False
+    
+    # (新增) 設定一組簡單的後台密碼
+    ADMIN_PASSWORD = os.environ.get('ADMIN_PASSWORD')

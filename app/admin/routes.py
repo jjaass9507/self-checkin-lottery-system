@@ -8,6 +8,41 @@ from datetime import datetime
 
 bp = Blueprint('admin', __name__)
 
+# --- (新增) 1. 權限卡控攔截器 ---
+@bp.before_request
+def require_login():
+    # 如果請求的是「登入頁面」本身，就放行，避免無窮迴圈
+    if request.endpoint == 'admin.login':
+        return
+
+    # 檢查 session 中是否有標記 is_admin
+    if not session.get('is_admin'):
+        return redirect(url_for('admin.login'))
+
+# --- (新增) 2. 登入路由 (只有輸入密碼) ---
+@bp.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        input_password = request.form.get('password')
+        
+        # 比對 config 中的密碼
+        if input_password == current_app.config['ADMIN_PASSWORD']:
+            session['is_admin'] = True  # 寫入 session
+            session.permanent = True    # (選用) 記住登入狀態
+            flash('登入成功', 'success')
+            return redirect(url_for('admin.import_page'))
+        else:
+            flash('密碼錯誤', 'danger')
+            
+    return render_template('admin/login.html')
+
+# --- (新增) 3. 登出路由 ---
+@bp.route('/logout')
+def logout():
+    session.pop('is_admin', None) # 移除 session
+    flash('已登出', 'info')
+    return redirect(url_for('admin.login'))
+
 @bp.route('/')
 def index():
     return redirect(url_for('admin.import_page'))

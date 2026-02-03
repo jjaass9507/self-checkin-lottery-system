@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+
+{% block title %}後台驗證{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-4">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-dark text-white text-center py-3">
+                    <h5 class="mb-0"><i class="bi bi-shield-lock me-2"></i>後台管理</h5>
+                </div>
+                <div class="card-body p-4">
+                    <form method="POST">
+                        <div class="mb-4">
+                            <label class="form-label text-muted">請輸入後台密碼</label>
+                            <input type="password" name="password" class="form-control form-control-lg text-center" 
+                                   placeholder="Passcode" required autofocus>
+                        </div>
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-dark btn-lg">驗證進入</button>
+                        </div>
+                    </form>
+                    <div class="text-center mt-3">
+                        <a href="{{ url_for('checkin.index') }}" class="text-decoration-none text-muted small">
+                            <i class="bi bi-arrow-left"></i> 返回前台
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
