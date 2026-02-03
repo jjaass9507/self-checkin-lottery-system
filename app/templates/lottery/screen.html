@@ -149,7 +149,17 @@
             opacity: 0; transform: scale(0.5);
         }
         
-        .winner-name { font-weight: 800; font-size: 1.2em; line-height: 1.2; width: 100%; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .winner-name { 
+            font-weight: 800; 
+            /* (*** 修改 1：將字體從 1.2em 加大到 1.5em ***) */
+            font-size: 1.5em; 
+            line-height: 1.2; 
+            width: 100%; 
+            text-align: center; 
+            white-space: nowrap; 
+            overflow: hidden; 
+            text-overflow: ellipsis; 
+        }
         .winner-info { font-size: 0.7em; opacity: 0.8; margin-top: 0.1em; }
         .winner-num { font-family: 'Orbitron', sans-serif; font-weight: bold; color: #d63031; font-size: 0.9em; margin-top: 0.1em; }
 
@@ -268,7 +278,6 @@
             if(prizeSelect) prizeSelect.focus();
         });
 
-        // (*** 新增：監聽獎項切換事件 ***)
         // (*** 新增：監聽獎項切換事件 ***)
     prizeSelect.addEventListener('change', async function() {
         const prizeName = this.value;
@@ -520,8 +529,8 @@
             }
 
             // 2. 由大到小嘗試字體大小
-            // 我們從 4rem (非常大) 開始，每次減小 0.1rem，直到畫面不出現捲軸
-            let size = 4.0; 
+            // (*** 修改 2：將起始最大字體從 4.0 調整到 6.0，讓少人時更巨大 ***)
+            let size = 6.0; 
             const minSize = 0.5; // 最小字體
             
             // 強制重設為最大，準備開始測量
