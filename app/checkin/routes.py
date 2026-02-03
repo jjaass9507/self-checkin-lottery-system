@@ -11,6 +11,10 @@ def index():
 
 @bp.route('/dashboard')
 def dashboard():
+    # (2) 加入權限檢查：如果沒有登入，就踢回後台登入頁
+    if not session.get('is_admin'):
+        return redirect(url_for('admin.login'))
+        
     return render_template('checkin/dashboard.html')
 
 # (*** 修正：函式名稱改為 api_checkin_by_id 以對應模板中的 url_for ***)
