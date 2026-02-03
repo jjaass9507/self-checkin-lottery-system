@@ -1,4 +1,5 @@
-from flask import Blueprint, render_template, request, jsonify, url_for
+# 修正後的程式碼 (補上 session 和 redirect)
+from flask import Blueprint, render_template, request, jsonify, url_for, session, redirect
 from app import db
 from app.models import CheckinList, DrawnTailNumber, Prize, CancellationLog
 from datetime import datetime
