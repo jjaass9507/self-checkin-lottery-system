@@ -81,14 +81,19 @@ def api_checkin_by_id():
         is_winner = False
 
     return jsonify({
-        "success": True, 
+        "success": True,
         "message": f"歡迎！{person.name} 報到成功！",
         "name": person.name,
         "employee_id": person.employee_id,
-        "lottery_number": lottery_num_str,        # 回傳抽獎號碼
+        "lottery_number": lottery_num_str,
         "table_number": person.table_number or "未分配",
         "prize_info": prize_display,
-        "is_winner": is_winner
+        "is_winner": is_winner,
+        # 活動額外欄位
+        "participant_type": person.participant_type,
+        "linked_employee_id": person.linked_employee_id,
+        "meal_type": person.meal_type,
+        "group_name": person.group_name,
     })
 
 @bp.route('/api/status_list')
@@ -158,20 +163,20 @@ def api_status_list():
                 "dept_code": person.dept_code,
                 "status": person.status,
                 "check_in_time": person.check_in_time.strftime('%H:%M:%S') if person.status == 'CheckedIn' else '',
-                
-                #(*** 新增欄位 ***)
-                # Table Number and Business Trip Status
                 "table_number": person.table_number,
                 "is_business_trip": person.is_business_trip,
-
                 "tail_prize_info": tail_prize_str,
                 "public_prize_info": public_prize_str,
-                "prize_info": f"{tail_prize_str} {public_prize_str}".strip(), # 搜尋用的合併欄位
-
+                "prize_info": f"{tail_prize_str} {public_prize_str}".strip(),
                 "has_won": person.has_won,
                 "has_won_public": person.has_won_public,
                 "prize_claimed": person.prize_claimed,
-                "public_prize_claimed": person.public_prize_claimed
+                "public_prize_claimed": person.public_prize_claimed,
+                # 活動額外欄位
+                "participant_type": person.participant_type,
+                "linked_employee_id": person.linked_employee_id,
+                "meal_type": person.meal_type,
+                "group_name": person.group_name,
             })
             
         return jsonify({
@@ -331,13 +336,18 @@ def api_search_by_id():
         is_winner = False
 
     return jsonify({
-        "success": True, 
-        "message": f"查詢成功：{person.name}", # 訊息改為查詢成功
+        "success": True,
+        "message": f"查詢成功：{person.name}",
         "name": person.name,
         "employee_id": person.employee_id,
         "lottery_number": lottery_num_str,
         "table_number": person.table_number or "未分配",
         "prize_info": prize_display,
         "is_winner": is_winner,
-        "status": person.status # 回傳狀態，讓前端可以額外標示(選用)
+        "status": person.status,
+        # 活動額外欄位
+        "participant_type": person.participant_type,
+        "linked_employee_id": person.linked_employee_id,
+        "meal_type": person.meal_type,
+        "group_name": person.group_name,
     })

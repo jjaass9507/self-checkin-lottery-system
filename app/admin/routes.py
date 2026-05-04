@@ -81,20 +81,38 @@ def import_page():
                     table_val = str(row.get('table_number', ''))
                     table_number = table_val if table_val and table_val.lower() != 'nan' else None
 
-                    # (*** 新增：讀取是否為公差 ***)
                     # 支援輸入: 1, Y, yes, true, 是
                     biz_val = str(row.get('is_business_trip', '')).strip().upper()
-                    is_business_trip = False
-                    if biz_val in ['1', 'Y', 'YES', 'TRUE', '是']:
-                        is_business_trip = True
+                    is_business_trip = biz_val in ['1', 'Y', 'YES', 'TRUE', '是']
+
+                    # ===== 活動額外欄位 (向後相容：欄位不存在時為 None) =====
+                    # 身分類別
+                    pt_raw = str(row.get('participant_type', '')).strip().lower()
+                    if pt_raw in ['dependent', '眷屬', 'dep']:
+                        participant_type = 'dependent'
+                    elif pt_raw in ['employee', '員工', 'emp']:
+                        participant_type = 'employee'
+                    else:
+                        participant_type = None
+
+                    # 綁定員工工號 (眷屬用)
+                    linked_raw = str(row.get('linked_employee_id', '')).strip()
+                    linked_employee_id = linked_raw if linked_raw and linked_raw.lower() != 'nan' else None
+
+                    # 餐點類型
+                    meal_raw = str(row.get('meal_type', '')).strip().upper()
+                    meal_type = meal_raw if meal_raw in ['A', 'B'] else None
+
+                    # 分組
+                    group_raw = str(row.get('group_name', '')).strip()
+                    group_name = group_raw if group_raw and group_raw.lower() != 'nan' else None
 
                     if not employee_id:
-                        continue 
+                        continue
 
                     exists = CheckinList.query.filter_by(employee_id=employee_id).first()
-                    
+
                     if not exists:
-                        # (*** 修改：如果是公差，預設狀態直接設為 CheckedIn ***)
                         initial_status = 'CheckedIn' if is_business_trip else 'Registered'
                         initial_time = datetime.now() if is_business_trip else None
 
@@ -104,14 +122,15 @@ def import_page():
                             lottery_number=lottery_number if lottery_number else None,
                             site=site if site and site.lower() != 'nan' else None,
                             dept_code=dept_code if dept_code and dept_code.lower() != 'nan' else None,
-                            
-                            # (*** 寫入新欄位 ***)
                             table_number=table_number,
                             is_business_trip=is_business_trip,
-                            
-                            # (*** 設定初始狀態 ***)
                             status=initial_status,
-                            check_in_time=initial_time
+                            check_in_time=initial_time,
+                            # 活動額外欄位
+                            participant_type=participant_type,
+                            linked_employee_id=linked_employee_id,
+                            meal_type=meal_type,
+                            group_name=group_name,
                         )
                         db.session.add(new_item)
                         imported_count += 1

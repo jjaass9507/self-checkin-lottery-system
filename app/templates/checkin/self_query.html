@@ -9,325 +9,409 @@
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Orbitron:wght@700;900&display=swap" rel="stylesheet">
     <style>
         body {
-            /* 與報到頁面相同的星空背景，維持風格一致 */
             background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
             background-size: 400% 400%;
             animation: gradientBG 15s ease infinite;
-            height: 100vh;
+            min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
             color: #fff;
             font-family: 'Noto Sans TC', sans-serif;
-            overflow: hidden;
+            overflow-x: hidden;
+            padding: 20px 0;
         }
-
         @keyframes gradientBG {
-            0% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
+            0%   { background-position: 0% 50%; }
+            50%  { background-position: 100% 50%; }
             100% { background-position: 0% 50%; }
         }
 
-        /* 主卡片：完全沿用報到頁面的毛玻璃設計 */
         .checkin-card {
-            background: rgba(0, 0, 0, 0.4);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
+            background: rgba(0, 0, 0, 0.42);
+            backdrop-filter: blur(22px);
+            -webkit-backdrop-filter: blur(22px);
             border: 1px solid rgba(255, 255, 255, 0.1);
             border-radius: 24px;
-            padding: 40px;
+            padding: 40px 36px;
             width: 90%;
-            max-width: 480px;
+            max-width: 500px;
             box-shadow: 0 20px 50px rgba(0,0,0,0.5);
             text-align: center;
             position: relative;
             overflow: hidden;
         }
-
-        /* 裝飾光暈：改為冷色系 (Cyan) 以區別報到的金色 */
         .checkin-card::before {
             content: '';
             position: absolute;
             top: -50%; left: -50%;
             width: 200%; height: 200%;
-            background: radial-gradient(circle, rgba(0, 255, 255, 0.1) 0%, transparent 60%);
-            animation: rotate 10s linear infinite;
+            background: radial-gradient(circle, rgba(0,198,255,0.08) 0%, transparent 60%);
+            animation: rotate 12s linear infinite;
             pointer-events: none;
         }
         @keyframes rotate { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 
-        /* 標題圖示：改為科技藍漸層 */
         .title-icon {
-            font-size: 3.5rem;
+            font-size: 3.2rem;
             background: linear-gradient(to bottom, #00c6ff, #0072ff);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
-            margin-bottom: 10px;
-            filter: drop-shadow(0 0 10px rgba(0, 198, 255, 0.3));
+            margin-bottom: 8px;
+            filter: drop-shadow(0 0 10px rgba(0,198,255,0.3));
         }
-
         .main-title {
-            font-weight: 700;
-            margin-bottom: 30px;
-            letter-spacing: 2px;
-            text-transform: uppercase;
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 900;
+            font-size: 1.1rem;
+            letter-spacing: 3px;
+            color: rgba(255,255,255,0.8);
+            margin-bottom: 28px;
         }
 
-        /* 輸入框：維持樣式，但 Focus 改為藍色光暈 */
+        /* 輸入框 */
         .form-control-lg {
-            background: rgba(255, 255, 255, 0.1);
-            border: 2px solid rgba(255, 255, 255, 0.2);
+            background: rgba(255,255,255,0.08) !important;
+            border: 2px solid rgba(255,255,255,0.18) !important;
             color: #fff !important;
             text-align: center;
             font-size: 1.5rem;
-            letter-spacing: 2px;
+            letter-spacing: 3px;
             border-radius: 12px;
             transition: all 0.3s;
         }
         .form-control-lg:focus {
-            background: rgba(255, 255, 255, 0.2);
-            border-color: #00c6ff;
-            box-shadow: 0 0 15px rgba(0, 198, 255, 0.3);
+            background: rgba(255,255,255,0.14) !important;
+            border-color: #00c6ff !important;
+            box-shadow: 0 0 18px rgba(0,198,255,0.25) !important;
             outline: none;
         }
-        .form-control::placeholder { color: rgba(255, 255, 255, 0.4); }
+        .form-control::placeholder { color: rgba(255,255,255,0.3); }
 
-        /* 按鈕：改為藍色系漸層 */
+        /* 查詢按鈕 */
         .btn-query {
             background: linear-gradient(90deg, #00c6ff 0%, #0072ff 100%);
             border: none;
-            color: #fff; /* 藍底白字 */
+            color: #fff;
             font-weight: 800;
-            font-size: 1.2rem;
-            padding: 12px;
+            font-size: 1.1rem;
+            padding: 13px;
             border-radius: 12px;
-            margin-top: 20px;
+            margin-top: 18px;
             transition: transform 0.2s, box-shadow 0.2s;
             position: relative;
             z-index: 1;
         }
         .btn-query:hover {
             transform: translateY(-2px);
-            box-shadow: 0 10px 20px rgba(0, 198, 255, 0.4);
+            box-shadow: 0 10px 24px rgba(0,198,255,0.35);
             color: #fff;
         }
         .btn-query:active { transform: scale(0.98); }
 
-        /* 結果顯示區 */
+        /* 結果區 */
         .result-box {
-            margin-top: 30px;
-            padding: 25px;
-            background: rgba(255, 255, 255, 0.05);
+            margin-top: 28px;
+            padding: 24px 20px;
+            background: rgba(255,255,255,0.04);
             border-radius: 16px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255,255,255,0.1);
             display: none;
             animation: slideUp 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
-        @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
 
-        .res-label { font-size: 0.9rem; color: #aaa; margin-bottom: 5px; }
-        
-        /* 抽獎號碼區域：維持藍色系 */
-        .lottery-badge-container {
-            margin: 15px 0;
+        .res-label {
+            font-size: 0.78rem;
+            color: rgba(255,255,255,0.45);
+            margin-bottom: 3px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .lottery-box {
+            margin: 14px 0;
             padding: 10px;
-            background: rgba(0, 255, 234, 0.1);
+            background: rgba(0,255,234,0.08);
             border-radius: 10px;
-            border: 1px solid rgba(0, 255, 234, 0.3);
+            border: 1px solid rgba(0,255,234,0.25);
         }
-        .lottery-num-display {
+        .lottery-num {
             font-family: 'Orbitron', sans-serif;
-            font-size: 2.5rem;
+            font-size: 2.4rem;
             color: #00ffea;
-            font-weight: bold;
-            letter-spacing: 3px;
-            text-shadow: 0 0 10px rgba(0, 255, 234, 0.5);
+            font-weight: 900;
+            letter-spacing: 4px;
+            text-shadow: 0 0 12px rgba(0,255,234,0.5);
         }
 
-        /* 桌號特大顯示：使用明亮的青色/白色，區別於報到的金色 */
         .table-badge {
             font-family: 'Orbitron', sans-serif;
-            font-size: 4rem;
+            font-size: 3.5rem;
             font-weight: 900;
-            color: #fff; /* 改為白色以配合藍底 */
+            color: #fff;
             line-height: 1;
-            margin: 10px 0 20px 0;
-            text-shadow: 0 0 20px rgba(255, 255, 255, 0.6);
+            margin: 8px 0 16px 0;
+            text-shadow: 0 0 20px rgba(255,255,255,0.4);
         }
 
-        /* 中獎資訊卡 */
+        /* 餐點區塊 */
+        .meal-box {
+            display: none;
+            margin: 10px 0;
+            padding: 10px 14px;
+            border-radius: 10px;
+            font-size: 1.4rem;
+            font-weight: 800;
+        }
+        .meal-box.meal-a { background: rgba(0,176,155,0.15); border: 1px solid rgba(0,176,155,0.35); color: #34d399; }
+        .meal-box.meal-b { background: rgba(79,172,254,0.15); border: 1px solid rgba(79,172,254,0.35); color: #60a5fa; }
+
+        /* 組別區塊 */
+        .group-box {
+            display: none;
+            margin: 8px 0;
+            padding: 8px 14px;
+            border-radius: 10px;
+            background: rgba(96,165,250,0.1);
+            border: 1px solid rgba(96,165,250,0.25);
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #93c5fd;
+        }
+
+        /* 身分徽章 */
+        .type-badge-employee  { background: rgba(253,185,49,0.15); color: #FDB931; border: 1px solid rgba(253,185,49,0.3); border-radius: 6px; padding: 3px 10px; font-size: 0.8rem; }
+        .type-badge-dependent { background: rgba(167,139,250,0.15); color: #c084fc; border: 1px solid rgba(167,139,250,0.3); border-radius: 6px; padding: 3px 10px; font-size: 0.8rem; }
+
+        /* 中獎卡 */
         .prize-card {
             background: linear-gradient(45deg, #e52d27, #b31217);
             color: white;
-            padding: 15px;
+            padding: 14px;
             border-radius: 10px;
-            font-weight: bold;
-            font-size: 1.1rem;
-            box-shadow: 0 5px 15px rgba(229, 45, 39, 0.4);
+            font-weight: 700;
+            font-size: 1rem;
+            box-shadow: 0 5px 15px rgba(229,45,39,0.4);
             animation: pulse 2s infinite;
         }
         .prize-card.no-prize {
-            background: rgba(255, 255, 255, 0.1);
-            color: #ccc;
+            background: rgba(255,255,255,0.07);
+            color: rgba(255,255,255,0.5);
             box-shadow: none;
             animation: none;
-            font-weight: normal;
+            font-weight: 400;
         }
-        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.02); } 100% { transform: scale(1); } }
+        @keyframes pulse {
+            0%   { transform: scale(1); }
+            50%  { transform: scale(1.02); }
+            100% { transform: scale(1); }
+        }
 
-        #msg-area { min-height: 24px; margin-top: 10px; }
+        .divider { border-color: rgba(255,255,255,0.1); margin: 14px 0; }
+        #msg-area { min-height: 22px; margin-top: 8px; font-size: 0.95rem; }
     </style>
 </head>
 <body>
 
-    <div class="checkin-card">
-        <i class="bi bi-search title-icon"></i>
-        <h2 class="main-title">SEARCH INFO</h2>
-        
-        <div class="mb-3">
-            <input type="text" id="emp-id" class="form-control form-control-lg" 
-                   placeholder="請輸入工號查詢" autocomplete="off" autofocus>
-        </div>
-        
-        <div class="d-grid gap-2">
-            <button class="btn btn-query" id="btn-submit">
-                <i class="bi bi-search me-1"></i> 開始查詢
-            </button>
-        </div>
+<div class="checkin-card">
+    <i class="bi bi-search title-icon"></i>
+    <div class="main-title">QUERY INFO</div>
 
-        <div id="msg-area" class="text-info fw-bold"></div>
-
-        <div id="result-area" class="result-box">
-            <h3 id="res-name" class="fw-bold text-white mb-1"></h3>
-            <div id="res-id" class="text-white-50 small mb-2"></div>
-            
-            <div id="res-status" class="mb-3"></div>
-
-            <div class="lottery-badge-container">
-                <div class="res-label" style="color: #00ffea;">抽獎編號</div>
-                <div class="lottery-num-display" id="res-lottery-num">---</div>
-            </div>
-
-            <div class="border-top border-secondary pt-3">
-                <div class="res-label">您的桌次</div>
-                <div class="table-badge"><span id="res-table">-</span></div>
-            </div>
-
-            <div id="prize-container"></div>
-        </div>
+    <div class="mb-3">
+        <input type="text" id="emp-id" class="form-control form-control-lg"
+               placeholder="請輸入工號查詢" autocomplete="off" autofocus>
     </div>
 
-    <script>
-        const empInput = document.getElementById('emp-id');
-        const btnSubmit = document.getElementById('btn-submit');
-        const msgArea = document.getElementById('msg-area');
-        const resultArea = document.getElementById('result-area');
-        const resName = document.getElementById('res-name');
-        const resId = document.getElementById('res-id');
-        const resStatus = document.getElementById('res-status'); // 取得狀態 DOM
-        const resTable = document.getElementById('res-table');
-        const prizeContainer = document.getElementById('prize-container');
-        const resLotteryNum = document.getElementById('res-lottery-num');
+    <div class="d-grid">
+        <button class="btn btn-query" id="btn-submit">
+            <i class="bi bi-search me-1"></i>開始查詢
+        </button>
+    </div>
 
-        // 監聽 Enter 鍵
-        empInput.addEventListener('keyup', (e) => {
-            if (e.key === 'Enter') doSearch();
-        });
+    <div id="msg-area" class="fw-bold" style="color:#00c6ff;"></div>
 
-        btnSubmit.addEventListener('click', doSearch);
+    <div id="result-area" class="result-box">
+        <!-- 姓名 + 身分 + 報到狀態 -->
+        <h3 id="res-name" class="fw-bold text-white mb-1"></h3>
+        <div class="d-flex align-items-center justify-content-center gap-2 mb-1">
+            <span id="res-id" class="text-white-50 small"></span>
+            <span id="res-type-badge"></span>
+        </div>
+        <div id="res-linked" class="small mb-2" style="color:rgba(167,139,250,0.7);"></div>
+        <div id="res-status" class="mb-3"></div>
 
-        async function doSearch() {
-            const empId = empInput.value.trim();
-            if (!empId) {
-                msgArea.innerText = "請輸入工號！";
-                shakeInput();
-                return;
-            }
+        <!-- 抽獎號碼 -->
+        <div class="lottery-box">
+            <div class="res-label">抽獎號碼</div>
+            <div class="lottery-num" id="res-lottery-num">---</div>
+        </div>
 
-            // UI 狀態切換
-            msgArea.innerText = "查詢中...";
-            resultArea.style.display = 'none';
-            btnSubmit.disabled = true;
-            btnSubmit.innerHTML = '<span class="spinner-border spinner-border-sm"></span> 查詢中...';
+        <!-- 桌次 -->
+        <hr class="divider">
+        <div class="res-label">您的桌次</div>
+        <div class="table-badge"><span id="res-table">-</span></div>
 
-            try {
-                // 指向 純查詢 API
-                const res = await fetch("{{ url_for('checkin.api_search_by_id') }}", {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ employee_id: empId })
-                });
-                const data = await res.json();
+        <!-- 餐點（有值才顯示） -->
+        <div id="res-meal-box" class="meal-box">
+            <i class="bi bi-egg-fried me-2"></i>
+            <span id="res-meal-text">-</span>
+        </div>
 
-                if (data.success) {
-                    msgArea.innerText = ""; 
-                    
-                    // 填入資料
-                    resName.innerText = data.name;
-                    resId.innerText = data.employee_id;
-                    resLotteryNum.innerText = data.lottery_number || "---"; 
-                    resTable.innerText = data.table_number || "未分配";
+        <!-- 組別（有值才顯示） -->
+        <div id="res-group-box" class="group-box">
+            <i class="bi bi-people-fill me-2"></i>
+            <span id="res-group-text">-</span>
+        </div>
 
-                    // (*** 新增：顯示報到狀態 ***)
-                    if (data.status === 'CheckedIn') {
-                        resStatus.innerHTML = '<span class="badge rounded-pill bg-success px-3 py-2"><i class="bi bi-check-circle-fill me-1"></i> 已報到</span>';
-                    } else {
-                        resStatus.innerHTML = '<span class="badge rounded-pill bg-secondary px-3 py-2"><i class="bi bi-hourglass-split me-1"></i> 未報到</span>';
-                    }
+        <hr class="divider">
 
-                    // 處理中獎顯示
-                    if (data.is_winner) {
-                        prizeContainer.innerHTML = `
-                            <div class="prize-card">
-                                <i class="bi bi-gift-fill me-2"></i>恭喜獲得<br>
-                                <span style="color:#FFD700">${data.prize_info}</span>
-                            </div>`;
-                    } else {
-                        prizeContainer.innerHTML = `
-                            <div class="prize-card no-prize">
-                                <i class="bi bi-stars me-1"></i> ${data.prize_info}
-                            </div>`;
-                    }
+        <!-- 中獎資訊 -->
+        <div id="prize-container"></div>
+    </div>
+</div>
 
-                    // 顯示結果區
-                    resultArea.style.display = 'block';
-                    
-                    // 查詢模式下顯示 10 秒
-                    setTimeout(() => {
-                        resetForm();
-                    }, 10000);
+<script>
+    const empInput    = document.getElementById('emp-id');
+    const btnSubmit   = document.getElementById('btn-submit');
+    const msgArea     = document.getElementById('msg-area');
+    const resultArea  = document.getElementById('result-area');
+    const resName     = document.getElementById('res-name');
+    const resId       = document.getElementById('res-id');
+    const resTypeBadge= document.getElementById('res-type-badge');
+    const resLinked   = document.getElementById('res-linked');
+    const resStatus   = document.getElementById('res-status');
+    const resTable    = document.getElementById('res-table');
+    const resLotteryNum = document.getElementById('res-lottery-num');
+    const resMealBox  = document.getElementById('res-meal-box');
+    const resMealText = document.getElementById('res-meal-text');
+    const resGroupBox = document.getElementById('res-group-box');
+    const resGroupText= document.getElementById('res-group-text');
+    const prizeContainer = document.getElementById('prize-container');
 
+    empInput.addEventListener('keyup', e => { if (e.key === 'Enter') doSearch(); });
+    btnSubmit.addEventListener('click', doSearch);
+
+    async function doSearch() {
+        const empId = empInput.value.trim();
+        if (!empId) { msgArea.innerText = '請輸入工號！'; shakeInput(); return; }
+
+        msgArea.innerText = '查詢中…';
+        resultArea.style.display = 'none';
+        btnSubmit.disabled = true;
+        btnSubmit.innerHTML = '<span class="spinner-border spinner-border-sm"></span> 查詢中…';
+
+        try {
+            const res  = await fetch("{{ url_for('checkin.api_search_by_id') }}", {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({employee_id: empId})
+            });
+            const data = await res.json();
+
+            if (data.success) {
+                msgArea.innerText = '';
+
+                // 基本資訊
+                resName.innerText = data.name;
+                resId.innerText   = data.employee_id;
+                resLotteryNum.innerText = data.lottery_number || '---';
+                resTable.innerText = data.table_number || '未分配';
+
+                // 報到狀態
+                if (data.status === 'CheckedIn') {
+                    resStatus.innerHTML = '<span class="badge rounded-pill px-3 py-2" style="background:rgba(74,222,128,0.2);color:#4ade80;border:1px solid rgba(74,222,128,0.35);"><i class="bi bi-check-circle-fill me-1"></i>已報到</span>';
                 } else {
-                    msgArea.innerText = data.message;
-                    shakeInput();
-                    resetBtn();
+                    resStatus.innerHTML = '<span class="badge rounded-pill px-3 py-2" style="background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.5);"><i class="bi bi-hourglass-split me-1"></i>未報到</span>';
                 }
-            } catch (e) {
-                msgArea.innerText = "連線錯誤，請重試";
+
+                // 身分徽章
+                if (data.participant_type === 'employee') {
+                    resTypeBadge.innerHTML = '<span class="type-badge-employee">員工</span>';
+                    resLinked.innerText = '';
+                } else if (data.participant_type === 'dependent') {
+                    resTypeBadge.innerHTML = '<span class="type-badge-dependent">眷屬</span>';
+                    resLinked.innerText = data.linked_employee_id ? `綁定員工：${data.linked_employee_id}` : '';
+                } else {
+                    resTypeBadge.innerHTML = '';
+                    resLinked.innerText = '';
+                }
+
+                // 餐點
+                if (data.meal_type === 'A') {
+                    resMealBox.className = 'meal-box meal-a';
+                    resMealText.innerText = 'A 餐';
+                    resMealBox.style.display = 'block';
+                } else if (data.meal_type === 'B') {
+                    resMealBox.className = 'meal-box meal-b';
+                    resMealText.innerText = 'B 餐';
+                    resMealBox.style.display = 'block';
+                } else {
+                    resMealBox.style.display = 'none';
+                }
+
+                // 組別
+                if (data.group_name) {
+                    resGroupText.innerText = data.group_name;
+                    resGroupBox.style.display = 'block';
+                } else {
+                    resGroupBox.style.display = 'none';
+                }
+
+                // 中獎資訊
+                if (data.is_winner) {
+                    prizeContainer.innerHTML = `
+                        <div class="prize-card">
+                            <i class="bi bi-gift-fill me-2"></i>恭喜獲得<br>
+                            <span style="color:#FFD700;font-size:1.1em;">${data.prize_info}</span>
+                        </div>`;
+                } else {
+                    prizeContainer.innerHTML = `
+                        <div class="prize-card no-prize">
+                            <i class="bi bi-stars me-1"></i> ${data.prize_info}
+                        </div>`;
+                }
+
+                resultArea.style.display = 'block';
+                setTimeout(resetForm, 12000);
+
+            } else {
+                msgArea.innerText = data.message;
+                shakeInput();
                 resetBtn();
-                console.error(e);
             }
-        }
-
-        function resetForm() {
-            empInput.value = '';
-            resultArea.style.display = 'none';
-            msgArea.innerText = '';
-            // 清空狀態欄
-            if(resStatus) resStatus.innerHTML = '';
+        } catch (e) {
+            msgArea.innerText = '連線錯誤，請重試';
             resetBtn();
-            empInput.focus();
+            console.error(e);
         }
+    }
 
-        function resetBtn() {
-            btnSubmit.disabled = false;
-            btnSubmit.innerHTML = '<i class="bi bi-search me-1"></i> 開始查詢';
-        }
+    function resetForm() {
+        empInput.value = '';
+        resultArea.style.display = 'none';
+        msgArea.innerText = '';
+        resTypeBadge.innerHTML = '';
+        resLinked.innerText = '';
+        resStatus.innerHTML = '';
+        resMealBox.style.display = 'none';
+        resGroupBox.style.display = 'none';
+        resetBtn();
+        empInput.focus();
+    }
 
-        function shakeInput() {
-            empInput.classList.add('is-invalid');
-            setTimeout(() => empInput.classList.remove('is-invalid'), 500);
-        }
-    </script>
+    function resetBtn() {
+        btnSubmit.disabled = false;
+        btnSubmit.innerHTML = '<i class="bi bi-search me-1"></i>開始查詢';
+    }
+
+    function shakeInput() {
+        empInput.classList.add('is-invalid');
+        setTimeout(() => empInput.classList.remove('is-invalid'), 500);
+    }
+</script>
 </body>
 </html>
