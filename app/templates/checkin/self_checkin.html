@@ -6,74 +6,67 @@
     <title>自助報到</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Orbitron:wght@700;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Nunito:wght@700;900&display=swap" rel="stylesheet">
     <style>
+        :root {
+            --ocean:       #0284c7;
+            --ocean-dark:  #0369a1;
+            --ocean-light: #38bdf8;
+            --nature:      #059669;
+            --sand:        #d97706;
+            --bg-page:     #f0f9ff;
+        }
+
         body {
-            background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
-            background-size: 400% 400%;
-            animation: gradientBG 15s ease infinite;
+            background: linear-gradient(160deg, #e0f2fe 0%, #f0fdf4 50%, #fef9c3 100%);
             min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
-            color: #fff;
             font-family: 'Noto Sans TC', sans-serif;
             overflow-x: hidden;
             padding: 20px 0;
         }
-        @keyframes gradientBG {
-            0%   { background-position: 0% 50%; }
-            50%  { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
-        }
 
         .checkin-card {
-            background: rgba(0, 0, 0, 0.42);
-            backdrop-filter: blur(22px);
-            -webkit-backdrop-filter: blur(22px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: #ffffff;
+            border: 2px solid #bae6fd;
             border-radius: 24px;
             padding: 40px 36px;
             width: 90%;
             max-width: 500px;
-            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+            box-shadow: 0 16px 48px rgba(2, 132, 199, 0.13);
             text-align: center;
-            position: relative;
-            overflow: hidden;
         }
-        .checkin-card::before {
-            content: '';
-            position: absolute;
-            top: -50%; left: -50%;
-            width: 200%; height: 200%;
-            background: radial-gradient(circle, rgba(255,215,0,0.08) 0%, transparent 60%);
-            animation: rotate 12s linear infinite;
-            pointer-events: none;
-        }
-        @keyframes rotate { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 
         .title-icon {
-            font-size: 3.2rem;
-            background: linear-gradient(to bottom, #FFD700, #FDB931);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            margin-bottom: 8px;
-            filter: drop-shadow(0 0 10px rgba(255,215,0,0.3));
+            font-size: 3rem;
+            color: var(--ocean);
+            display: block;
+            margin-bottom: 6px;
+            filter: drop-shadow(0 4px 8px rgba(2,132,199,0.25));
         }
         .main-title {
-            font-family: 'Orbitron', sans-serif;
+            font-family: 'Nunito', 'Noto Sans TC', sans-serif;
             font-weight: 900;
-            font-size: 1.1rem;
-            letter-spacing: 3px;
-            color: rgba(255,255,255,0.8);
-            margin-bottom: 28px;
+            font-size: 0.88rem;
+            letter-spacing: 4px;
+            color: #64748b;
+            margin-bottom: 6px;
+            text-transform: uppercase;
+        }
+        .wave-deco {
+            font-size: 1.4rem;
+            letter-spacing: 4px;
+            opacity: 0.4;
+            margin-bottom: 18px;
         }
 
         /* 輸入框 */
         .form-control-lg {
-            background: rgba(255,255,255,0.08) !important;
-            border: 2px solid rgba(255,255,255,0.18) !important;
-            color: #fff !important;
+            border: 2px solid #bae6fd !important;
+            background: #f8fafc !important;
+            color: #0c4a6e !important;
             text-align: center;
             font-size: 1.5rem;
             letter-spacing: 3px;
@@ -81,81 +74,82 @@
             transition: all 0.3s;
         }
         .form-control-lg:focus {
-            background: rgba(255,255,255,0.14) !important;
-            border-color: #FFD700 !important;
-            box-shadow: 0 0 18px rgba(255,215,0,0.25) !important;
+            border-color: var(--ocean) !important;
+            box-shadow: 0 0 0 0.2rem rgba(2,132,199,0.18) !important;
+            background: #ffffff !important;
             outline: none;
         }
-        .form-control::placeholder { color: rgba(255,255,255,0.3); }
+        .form-control-lg::placeholder { color: #94a3b8; }
 
         /* 報到按鈕 */
         .btn-checkin {
-            background: linear-gradient(90deg, #FDB931 0%, #FFD700 100%);
+            background: linear-gradient(90deg, var(--ocean-dark), var(--ocean));
             border: none;
-            color: #222;
+            color: #fff;
             font-weight: 800;
-            font-size: 1.1rem;
+            font-size: 1.05rem;
             padding: 13px;
             border-radius: 12px;
-            margin-top: 18px;
-            transition: transform 0.2s, box-shadow 0.2s;
-            position: relative;
-            z-index: 1;
+            margin-top: 14px;
+            transition: all 0.2s;
         }
         .btn-checkin:hover {
+            background: linear-gradient(90deg, var(--ocean), var(--ocean-light));
+            color: #fff;
             transform: translateY(-2px);
-            box-shadow: 0 10px 24px rgba(253,185,49,0.4);
-            color: #000;
+            box-shadow: 0 8px 20px rgba(2,132,199,0.3);
         }
         .btn-checkin:active { transform: scale(0.98); }
 
         /* 結果區 */
         .result-box {
-            margin-top: 28px;
+            margin-top: 24px;
             padding: 24px 20px;
-            background: rgba(255,255,255,0.04);
+            background: #f8fafc;
             border-radius: 16px;
-            border: 1px solid rgba(255,255,255,0.1);
+            border: 1px solid #e0f2fe;
             display: none;
-            animation: slideUp 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            animation: slideUp 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
         @keyframes slideUp {
-            from { opacity: 0; transform: translateY(20px); }
+            from { opacity: 0; transform: translateY(16px); }
             to   { opacity: 1; transform: translateY(0); }
         }
 
         .res-label {
-            font-size: 0.78rem;
-            color: rgba(255,255,255,0.45);
+            font-size: 0.75rem;
+            color: #64748b;
             margin-bottom: 3px;
             text-transform: uppercase;
             letter-spacing: 1px;
+            font-weight: 500;
         }
+        .res-name { color: #0c4a6e; font-size: 1.5rem; font-weight: 800; }
 
+        /* 抽獎號碼框 */
         .lottery-box {
             margin: 14px 0;
-            padding: 10px;
-            background: rgba(0,255,234,0.08);
-            border-radius: 10px;
-            border: 1px solid rgba(0,255,234,0.25);
+            padding: 12px;
+            background: #e0f2fe;
+            border-radius: 12px;
+            border: 1px solid #bae6fd;
         }
         .lottery-num {
-            font-family: 'Orbitron', sans-serif;
+            font-family: 'Nunito', sans-serif;
             font-size: 2.4rem;
-            color: #00ffea;
+            color: var(--ocean-dark);
             font-weight: 900;
             letter-spacing: 4px;
-            text-shadow: 0 0 12px rgba(0,255,234,0.5);
         }
 
+        /* 桌次 */
         .table-badge {
-            font-family: 'Orbitron', sans-serif;
-            font-size: 3.5rem;
+            font-family: 'Nunito', sans-serif;
+            font-size: 3.2rem;
             font-weight: 900;
-            color: #FFD700;
+            color: var(--sand);
             line-height: 1;
-            margin: 8px 0 16px 0;
-            text-shadow: 0 0 20px rgba(255,215,0,0.55);
+            margin: 8px 0 14px 0;
         }
 
         /* 餐點區塊 */
@@ -164,12 +158,19 @@
             margin: 10px 0;
             padding: 10px 14px;
             border-radius: 10px;
-            font-size: 1.4rem;
+            font-size: 1.3rem;
             font-weight: 800;
-            letter-spacing: 1px;
         }
-        .meal-box.meal-a { background: rgba(0,176,155,0.15); border: 1px solid rgba(0,176,155,0.35); color: #34d399; }
-        .meal-box.meal-b { background: rgba(79,172,254,0.15); border: 1px solid rgba(79,172,254,0.35); color: #60a5fa; }
+        .meal-box.meal-a {
+            background: #d1fae5;
+            border: 1px solid #6ee7b7;
+            color: #065f46;
+        }
+        .meal-box.meal-b {
+            background: #dbeafe;
+            border: 1px solid #93c5fd;
+            color: #1e3a8a;
+        }
 
         /* 組別區塊 */
         .group-box {
@@ -177,50 +178,61 @@
             margin: 8px 0;
             padding: 8px 14px;
             border-radius: 10px;
-            background: rgba(96,165,250,0.1);
-            border: 1px solid rgba(96,165,250,0.25);
-            font-size: 1.1rem;
+            background: #ecfdf5;
+            border: 1px solid #a7f3d0;
+            font-size: 1rem;
             font-weight: 700;
-            color: #93c5fd;
+            color: #065f46;
         }
 
         /* 身分徽章 */
-        .type-badge-employee  { background: rgba(253,185,49,0.15); color: #FDB931; border: 1px solid rgba(253,185,49,0.3); border-radius: 6px; padding: 3px 10px; font-size: 0.8rem; }
-        .type-badge-dependent { background: rgba(167,139,250,0.15); color: #c084fc; border: 1px solid rgba(167,139,250,0.3); border-radius: 6px; padding: 3px 10px; font-size: 0.8rem; }
+        .type-badge-employee  {
+            background: #eff6ff; color: #1d4ed8;
+            border: 1px solid #bfdbfe; border-radius: 6px;
+            padding: 3px 10px; font-size: 0.8rem; font-weight: 600;
+        }
+        .type-badge-dependent {
+            background: #faf5ff; color: #7c3aed;
+            border: 1px solid #ddd6fe; border-radius: 6px;
+            padding: 3px 10px; font-size: 0.8rem; font-weight: 600;
+        }
+        .linked-text { color: #7c3aed; font-size: 0.82rem; }
 
         /* 中獎卡 */
         .prize-card {
-            background: linear-gradient(45deg, #e52d27, #b31217);
-            color: white;
-            padding: 14px;
-            border-radius: 10px;
+            background: linear-gradient(135deg, #dc2626, #b91c1c);
+            color: #fff;
+            padding: 16px;
+            border-radius: 12px;
             font-weight: 700;
             font-size: 1rem;
-            box-shadow: 0 5px 15px rgba(229,45,39,0.4);
+            box-shadow: 0 6px 18px rgba(220,38,38,0.3);
             animation: pulse 2s infinite;
         }
         .prize-card.no-prize {
-            background: rgba(255,255,255,0.07);
-            color: rgba(255,255,255,0.5);
+            background: #f1f5f9;
+            color: #94a3b8;
             box-shadow: none;
             animation: none;
             font-weight: 400;
+            border: 1px solid #e2e8f0;
         }
         @keyframes pulse {
-            0%   { transform: scale(1); }
-            50%  { transform: scale(1.02); }
-            100% { transform: scale(1); }
+            0%, 100% { transform: scale(1); }
+            50%       { transform: scale(1.02); }
         }
 
-        .divider { border-color: rgba(255,255,255,0.1); margin: 14px 0; }
-        #msg-area { min-height: 22px; margin-top: 8px; font-size: 0.95rem; }
+        .divider { border-color: #e0f2fe; margin: 14px 0; }
+        #msg-area { min-height: 22px; margin-top: 8px; font-size: 0.95rem; color: #dc2626; font-weight: 700; }
+        #msg-area.msg-success { color: var(--nature); }
     </style>
 </head>
 <body>
 
 <div class="checkin-card">
     <i class="bi bi-qr-code-scan title-icon"></i>
-    <div class="main-title">GUEST CHECK-IN</div>
+    <div class="main-title">Guest Check-In</div>
+    <div class="wave-deco">🌊 🌿 🌊</div>
 
     <div class="mb-3">
         <input type="text" id="emp-id" class="form-control form-control-lg"
@@ -233,16 +245,16 @@
         </button>
     </div>
 
-    <div id="msg-area" class="text-warning fw-bold"></div>
+    <div id="msg-area"></div>
 
     <div id="result-area" class="result-box">
         <!-- 姓名 + 身分 -->
-        <h3 id="res-name" class="fw-bold text-white mb-1"></h3>
+        <div class="res-name mb-1" id="res-name"></div>
         <div class="d-flex align-items-center justify-content-center gap-2 mb-1">
-            <span id="res-id" class="text-white-50 small"></span>
+            <span id="res-id" class="text-muted small"></span>
             <span id="res-type-badge"></span>
         </div>
-        <div id="res-linked" class="small mb-3" style="color:rgba(167,139,250,0.7);"></div>
+        <div id="res-linked" class="small mb-3 linked-text"></div>
 
         <!-- 抽獎號碼 -->
         <div class="lottery-box">
@@ -296,9 +308,10 @@
 
     async function checkin() {
         const empId = empInput.value.trim();
-        if (!empId) { msgArea.innerText = '請輸入工號！'; shakeInput(); return; }
+        if (!empId) { msgArea.innerText = '請輸入工號！'; msgArea.className = ''; shakeInput(); return; }
 
         msgArea.innerText = '查詢中…';
+        msgArea.className = '';
         resultArea.style.display = 'none';
         btnSubmit.disabled = true;
         btnSubmit.innerHTML = '<span class="spinner-border spinner-border-sm"></span> 處理中…';
@@ -323,6 +336,7 @@
                 // 身分徽章
                 if (data.participant_type === 'employee') {
                     resTypeBadge.innerHTML = '<span class="type-badge-employee">員工</span>';
+                    resLinked.innerText = '';
                 } else if (data.participant_type === 'dependent') {
                     resTypeBadge.innerHTML = '<span class="type-badge-dependent">眷屬</span>';
                     resLinked.innerText = data.linked_employee_id ? `綁定員工：${data.linked_employee_id}` : '';
@@ -357,7 +371,7 @@
                     prizeContainer.innerHTML = `
                         <div class="prize-card">
                             <i class="bi bi-gift-fill me-2"></i>恭喜獲得<br>
-                            <span style="color:#FFD700;font-size:1.1em;">${data.prize_info}</span>
+                            <span style="color:#fde68a;font-size:1.1em;">${data.prize_info}</span>
                         </div>`;
                 } else {
                     prizeContainer.innerHTML = `
@@ -371,6 +385,7 @@
 
             } else {
                 msgArea.innerText = data.message;
+                msgArea.className = '';
                 shakeInput();
                 resetBtn();
             }

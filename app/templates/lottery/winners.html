@@ -8,31 +8,30 @@
 
         {# ===== 左欄：開獎號碼紀錄 ===== #}
         <div class="col-md-4">
-            <div class="card shadow-sm h-100">
+            <div class="card h-100">
                 <div class="card-header ch-info d-flex align-items-center gap-2">
                     <i class="bi bi-clock-history fs-5"></i>
                     <span>開獎號碼紀錄</span>
                 </div>
-                <ul class="list-group list-group-flush" style="background:transparent; max-height:70vh; overflow-y:auto;">
+                <ul class="list-group list-group-flush" style="max-height:70vh; overflow-y:auto;">
                     {% for draw in drawn_numbers %}
-                    <li class="list-group-item d-flex justify-content-between align-items-center"
-                        style="background:transparent; border-color:rgba(255,255,255,0.07);">
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
                         <div class="d-flex align-items-center gap-2 flex-wrap">
-                            <span class="badge" style="background:rgba(253,185,49,0.2);color:#FDB931;border:1px solid rgba(253,185,49,0.3);font-family:'Orbitron',sans-serif;font-size:0.85rem;">
+                            <span class="badge" style="background:#fef9c3;color:#92400e;border:1px solid #fde68a;font-weight:700;font-size:0.85rem;">
                                 {{ draw.tail_number }}
                             </span>
-                            <span class="fw-bold">{{ draw.prize_name }}</span>
+                            <span class="fw-bold" style="color:var(--text-main);">{{ draw.prize_name }}</span>
                             {% if draw.is_addon %}
-                                <span class="badge" style="background:rgba(167,139,250,0.2);color:#c084fc;border:1px solid rgba(167,139,250,0.3);">加碼</span>
+                                <span class="badge" style="background:#faf5ff;color:#7c3aed;border:1px solid #ddd6fe;">加碼</span>
                             {% endif %}
                             {% if draw.prize_type == 'public' %}
-                                <span class="badge" style="background:rgba(96,165,250,0.2);color:#93c5fd;border:1px solid rgba(96,165,250,0.3);">公獎</span>
+                                <span class="badge" style="background:#e0f2fe;color:#0369a1;border:1px solid #bae6fd;">公獎</span>
                             {% endif %}
                         </div>
-                        <small style="color:rgba(255,255,255,0.35);">{{ draw.timestamp.strftime('%H:%M:%S') }}</small>
+                        <small class="text-muted">{{ draw.timestamp.strftime('%H:%M:%S') }}</small>
                     </li>
                     {% else %}
-                    <li class="list-group-item text-center p-4" style="background:transparent;color:rgba(255,255,255,0.35);">
+                    <li class="list-group-item text-center p-4 text-muted">
                         <i class="bi bi-inbox fs-2 d-block mb-2"></i>
                         尚未開出任何號碼
                     </li>
@@ -43,19 +42,19 @@
 
         {# ===== 右欄：中獎人員名單 ===== #}
         <div class="col-md-8">
-            <div class="card shadow-sm">
+            <div class="card">
                 <div class="card-header ch-success d-flex justify-content-between align-items-center">
                     <div class="d-flex align-items-center gap-2">
                         <i class="bi bi-trophy-fill fs-5"></i>
                         <span>已中獎人員名單</span>
                     </div>
-                    <span class="badge" style="background:rgba(74,222,128,0.2);color:#4ade80;border:1px solid rgba(74,222,128,0.3);">
+                    <span class="badge" style="background:#d1fae5;color:#065f46;border:1px solid #6ee7b7;">
                         {{ winners_data|length }} 人
                     </span>
                 </div>
                 <div class="card-body p-0">
                     <div class="table-responsive" style="max-height:70vh; overflow-y:auto;">
-                        <table class="table table-hover mb-0 align-middle">
+                        <table class="table table-hover table-striped mb-0 align-middle">
                             <thead>
                                 <tr>
                                     <th>姓名</th>
@@ -70,23 +69,23 @@
                                     <td class="fw-bold">
                                         {{ w.name }}
                                         {% if w.is_business_trip %}
-                                            <span class="ms-1" style="font-size:0.75rem;color:#93c5fd;">(公差)</span>
+                                            <span class="ms-1 badge" style="background:#e0f2fe;color:#0369a1;border:1px solid #bae6fd;font-size:0.72rem;">公差</span>
                                         {% endif %}
                                     </td>
-                                    <td style="color:rgba(255,255,255,0.6);">{{ w.employee_id }}</td>
+                                    <td class="text-muted">{{ w.employee_id }}</td>
                                     <td>
-                                        <span style="font-family:'Orbitron',sans-serif;font-weight:700;color:#00ffea;">
+                                        <span style="font-weight:700;color:var(--ocean-dark);">
                                             {{ w.lottery_number }}
                                         </span>
                                     </td>
                                     <td>
-                                        <span class="fw-bold" style="color:#f87171;">{{ w.prize_name }}</span>
+                                        <span class="fw-bold" style="color:#dc2626;">{{ w.prize_name }}</span>
                                     </td>
                                 </tr>
                                 {% else %}
                                 <tr>
-                                    <td colspan="4" class="text-center p-5" style="color:rgba(255,255,255,0.35);">
-                                        <i class="bi bi-stars fs-2 d-block mb-2" style="color:rgba(253,185,49,0.4);"></i>
+                                    <td colspan="4" class="text-center p-5 text-muted">
+                                        <i class="bi bi-stars fs-2 d-block mb-2" style="color:var(--sand-light);"></i>
                                         目前尚未產生中獎者
                                     </td>
                                 </tr>

@@ -1,20 +1,18 @@
 {% extends "base.html" %}
-
 {% block title %}後台 - 獎項管理{% endblock %}
 
 {% block content %}
 <div class="container mt-4 mb-5">
-
     <div class="d-flex justify-content-between align-items-center mb-3">
-        <h4 class="mb-0" style="color:#FDB931;">
-            <i class="bi bi-trophy-fill me-2"></i>獎項管理
+        <h4 class="mb-0 fw-bold" style="color:var(--ocean-dark);">
+            <i class="bi bi-trophy me-2"></i>獎項管理
         </h4>
-        <button class="btn btn-gold" id="btn-open-add">
+        <button class="btn btn-ocean" id="btn-open-add">
             <i class="bi bi-plus-lg me-1"></i>新增獎項
         </button>
     </div>
 
-    <div class="card shadow-sm">
+    <div class="card">
         <div class="card-body p-0">
             <div class="table-responsive">
                 <table class="table table-hover table-striped mb-0 align-middle">
@@ -32,36 +30,34 @@
                         <tr>
                             <td>
                                 {% if prize.prize_type == 'tail' %}
-                                    <span class="badge" style="background:rgba(96,165,250,0.2);color:#60a5fa;border:1px solid rgba(96,165,250,0.3);">
+                                    <span class="badge" style="background:#e0f2fe;color:#0369a1;border:1px solid #bae6fd;">
                                         <i class="bi bi-ticket-perforated me-1"></i>尾數獎
                                     </span>
                                 {% else %}
-                                    <span class="badge" style="background:rgba(253,185,49,0.2);color:#FDB931;border:1px solid rgba(253,185,49,0.3);">
-                                        <i class="bi bi-trophy-fill me-1"></i>公獎
+                                    <span class="badge" style="background:#fffbeb;color:#92400e;border:1px solid #fde68a;">
+                                        <i class="bi bi-trophy me-1"></i>公獎
                                     </span>
                                 {% endif %}
                             </td>
                             <td class="fw-bold">{{ prize.name }}</td>
                             <td>{{ prize.quantity }}</td>
-                            <td><span class="badge bg-secondary">{{ prize.display_order }}</span></td>
+                            <td><span class="badge bg-light text-secondary border">{{ prize.display_order }}</span></td>
                             <td class="text-end">
                                 <button class="btn btn-sm btn-outline-secondary me-1"
                                     onclick="openEditModal('{{ prize.id }}','{{ prize.name }}','{{ prize.prize_type }}','{{ prize.quantity }}','{{ prize.display_order }}')"
                                     title="編輯">
                                     <i class="bi bi-pencil"></i>
                                 </button>
-
                                 <form method="POST" action="{{ url_for('admin.reset_prize') }}" class="d-inline"
-                                    onsubmit="return confirm('【警告】確定要清除「{{ prize.name }}」的所有中獎紀錄嗎？\n\n此操作將：\n1. 刪除該獎項的已抽出號碼\n2. 將得主恢復為未中獎狀態\n\n此操作無法復原！');">
+                                    onsubmit="return confirm('確定要清除「{{ prize.name }}」的所有中獎紀錄嗎？\n此操作無法復原！');">
                                     <input type="hidden" name="prize_name" value="{{ prize.name }}">
                                     <input type="hidden" name="prize_type" value="{{ prize.prize_type }}">
                                     <button type="submit" class="btn btn-sm btn-outline-warning me-1" title="清除中獎紀錄（重抽）">
                                         <i class="bi bi-arrow-counterclockwise"></i>
                                     </button>
                                 </form>
-
                                 <form method="POST" action="{{ url_for('admin.manage_prizes') }}" class="d-inline"
-                                    onsubmit="return confirm('確定要刪除「{{ prize.name }}」這個獎項設定嗎？\n（不會刪除已中獎的紀錄）');">
+                                    onsubmit="return confirm('確定要刪除「{{ prize.name }}」嗎？');">
                                     <input type="hidden" name="action" value="delete">
                                     <input type="hidden" name="prize_id" value="{{ prize.id }}">
                                     <button type="submit" class="btn btn-sm btn-outline-danger" title="刪除獎項">
@@ -72,9 +68,8 @@
                         </tr>
                         {% else %}
                         <tr>
-                            <td colspan="5" class="text-center p-5" style="color:rgba(255,255,255,0.35);">
-                                <i class="bi bi-inbox fs-2 d-block mb-2"></i>
-                                尚未設定任何獎項，請點擊「新增獎項」開始。
+                            <td colspan="5" class="text-center p-5 text-muted">
+                                <i class="bi bi-inbox fs-2 d-block mb-2"></i>尚未設定任何獎項
                             </td>
                         </tr>
                         {% endfor %}
@@ -85,19 +80,18 @@
     </div>
 </div>
 
-{# ===== 新增/編輯 Modal ===== #}
+{# Modal #}
 <div class="modal fade" id="prizeModal" tabindex="-1">
     <div class="modal-dialog">
-        <div class="modal-content" style="background:rgba(15,12,41,0.97);border:1px solid rgba(255,255,255,0.12);">
+        <div class="modal-content border-0 shadow">
             <form method="POST" action="{{ url_for('admin.manage_prizes') }}">
-                <div class="modal-header" style="border-bottom:1px solid rgba(255,255,255,0.1);">
-                    <h5 class="modal-title" id="modalTitle" style="color:#FDB931;">新增獎項</h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                <div class="modal-header" style="background:#f0f9ff;border-bottom:1px solid #bae6fd;">
+                    <h5 class="modal-title fw-bold" id="modalTitle" style="color:var(--ocean-dark);">新增獎項</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
                     <input type="hidden" name="action" id="formAction" value="add">
                     <input type="hidden" name="prize_id" id="prizeId">
-
                     <div class="mb-3">
                         <label class="form-label">獎項類型</label>
                         <select class="form-select" name="prize_type" id="prizeType">
@@ -107,21 +101,20 @@
                     </div>
                     <div class="mb-3">
                         <label class="form-label">獎項名稱</label>
-                        <input type="text" class="form-control" name="name" id="prizeName"
-                               placeholder="例：iPhone 16 Pro" required>
+                        <input type="text" class="form-control" name="name" id="prizeName" placeholder="例：限量環保袋" required>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label">數量 <small style="color:rgba(255,255,255,0.4);">（公獎用）</small></label>
+                        <label class="form-label">數量 <span class="text-muted">(公獎用)</span></label>
                         <input type="number" class="form-control" name="quantity" id="prizeQuantity" value="1" min="1">
                     </div>
                     <div class="mb-3">
-                        <label class="form-label">排序 <small style="color:rgba(255,255,255,0.4);">（數字越小越前）</small></label>
+                        <label class="form-label">排序 <span class="text-muted">(數字越小越前)</span></label>
                         <input type="number" class="form-control" name="display_order" id="prizeOrder" value="0">
                     </div>
                 </div>
-                <div class="modal-footer" style="border-top:1px solid rgba(255,255,255,0.1);">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
-                    <button type="submit" class="btn btn-gold">
+                <div class="modal-footer" style="background:#f8fafc;border-top:1px solid #e2e8f0;">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="submit" class="btn btn-ocean">
                         <i class="bi bi-check-lg me-1"></i>儲存
                     </button>
                 </div>
@@ -132,10 +125,9 @@
 
 <script>
     var prizeModal;
-    document.addEventListener('DOMContentLoaded', function() {
+    document.addEventListener('DOMContentLoaded', () => {
         prizeModal = new bootstrap.Modal(document.getElementById('prizeModal'));
-
-        document.getElementById('btn-open-add').addEventListener('click', function() {
+        document.getElementById('btn-open-add').addEventListener('click', () => {
             document.getElementById('modalTitle').innerText = '新增獎項';
             document.getElementById('formAction').value = 'add';
             document.getElementById('prizeId').value = '';
@@ -146,7 +138,6 @@
             prizeModal.show();
         });
     });
-
     function openEditModal(id, name, type, qty, order) {
         document.getElementById('modalTitle').innerText = '編輯獎項';
         document.getElementById('formAction').value = 'edit';

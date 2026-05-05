@@ -8,9 +8,9 @@
         <div class="col-lg-8">
 
             {# ===== 匯入卡片 ===== #}
-            <div class="card shadow-sm mb-4">
-                <div class="card-header ch-gold d-flex align-items-center gap-2">
-                    <i class="bi bi-cloud-upload-fill fs-5"></i>
+            <div class="card mb-4">
+                <div class="card-header ch-ocean d-flex align-items-center gap-2">
+                    <i class="bi bi-cloud-upload fs-5"></i>
                     <span>匯入報到名單</span>
                 </div>
                 <div class="card-body p-4">
@@ -21,44 +21,44 @@
                                    name="file" id="file" accept=".xlsx" required>
                         </div>
 
-                        <div class="p-3 mb-4" style="background:rgba(96,165,250,0.08); border:1px solid rgba(96,165,250,0.2); border-radius:10px;">
-                            <p class="mb-2" style="color:#93c5fd; font-weight:600; font-size:0.9rem;">
-                                <i class="bi bi-info-circle-fill me-1"></i>Excel 欄位說明
+                        <div class="p-3 mb-4 rounded-3" style="background:#f0f9ff; border:1px solid #bae6fd;">
+                            <p class="mb-2 fw-bold" style="color:var(--ocean-dark); font-size:0.88rem;">
+                                <i class="bi bi-info-circle me-1"></i>Excel 欄位說明
                             </p>
-                            <p class="mb-1 small" style="color:rgba(255,255,255,0.8);">
+                            <p class="mb-1 small text-dark">
                                 <span class="badge bg-danger me-1">必填</span>
                                 <code>name</code> 姓名　<code>employee_id</code> 工號 / 識別碼
                             </p>
-                            <p class="mb-2 small" style="color:rgba(255,255,255,0.6);">
+                            <p class="mb-2 small text-secondary">
                                 <span class="badge bg-secondary me-1">選填</span>
-                                <code>lottery_number</code> 抽獎號碼
-                                <code>site</code> 站點
-                                <code>dept_code</code> 部門
-                                <code>table_number</code> 桌次
-                                <code>is_business_trip</code> 公差 (Y/是)
+                                <code>lottery_number</code>&nbsp;
+                                <code>site</code>&nbsp;
+                                <code>dept_code</code>&nbsp;
+                                <code>table_number</code>&nbsp;
+                                <code>is_business_trip</code> (Y / 是)
                             </p>
-                            <hr style="border-color:rgba(255,255,255,0.1);">
-                            <p class="mb-1 small" style="color:rgba(167,139,250,0.9);">
-                                <span class="badge me-1" style="background:rgba(167,139,250,0.3);color:#c084fc;">外部活動</span>
-                                <code>participant_type</code> 身分類別 (employee 員工 / dependent 眷屬)
+                            <hr class="my-2" style="border-color:#bae6fd;">
+                            <p class="mb-1 small" style="color:#7c3aed;">
+                                <span class="badge me-1" style="background:#ede9fe;color:#7c3aed;">外部活動</span>
+                                <code>participant_type</code> 身分 (employee / dependent)
                             </p>
-                            <p class="mb-1 small" style="color:rgba(167,139,250,0.9);">
-                                <span class="badge me-1" style="background:rgba(167,139,250,0.3);color:#c084fc;">外部活動</span>
-                                <code>linked_employee_id</code> 眷屬綁定的員工工號
+                            <p class="mb-1 small" style="color:#7c3aed;">
+                                <span class="badge me-1" style="background:#ede9fe;color:#7c3aed;">外部活動</span>
+                                <code>linked_employee_id</code> 眷屬綁定員工工號
                             </p>
-                            <p class="mb-1 small" style="color:rgba(52,211,153,0.9);">
-                                <span class="badge me-1" style="background:rgba(52,211,153,0.2);color:#34d399;">外部活動</span>
-                                <code>meal_type</code> 餐點類型 (A / B)
+                            <p class="mb-1 small" style="color:var(--nature);">
+                                <span class="badge me-1" style="background:#d1fae5;color:#065f46;">外部活動</span>
+                                <code>meal_type</code> 餐點 (A / B)
                             </p>
-                            <p class="mb-0 small" style="color:rgba(96,165,250,0.9);">
-                                <span class="badge me-1" style="background:rgba(96,165,250,0.2);color:#60a5fa;">外部活動</span>
+                            <p class="mb-0 small" style="color:var(--ocean);">
+                                <span class="badge me-1" style="background:#e0f2fe;color:#0369a1;">外部活動</span>
                                 <code>group_name</code> 活動組別名稱
                             </p>
                         </div>
 
                         <div class="d-grid">
-                            <button type="submit" class="btn btn-gold btn-lg">
-                                <i class="bi bi-play-circle-fill me-2"></i>開始匯入
+                            <button type="submit" class="btn btn-ocean btn-lg">
+                                <i class="bi bi-play-circle me-2"></i>開始匯入
                             </button>
                         </div>
                     </form>
@@ -66,7 +66,7 @@
             </div>
 
             {# ===== 測試工具 ===== #}
-            <div class="card shadow-sm mb-4">
+            <div class="card mb-4">
                 <div class="card-header ch-warning d-flex align-items-center gap-2">
                     <i class="bi bi-tools fs-5"></i>
                     <span>測試專用</span>
@@ -82,35 +82,30 @@
             </div>
 
             {# ===== 危險區 ===== #}
-            <div class="card shadow-sm">
+            <div class="card">
                 <div class="card-header ch-danger d-flex align-items-center gap-2">
-                    <i class="bi bi-exclamation-triangle-fill fs-5"></i>
+                    <i class="bi bi-exclamation-triangle fs-5"></i>
                     <span>資料重置（危險區）</span>
                 </div>
                 <div class="card-body p-4">
-                    <p class="small mb-4" style="color:rgba(255,255,255,0.5);">
-                        請謹慎操作，所有重置動作均無法復原。
-                    </p>
+                    <p class="small text-muted mb-4">請謹慎操作，所有重置動作均無法復原。</p>
                     <div class="d-grid gap-3">
                         <form action="{{ url_for('admin.reset_list') }}" method="POST"
-                              onsubmit="return confirm('【警告】確定要清除「所有名單」嗎？\n所有人員資料將消失！');">
+                              onsubmit="return confirm('確定要清除「所有名單」嗎？\n所有人員資料將消失！');">
                             <button type="submit" class="btn btn-outline-danger w-100 text-start">
-                                <i class="bi bi-person-x-fill me-2"></i>
-                                1. 清除所有名單（含報到與中獎紀錄）
+                                <i class="bi bi-person-x me-2"></i>1. 清除所有名單（含報到與中獎紀錄）
                             </button>
                         </form>
                         <form action="{{ url_for('admin.reset_checkin') }}" method="POST"
-                              onsubmit="return confirm('【警告】確定要重置「報到紀錄」嗎？\n所有人將變回「未報到」狀態。');">
+                              onsubmit="return confirm('確定要重置「報到紀錄」嗎？');">
                             <button type="submit" class="btn btn-outline-danger w-100 text-start">
-                                <i class="bi bi-arrow-counterclockwise me-2"></i>
-                                2. 僅清除報到紀錄（重置為未報到）
+                                <i class="bi bi-arrow-counterclockwise me-2"></i>2. 僅清除報到紀錄（重置為未報到）
                             </button>
                         </form>
                         <form action="{{ url_for('admin.reset_lottery') }}" method="POST"
-                              onsubmit="return confirm('【警告】確定要重置「中獎紀錄」嗎？\n所有人將變回「未中獎」，已抽號碼將清空。');">
+                              onsubmit="return confirm('確定要重置「中獎紀錄」嗎？');">
                             <button type="submit" class="btn btn-outline-danger w-100 text-start">
-                                <i class="bi bi-ticket-perforated me-2"></i>
-                                3. 僅清除中獎紀錄（重置為未中獎）
+                                <i class="bi bi-ticket-perforated me-2"></i>3. 僅清除中獎紀錄（重置為未中獎）
                             </button>
                         </form>
                     </div>
