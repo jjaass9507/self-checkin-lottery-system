@@ -1,9 +1,12 @@
 from flask import (
-    Blueprint, render_template, request, flash, redirect, url_for, session, current_app
+    Blueprint, render_template, request, flash, redirect, url_for, session, current_app, send_file
 )
 import pandas as pd
+import openpyxl
+from openpyxl.styles import Font, PatternFill
+from io import BytesIO
 from app import db
-from app.models import CheckinList, DrawnTailNumber, Prize, CancellationLog
+from app.models import CheckinList, DrawnTailNumber, Prize, CancellationLog, AppSetting
 from datetime import datetime
 
 bp = Blueprint('admin', __name__)
@@ -294,6 +297,63 @@ def test_checkin_all():
         db.session.rollback()
         flash(f"失敗：{e}", 'danger')
     return redirect(url_for('admin.import_page'))
+
+# --- 下載範本 ---
+@bp.route('/download_template')
+def download_template():
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = '報到名單範本'
+
+    headers = [
+        'name', 'employee_id', 'lottery_number',
+        'site', 'dept_code', 'table_number', 'is_business_trip',
+        'participant_type', 'linked_employee_id', 'meal_type', 'group_name'
+    ]
+    ws.append(headers)
+
+    # 範例資料列
+    ws.append(['王小明', 'A001', '101', 'Taipei', 'IT', '5', '', 'employee', '', 'A', '第一組'])
+    ws.append(['李小花', 'B002', '202', '', '', '', '', 'dependent', 'A001', 'B', '第一組'])
+    ws.append(['陳大雄', 'C003', '303', 'Hsinchu', 'RD', '8', 'Y', '', '', '', ''])
+
+    # 標題列樣式
+    header_fill = PatternFill(start_color='0369a1', end_color='0369a1', fill_type='solid')
+    header_font = Font(color='FFFFFF', bold=True)
+    for cell in ws[1]:
+        cell.fill = header_fill
+        cell.font = header_font
+
+    # 自動欄寬
+    for col in ws.columns:
+        max_len = max(len(str(cell.value or '')) for cell in col)
+        ws.column_dimensions[col[0].column_letter].width = max(max_len + 4, 14)
+
+    buf = BytesIO()
+    wb.save(buf)
+    buf.seek(0)
+    return send_file(
+        buf,
+        mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        as_attachment=True,
+        download_name='checkin_template.xlsx'
+    )
+
+
+# --- 切換抽獎功能 ---
+@bp.route('/toggle_lottery', methods=['POST'])
+def toggle_lottery():
+    new_value = request.form.get('lottery_enabled', 'true')
+    setting = AppSetting.query.get('lottery_enabled')
+    if setting:
+        setting.value = new_value
+    else:
+        db.session.add(AppSetting(key='lottery_enabled', value=new_value))
+    db.session.commit()
+    state = '啟用' if new_value == 'true' else '停用'
+    flash(f'抽獎功能已{state}', 'success')
+    return redirect(url_for('admin.import_page'))
+
 
 # --- (新增) 檢視取消紀錄頁面 ---
 @bp.route('/logs')

@@ -92,3 +92,14 @@ class Prize(db.Model):
 
     def __repr__(self):
         return f'<Prize {self.name}>'
+
+
+# 5. 系統設定 (AppSetting)
+class AppSetting(db.Model):
+    __tablename__ = 'app_settings'
+
+    key   = db.Column(db.String(50), primary_key=True)
+    value = db.Column(db.String(200), nullable=False)
+
+    def __repr__(self):
+        return f'<AppSetting {self.key}={self.value}>'

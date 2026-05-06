@@ -32,7 +32,18 @@ def create_app(config_class=Config):
     from app.lottery.routes import bp as lottery_bp
     app.register_blueprint(lottery_bp, url_prefix='/lottery')
 
-    # 5. 建立一個首頁路由 (可選)
+    # 5. 注入全域模板變數
+    @app.context_processor
+    def inject_settings():
+        try:
+            from app.models import AppSetting
+            s = AppSetting.query.get('lottery_enabled')
+            lottery_enabled = (s.value == 'true') if s else True
+        except Exception:
+            lottery_enabled = True
+        return {'lottery_enabled': lottery_enabled}
+
+    # 6. 建立一個首頁路由 (可選)
     @app.route('/')
     def index():
         return "系統已啟動。請訪問 /admin, /checkin, 或 /lottery"
