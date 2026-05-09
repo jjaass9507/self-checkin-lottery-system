@@ -287,67 +287,80 @@ def api_toggle_claim():
 def query_page():
     return render_template('checkin/self_query.html')
 
-# --- 新增：純查詢 API (不修改報到狀態) ---
+# --- 純查詢 API (不修改報到狀態) ---
 @bp.route('/api/search_by_id', methods=['POST'])
 def api_search_by_id():
+    from app.models import AppSetting
+
     data = request.get_json()
     emp_id = data.get('employee_id')
-    
+
     if not emp_id:
         return jsonify({"success": False, "message": "請輸入工號"}), 400
-        
-    # 1. 找人
+
     person = CheckinList.query.filter(CheckinList.employee_id.ilike(emp_id)).first()
-    
     if not person:
         return jsonify({"success": False, "message": "找不到此工號，請聯繫工作人員。"}), 404
-        
-    # 2. (重要) 這裡 不執行 報到寫入 (db.session.commit)，僅讀取資料
-    
-    # 3. 計算顯示資訊 (邏輯同報到 API)
-    lottery_num_str = str(person.lottery_number).zfill(3) if person.lottery_number else "未設定"
-    
-    prize_info_list = []
-    if person.lottery_number:
-        # A. 檢查公獎
-        if person.has_won_public:
-            public_draws = DrawnTailNumber.query.filter_by(prize_type='public').all()
+
+    # 讀取已開獎紀錄（共用，避免每人重複查詢）
+    tail_draws   = DrawnTailNumber.query.filter_by(prize_type='tail').all()
+    public_draws = DrawnTailNumber.query.filter_by(prize_type='public').all()
+
+    def compute_prize(p):
+        num = str(p.lottery_number).zfill(3) if p.lottery_number else None
+        if not num:
+            return "尚未中獎", False
+        items = []
+        if p.has_won_public:
             for d in public_draws:
-                if str(d.tail_number) == lottery_num_str:
-                    prize_info_list.append(f"【公獎】{d.prize_name}")
-        
-        # B. 檢查尾數獎
-        if person.has_won:
-            tail_draws = DrawnTailNumber.query.filter_by(prize_type='tail').all()
-            matched_prizes = []
-            for d in tail_draws:
-                if lottery_num_str.endswith(str(d.tail_number)):
-                    matched_prizes.append(d)
-            if matched_prizes:
-                matched_prizes.sort(key=lambda x: len(str(x.tail_number)), reverse=True)
-                best_match = matched_prizes[0]
-                prize_info_list.append(f"【尾數獎】{best_match.prize_name}")
+                if str(d.tail_number) == num:
+                    items.append(f"【公獎】{d.prize_name}")
+        if p.has_won:
+            matched = [d for d in tail_draws if num.endswith(str(d.tail_number))]
+            if matched:
+                matched.sort(key=lambda x: len(str(x.tail_number)), reverse=True)
+                items.append(f"【尾數獎】{matched[0].prize_name}")
+        if items:
+            return " & ".join(items), True
+        return "尚未中獎", False
 
-    if prize_info_list:
-        prize_display = " & ".join(prize_info_list)
-        is_winner = True
-    else:
-        prize_display = "尚未中獎" # 查詢模式顯示較中性的文字
-        is_winner = False
+    def person_to_dict(p):
+        prize_display, is_winner = compute_prize(p)
+        return {
+            "name": p.name,
+            "employee_id": p.employee_id,
+            "lottery_number": str(p.lottery_number).zfill(3) if p.lottery_number else "未設定",
+            "table_number": p.table_number or "未分配",
+            "prize_info": prize_display,
+            "is_winner": is_winner,
+            "status": p.status,
+            "participant_type": p.participant_type,
+            "linked_employee_id": p.linked_employee_id,
+            "meal_type": p.meal_type,
+            "group_name": p.group_name,
+        }
 
-    return jsonify({
+    # 讀取後台欄位顯示設定
+    field_keys = ['employee_id', 'status', 'lottery_number', 'prize_info',
+                  'table_number', 'meal_type', 'group_name', 'participant_type']
+    field_settings = {}
+    for key in field_keys:
+        s = AppSetting.query.get(f'query_show_{key}')
+        field_settings[key] = (s.value != 'false') if s else True
+
+    # 若查到的是員工（非眷屬），一併撈出所有眷屬
+    dependents = []
+    if person.participant_type != 'dependent':
+        dep_records = CheckinList.query.filter(
+            CheckinList.linked_employee_id.ilike(emp_id)
+        ).all()
+        dependents = [person_to_dict(d) for d in dep_records]
+
+    result = person_to_dict(person)
+    result.update({
         "success": True,
         "message": f"查詢成功：{person.name}",
-        "name": person.name,
-        "employee_id": person.employee_id,
-        "lottery_number": lottery_num_str,
-        "table_number": person.table_number or "未分配",
-        "prize_info": prize_display,
-        "is_winner": is_winner,
-        "status": person.status,
-        # 活動額外欄位
-        "participant_type": person.participant_type,
-        "linked_employee_id": person.linked_employee_id,
-        "meal_type": person.meal_type,
-        "group_name": person.group_name,
+        "field_settings": field_settings,
+        "dependents": dependents,
     })
+    return jsonify(result)

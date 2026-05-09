@@ -147,7 +147,30 @@ def import_page():
             
             return redirect(url_for('admin.import_page'))
 
-    return render_template('admin/import.html')
+    field_keys = ['employee_id', 'status', 'lottery_number', 'prize_info',
+                  'table_number', 'meal_type', 'group_name', 'participant_type']
+    query_fields = {}
+    for key in field_keys:
+        setting = AppSetting.query.get(f'query_show_{key}')
+        query_fields[key] = (setting.value != 'false') if setting else True
+
+    return render_template('admin/import.html', query_fields=query_fields)
+
+# --- (新功能) 0. 查詢站欄位設定 ---
+@bp.route('/query_fields', methods=['POST'])
+def toggle_query_fields():
+    field_keys = ['employee_id', 'status', 'lottery_number', 'prize_info',
+                  'table_number', 'meal_type', 'group_name', 'participant_type']
+    for key in field_keys:
+        new_value = 'true' if request.form.get(f'show_{key}') else 'false'
+        setting = AppSetting.query.get(f'query_show_{key}')
+        if setting:
+            setting.value = new_value
+        else:
+            db.session.add(AppSetting(key=f'query_show_{key}', value=new_value))
+    db.session.commit()
+    flash('查詢站欄位設定已更新', 'success')
+    return redirect(url_for('admin.import_page'))
 
 # --- (新功能) 1. 清除所有名單 (最徹底) ---
 @bp.route('/reset/list', methods=['POST'])

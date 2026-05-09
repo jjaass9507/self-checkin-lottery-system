@@ -104,6 +104,74 @@
                 </div>
             </div>
 
+            {# ===== 查詢站欄位設定 ===== #}
+            <div class="card mb-4">
+                <div class="card-header ch-ocean d-flex align-items-center gap-2">
+                    <i class="bi bi-layout-text-sidebar fs-5"></i>
+                    <span>查詢站顯示欄位</span>
+                </div>
+                <div class="card-body p-4">
+                    <p class="small text-muted mb-3">勾選要在查詢站顯示的欄位（姓名永遠顯示）。</p>
+                    <form action="{{ url_for('admin.toggle_query_fields') }}" method="POST">
+                        <div class="row g-2 mb-3">
+                            <div class="col-6">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="show_employee_id" id="sq_emp_id" {% if query_fields.employee_id %}checked{% endif %}>
+                                    <label class="form-check-label" for="sq_emp_id"><i class="bi bi-person-badge me-1"></i>工號</label>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="show_status" id="sq_status" {% if query_fields.status %}checked{% endif %}>
+                                    <label class="form-check-label" for="sq_status"><i class="bi bi-check-circle me-1"></i>報到狀態</label>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="show_lottery_number" id="sq_lottery" {% if query_fields.lottery_number %}checked{% endif %}>
+                                    <label class="form-check-label" for="sq_lottery"><i class="bi bi-ticket me-1"></i>抽獎號碼</label>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="show_prize_info" id="sq_prize" {% if query_fields.prize_info %}checked{% endif %}>
+                                    <label class="form-check-label" for="sq_prize"><i class="bi bi-gift me-1"></i>中獎資訊</label>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="show_table_number" id="sq_table" {% if query_fields.table_number %}checked{% endif %}>
+                                    <label class="form-check-label" for="sq_table"><i class="bi bi-grid me-1"></i>桌次</label>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="show_meal_type" id="sq_meal" {% if query_fields.meal_type %}checked{% endif %}>
+                                    <label class="form-check-label" for="sq_meal"><i class="bi bi-egg-fried me-1"></i>餐別</label>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="show_group_name" id="sq_group" {% if query_fields.group_name %}checked{% endif %}>
+                                    <label class="form-check-label" for="sq_group"><i class="bi bi-people me-1"></i>組別</label>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="show_participant_type" id="sq_ptype" {% if query_fields.participant_type %}checked{% endif %}>
+                                    <label class="form-check-label" for="sq_ptype"><i class="bi bi-person-lines-fill me-1"></i>員工/眷屬身份</label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-ocean">
+                                <i class="bi bi-save me-1"></i>儲存設定
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
             {# ===== 測試工具 ===== #}
             <div class="card mb-4">
                 <div class="card-header ch-warning d-flex align-items-center gap-2">
