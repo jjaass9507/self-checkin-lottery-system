@@ -349,6 +349,7 @@ def api_search_by_id():
         field_settings[key] = (s.value != 'false') if s else True
 
     # 若查到的是員工（非眷屬），一併撈出所有眷屬
+    dep_records = []
     dependents = []
     if person.participant_type != 'dependent':
         dep_records = CheckinList.query.filter(
@@ -357,6 +358,17 @@ def api_search_by_id():
         dependents = [person_to_dict(d) for d in dep_records]
 
     result = person_to_dict(person)
+
+    # 主員工若缺少「家庭共用」欄位（桌次/餐別/組別），自動從眷屬補上
+    if dep_records:
+        for fld in ('table_number', 'meal_type', 'group_name'):
+            if not getattr(person, fld):
+                for d in dep_records:
+                    val = getattr(d, fld)
+                    if val:
+                        result[fld] = val
+                        break
+
     result.update({
         "success": True,
         "message": f"查詢成功：{person.name}",
