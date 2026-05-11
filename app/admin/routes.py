@@ -147,14 +147,22 @@ def import_page():
             
             return redirect(url_for('admin.import_page'))
 
-    field_keys = ['employee_id', 'status', 'lottery_number', 'prize_info',
-                  'table_number', 'meal_type', 'group_name', 'participant_type']
+    query_field_keys = ['employee_id', 'status', 'lottery_number', 'prize_info',
+                        'table_number', 'meal_type', 'group_name', 'participant_type']
     query_fields = {}
-    for key in field_keys:
+    for key in query_field_keys:
         setting = AppSetting.query.get(f'query_show_{key}')
         query_fields[key] = (setting.value != 'false') if setting else True
 
-    return render_template('admin/import.html', query_fields=query_fields)
+    dash_field_keys = ['checkin_seq', 'site', 'dept', 'table', 'business_trip',
+                       'participant_type', 'meal', 'group', 'lottery_number',
+                       'status', 'prize', 'checkin_time']
+    dash_fields = {}
+    for key in dash_field_keys:
+        setting = AppSetting.query.get(f'dash_show_{key}')
+        dash_fields[key] = (setting.value != 'false') if setting else True
+
+    return render_template('admin/import.html', query_fields=query_fields, dash_fields=dash_fields)
 
 # --- (新功能) 0a. 報到名單欄位設定 ---
 @bp.route('/dash_fields', methods=['POST'])
