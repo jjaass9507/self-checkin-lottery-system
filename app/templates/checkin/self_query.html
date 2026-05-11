@@ -555,21 +555,21 @@
         resTable.innerText = data.table_number || '未分配';
         applyField(fs.table_number !== false, resTableSec);
 
-        // 餐點
+        // 餐點（注意：.meal-box CSS 預設 display:none，必須明確設 block）
         if (fs.meal_type !== false && data.meal_type) {
             resMealBox.className = 'meal-box meal-' + data.meal_type.toLowerCase();
             resMealText.innerText = data.meal_type + ' 餐';
-            show(resMealBox);
+            resMealBox.style.display = 'block';
         } else {
-            hide(resMealBox);
+            resMealBox.style.display = 'none';
         }
 
-        // 組別
+        // 組別（同上）
         if (fs.group_name !== false && data.group_name) {
             resGroupText.innerText = data.group_name;
-            show(resGroupBox);
+            resGroupBox.style.display = 'block';
         } else {
-            hide(resGroupBox);
+            resGroupBox.style.display = 'none';
         }
 
         // 中獎資訊
