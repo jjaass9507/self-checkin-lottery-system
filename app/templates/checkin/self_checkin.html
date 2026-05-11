@@ -256,6 +256,12 @@
         </div>
         <div id="res-linked" class="small mb-3 linked-text"></div>
 
+        <!-- 報到流水號（有值才顯示） -->
+        <div id="res-seq-box" style="display:none;margin:10px 0;padding:10px 14px;border-radius:10px;background:#faf5ff;border:1px solid #ddd6fe;text-align:center;">
+            <div class="res-label" style="color:#7c3aed;">報到序號</div>
+            <div style="font-family:'Nunito',sans-serif;font-size:2rem;font-weight:900;color:#7c3aed;letter-spacing:3px;" id="res-seq">-</div>
+        </div>
+
         <!-- 抽獎號碼 -->
         <div class="lottery-box">
             <div class="res-label">抽獎號碼</div>
@@ -296,6 +302,8 @@
     const resTypeBadge= document.getElementById('res-type-badge');
     const resLinked   = document.getElementById('res-linked');
     const resTable    = document.getElementById('res-table');
+    const resSeqBox   = document.getElementById('res-seq-box');
+    const resSeq      = document.getElementById('res-seq');
     const resLotteryNum = document.getElementById('res-lottery-num');
     const resMealBox  = document.getElementById('res-meal-box');
     const resMealText = document.getElementById('res-meal-text');
@@ -332,6 +340,14 @@
                 resId.innerText   = data.employee_id;
                 resLotteryNum.innerText = data.lottery_number || '---';
                 resTable.innerText = data.table_number || '未分配';
+
+                // 報到流水號
+                if (data.checkin_seq) {
+                    resSeq.innerText = data.checkin_seq;
+                    resSeqBox.style.display = 'block';
+                } else {
+                    resSeqBox.style.display = 'none';
+                }
 
                 // 身分徽章
                 if (data.participant_type === 'employee') {
@@ -404,6 +420,7 @@
         resLinked.innerText = '';
         resMealBox.style.display = 'none';
         resGroupBox.style.display = 'none';
+        resSeqBox.style.display = 'none';
         resetBtn();
         empInput.focus();
     }

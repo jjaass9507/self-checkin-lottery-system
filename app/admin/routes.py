@@ -156,7 +156,24 @@ def import_page():
 
     return render_template('admin/import.html', query_fields=query_fields)
 
-# --- (新功能) 0. 查詢站欄位設定 ---
+# --- (新功能) 0a. 報到名單欄位設定 ---
+@bp.route('/dash_fields', methods=['POST'])
+def toggle_dash_fields():
+    field_keys = ['checkin_seq', 'site', 'dept', 'table', 'business_trip',
+                  'participant_type', 'meal', 'group', 'lottery_number',
+                  'status', 'prize', 'checkin_time']
+    for key in field_keys:
+        new_value = 'true' if request.form.get(f'show_{key}') else 'false'
+        setting = AppSetting.query.get(f'dash_show_{key}')
+        if setting:
+            setting.value = new_value
+        else:
+            db.session.add(AppSetting(key=f'dash_show_{key}', value=new_value))
+    db.session.commit()
+    flash('報到名單欄位設定已更新', 'success')
+    return redirect(url_for('admin.import_page'))
+
+# --- (新功能) 0b. 查詢站欄位設定 ---
 @bp.route('/query_fields', methods=['POST'])
 def toggle_query_fields():
     field_keys = ['employee_id', 'status', 'lottery_number', 'prize_info',

@@ -104,6 +104,98 @@
                 </div>
             </div>
 
+            {# ===== 報到名單顯示欄位 ===== #}
+            <div class="card mb-4">
+                <div class="card-header ch-ocean d-flex align-items-center gap-2">
+                    <i class="bi bi-table fs-5"></i>
+                    <span>報到名單顯示欄位</span>
+                </div>
+                <div class="card-body p-4">
+                    <p class="small text-muted mb-3">勾選要在報到名單（Dashboard）顯示的欄位（姓名、工號永遠顯示）。</p>
+                    <form action="{{ url_for('admin.toggle_dash_fields') }}" method="POST">
+                        <div class="row g-2 mb-3">
+                            <div class="col-6">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="show_checkin_seq" id="ds_seq" {% if dash_fields.checkin_seq %}checked{% endif %}>
+                                    <label class="form-check-label" for="ds_seq"><i class="bi bi-123 me-1"></i>報到流水號</label>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="show_status" id="ds_status" {% if dash_fields.status %}checked{% endif %}>
+                                    <label class="form-check-label" for="ds_status"><i class="bi bi-check-circle me-1"></i>報到狀態</label>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="show_checkin_time" id="ds_time" {% if dash_fields.checkin_time %}checked{% endif %}>
+                                    <label class="form-check-label" for="ds_time"><i class="bi bi-clock me-1"></i>報到時間</label>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="show_table" id="ds_table" {% if dash_fields.table %}checked{% endif %}>
+                                    <label class="form-check-label" for="ds_table"><i class="bi bi-grid me-1"></i>桌次</label>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="show_meal" id="ds_meal" {% if dash_fields.meal %}checked{% endif %}>
+                                    <label class="form-check-label" for="ds_meal"><i class="bi bi-egg-fried me-1"></i>餐點</label>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="show_group" id="ds_group" {% if dash_fields.group %}checked{% endif %}>
+                                    <label class="form-check-label" for="ds_group"><i class="bi bi-people me-1"></i>組別</label>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="show_participant_type" id="ds_ptype" {% if dash_fields.participant_type %}checked{% endif %}>
+                                    <label class="form-check-label" for="ds_ptype"><i class="bi bi-person-lines-fill me-1"></i>員工/眷屬身份</label>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="show_site" id="ds_site" {% if dash_fields.site %}checked{% endif %}>
+                                    <label class="form-check-label" for="ds_site"><i class="bi bi-geo-alt me-1"></i>廠區 (Site)</label>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="show_dept" id="ds_dept" {% if dash_fields.dept %}checked{% endif %}>
+                                    <label class="form-check-label" for="ds_dept"><i class="bi bi-building me-1"></i>部門</label>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="show_business_trip" id="ds_biz" {% if dash_fields.business_trip %}checked{% endif %}>
+                                    <label class="form-check-label" for="ds_biz"><i class="bi bi-briefcase me-1"></i>公差</label>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="show_lottery_number" id="ds_lot" {% if dash_fields.lottery_number %}checked{% endif %}>
+                                    <label class="form-check-label" for="ds_lot"><i class="bi bi-ticket me-1"></i>抽獎號碼</label>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="show_prize" id="ds_prize" {% if dash_fields.prize %}checked{% endif %}>
+                                    <label class="form-check-label" for="ds_prize"><i class="bi bi-gift me-1"></i>中獎資訊 / 領獎</label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-ocean">
+                                <i class="bi bi-save me-1"></i>儲存設定
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
             {# ===== 查詢站欄位設定 ===== #}
             <div class="card mb-4">
                 <div class="card-header ch-ocean d-flex align-items-center gap-2">

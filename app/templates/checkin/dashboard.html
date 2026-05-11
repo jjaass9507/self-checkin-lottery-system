@@ -191,27 +191,28 @@
         {# ===== 表格 ===== #}
         <div class="card-body p-0 table-container">
             <table class="table table-hover table-striped mb-0 align-middle">
-                <thead>
+                <thead id="table-head">
                     <tr>
                         <th>姓名</th>
                         <th>工號</th>
-                        <th>Site</th>
-                        <th>部門</th>
-                        <th>桌次</th>
-                        <th>公差</th>
-                        <th>身分</th>
-                        <th>餐點</th>
-                        <th>組別</th>
-                        {% if lottery_enabled %}<th>抽獎號碼</th>{% endif %}
-                        <th>狀態</th>
-                        {% if lottery_enabled %}<th>中獎資訊</th><th>領獎確認</th>{% endif %}
-                        <th>時間</th>
+                        {% if dash_fields.checkin_seq %}<th>流水號</th>{% endif %}
+                        {% if dash_fields.site %}<th>Site</th>{% endif %}
+                        {% if dash_fields.dept %}<th>部門</th>{% endif %}
+                        {% if dash_fields.table %}<th>桌次</th>{% endif %}
+                        {% if dash_fields.business_trip %}<th>公差</th>{% endif %}
+                        {% if dash_fields.participant_type %}<th>身分</th>{% endif %}
+                        {% if dash_fields.meal %}<th>餐點</th>{% endif %}
+                        {% if dash_fields.group %}<th>組別</th>{% endif %}
+                        {% if lottery_enabled and dash_fields.lottery_number %}<th>抽獎號碼</th>{% endif %}
+                        {% if dash_fields.status %}<th>狀態</th>{% endif %}
+                        {% if lottery_enabled and dash_fields.prize %}<th>中獎資訊</th><th>領獎確認</th>{% endif %}
+                        {% if dash_fields.checkin_time %}<th>時間</th>{% endif %}
                         <th class="text-end">操作</th>
                     </tr>
                 </thead>
                 <tbody id="table-body">
                     <tr>
-                        <td colspan="{{ 15 if lottery_enabled else 12 }}" class="text-center p-5">
+                        <td colspan="99" class="text-center p-5">
                             <div class="spinner-border" style="color:var(--ocean);"></div>
                         </td>
                     </tr>
@@ -225,6 +226,7 @@
 {% block scripts %}
 <script>
     const LOTTERY = {{ lottery_enabled | tojson }};
+    const DF = {{ dash_fields | tojson }};
 
     // ===== DOM 參考 =====
     const statTotalEl     = document.getElementById('stat-total');
@@ -401,10 +403,8 @@
 
         displayCountEl.innerText = filtered.length;
 
-        const COLSPAN = LOTTERY ? 15 : 12;
-
         if (filtered.length === 0) {
-            tableBodyEl.innerHTML = `<tr><td colspan="${COLSPAN}" class="text-center p-4 text-muted">查無符合資料</td></tr>`;
+            tableBodyEl.innerHTML = `<tr><td colspan="99" class="text-center p-4 text-muted">查無符合資料</td></tr>`;
             return;
         }
 
@@ -470,20 +470,26 @@
                 actionBtn = `<button class="btn btn-sm btn-outline-success" onclick="adminCheckIn(${p.id},'${p.name}')">簽到</button>`;
             }
 
+            // 流水號徽章
+            const seqBadge = p.checkin_seq
+                ? `<span style="font-family:'Nunito',sans-serif;font-weight:800;color:#7c3aed;">${p.checkin_seq}</span>`
+                : `-`;
+
             return `<tr>
                 <td><b>${p.name}</b></td>
                 <td class="text-muted">${p.employee_id}</td>
-                <td>${p.site || '-'}</td>
-                <td>${p.dept_code || '-'}</td>
-                <td style="color:var(--sand);font-weight:700;">${p.table_number || '-'}</td>
-                <td>${bizBadge}</td>
-                <td>${typeBadge}</td>
-                <td>${mealBadge}</td>
-                <td>${groupText}</td>
-                ${LOTTERY ? `<td style="font-weight:700;color:var(--ocean-dark);">${p.lottery_number || '-'}</td>` : ''}
-                <td>${statusBadge}</td>
-                ${LOTTERY ? `<td>${prizeHtml}</td><td>${claimHtml}</td>` : ''}
-                <td class="text-muted" style="font-size:0.8rem;">${p.check_in_time || ''}</td>
+                ${DF.checkin_seq ? `<td>${seqBadge}</td>` : ''}
+                ${DF.site ? `<td>${p.site || '-'}</td>` : ''}
+                ${DF.dept ? `<td>${p.dept_code || '-'}</td>` : ''}
+                ${DF.table ? `<td style="color:var(--sand);font-weight:700;">${p.table_number || '-'}</td>` : ''}
+                ${DF.business_trip ? `<td>${bizBadge}</td>` : ''}
+                ${DF.participant_type ? `<td>${typeBadge}</td>` : ''}
+                ${DF.meal ? `<td>${mealBadge}</td>` : ''}
+                ${DF.group ? `<td>${groupText}</td>` : ''}
+                ${LOTTERY && DF.lottery_number ? `<td style="font-weight:700;color:var(--ocean-dark);">${p.lottery_number || '-'}</td>` : ''}
+                ${DF.status ? `<td>${statusBadge}</td>` : ''}
+                ${LOTTERY && DF.prize ? `<td>${prizeHtml}</td><td>${claimHtml}</td>` : ''}
+                ${DF.checkin_time ? `<td class="text-muted" style="font-size:0.8rem;">${p.check_in_time || ''}</td>` : ''}
                 <td class="text-end">${actionBtn}</td>
             </tr>`;
         }).join('');

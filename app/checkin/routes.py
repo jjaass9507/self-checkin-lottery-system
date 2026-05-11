@@ -12,32 +12,63 @@ def index():
 
 @bp.route('/dashboard')
 def dashboard():
-    # (2) 加入權限檢查：如果沒有登入，就踢回後台登入頁
     if not session.get('is_admin'):
         return redirect(url_for('admin.login'))
-        
-    return render_template('checkin/dashboard.html')
 
-# (*** 修正：函式名稱改為 api_checkin_by_id 以對應模板中的 url_for ***)
+    from app.models import AppSetting
+    dash_field_keys = ['checkin_seq', 'site', 'dept', 'table', 'business_trip',
+                       'participant_type', 'meal', 'group', 'lottery_number',
+                       'status', 'prize', 'checkin_time']
+    dash_fields = {}
+    for key in dash_field_keys:
+        s = AppSetting.query.get(f'dash_show_{key}')
+        dash_fields[key] = (s.value != 'false') if s else True
+
+    return render_template('checkin/dashboard.html', dash_fields=dash_fields)
+
+def _assign_checkin_seq(person):
+    """依餐別分配流水號：A餐→A001, B餐→B001, 無餐別→001。已有號碼則不重複分配。"""
+    if person.checkin_seq:
+        return
+    prefix = (person.meal_type or '').upper()
+    if prefix not in ('A', 'B'):
+        prefix = ''
+    # 取同前綴中最大的號碼
+    seq_len = len(prefix) + 3
+    candidates = CheckinList.query.filter(
+        CheckinList.checkin_seq.isnot(None),
+        db.func.length(CheckinList.checkin_seq) == seq_len,
+        CheckinList.checkin_seq.like(f'{prefix}%')
+    ).all()
+    max_num = 0
+    for c in candidates:
+        try:
+            max_num = max(max_num, int(c.checkin_seq[len(prefix):]))
+        except (ValueError, TypeError):
+            pass
+    person.checkin_seq = f'{prefix}{max_num + 1:03d}'
+
+
 @bp.route('/api/checkin_by_id', methods=['POST'])
 def api_checkin_by_id():
     data = request.get_json()
     emp_id = data.get('employee_id')
-    
+
     if not emp_id:
         return jsonify({"success": False, "message": "請輸入工號"}), 400
-        
+
     # 1. 先去資料庫找人 (這行一定要在最前面！)
     person = CheckinList.query.filter(CheckinList.employee_id.ilike(emp_id)).first()
-    
+
     if not person:
         return jsonify({"success": False, "message": "找不到此工號，請聯繫工作人員。"}), 404
-        
+
     # 2. 執行報到 (如果還沒報到)
     if person.status != 'CheckedIn':
         try:
             person.status = 'CheckedIn'
             person.check_in_time = datetime.now()
+            _assign_checkin_seq(person)
             db.session.commit()
         except Exception as e:
             db.session.rollback()
@@ -89,6 +120,7 @@ def api_checkin_by_id():
         "table_number": person.table_number or "未分配",
         "prize_info": prize_display,
         "is_winner": is_winner,
+        "checkin_seq": person.checkin_seq,
         # 活動額外欄位
         "participant_type": person.participant_type,
         "linked_employee_id": person.linked_employee_id,
@@ -165,6 +197,7 @@ def api_status_list():
                 "check_in_time": person.check_in_time.strftime('%H:%M:%S') if person.status == 'CheckedIn' else '',
                 "table_number": person.table_number,
                 "is_business_trip": person.is_business_trip,
+                "checkin_seq": person.checkin_seq,
                 "tail_prize_info": tail_prize_str,
                 "public_prize_info": public_prize_str,
                 "prize_info": f"{tail_prize_str} {public_prize_str}".strip(),
