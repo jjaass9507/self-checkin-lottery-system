@@ -229,14 +229,15 @@ def api_admin_checkin():
         data = request.get_json()
         target_id = data.get('id')
         person = CheckinList.query.get(target_id)
-        
+
         if not person:
             return jsonify({"success": False, "message": "找不到人員"}), 404
-            
+
         person.status = 'CheckedIn'
         person.check_in_time = datetime.now()
+        _assign_checkin_seq(person)
         db.session.commit()
-        
+
         return jsonify({"success": True, "message": f"{person.name} 簽到成功"})
     except Exception as e:
         db.session.rollback()
