@@ -1,5 +1,5 @@
 # app/__init__.py
-from flask import Flask, request
+from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from config import Config
@@ -45,20 +45,6 @@ def create_app(config_class=Config):
         except Exception:
             lottery_enabled = True
         return {'lottery_enabled': lottery_enabled}
-
-    @app.after_request
-    def inject_display_helpers(response):
-        # self_checkin.html / self_query.html 是獨立模板，沒有繼承 base.html。
-        # 這裡統一把顯示輔助 JS 注入所有 HTML 頁面，確保身份、餐點、部門截字規則一致。
-        content_type = response.headers.get('Content-Type', '')
-        if response.status_code == 200 and 'text/html' in content_type:
-            body = response.get_data(as_text=True)
-            helper_tag = '<script src="/static/js/display_helpers.js?v=20260525"></script>'
-            if helper_tag not in body and '</body>' in body:
-                body = body.replace('</body>', f'{helper_tag}\n</body>')
-                response.set_data(body)
-                response.headers['Content-Length'] = str(len(response.get_data()))
-        return response
 
     # 6. 建立一個首頁路由 (可選)
     @app.route('/')
