@@ -7,7 +7,7 @@ from flask import flash, redirect, render_template, request, url_for
 
 from app import db
 from app.admin.routes import bp
-from app.models import AppSetting, CheckinList
+from app.models import AppSetting, CancellationLog, CheckinList
 
 IMPORT_BATCH_SIZE = 300
 
@@ -217,4 +217,17 @@ def optimized_import_page():
     return redirect(url_for('admin.import_page'))
 
 
+def optimized_reset_list():
+    try:
+        deleted_logs = db.session.query(CancellationLog).delete(synchronize_session=False)
+        deleted_list = db.session.query(CheckinList).delete(synchronize_session=False)
+        db.session.commit()
+        flash(f"已清除所有名單 (共 {deleted_list} 筆)，並清除取消紀錄 {deleted_logs} 筆。", 'warning')
+    except Exception as exc:
+        db.session.rollback()
+        flash(f"清除名單失敗：{exc}", 'danger')
+    return redirect(url_for('admin.import_page'))
+
+
 bp.view_functions['import_page'] = optimized_import_page
+bp.view_functions['reset_list'] = optimized_reset_list
