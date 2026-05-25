@@ -122,6 +122,8 @@ def _build_row_data(row, headers, dependent_serials):
         'linked_employee_id': linked_employee_id,
         'meal_type': _parse_meal_type(_get(row, headers, 'meal_type')),
         'group_name': _get(row, headers, 'group_name'),
+        'age_group': _get(row, headers, 'age_group'),
+        'phone': _get(row, headers, 'phone'),
     }
 
 
@@ -159,7 +161,8 @@ def _save_batch(rows):
 def _render_import_page():
     query_field_keys = [
         'employee_id', 'status', 'lottery_number', 'prize_info',
-        'table_number', 'meal_type', 'group_name', 'participant_type'
+        'table_number', 'meal_type', 'group_name', 'participant_type',
+        'age_group', 'phone'
     ]
     query_fields = {}
     for key in query_field_keys:
@@ -168,7 +171,7 @@ def _render_import_page():
 
     dash_field_keys = [
         'checkin_seq', 'site', 'dept', 'table', 'business_trip',
-        'participant_type', 'meal', 'group', 'lottery_number',
+        'participant_type', 'age_group', 'phone', 'meal', 'group', 'lottery_number',
         'status', 'prize', 'checkin_time'
     ]
     dash_fields = {}
