@@ -41,7 +41,7 @@
             .replace(/&/g, '&amp;')
             .replace(/</g, '&lt;')
             .replace(/>/g, '&gt;')
-            .replace(/"/g, '&quot;')
+            .replace(/\"/g, '&quot;')
             .replace(/'/g, '&#39;');
     }
 
@@ -74,7 +74,6 @@
     function mealLabel(value) {
         if (!value) return '';
         const raw = String(value).trim();
-        const key = mealKey(raw);
         if (raw.toUpperCase() === 'A') return 'A 餐';
         if (raw.toUpperCase() === 'B') return 'B 餐';
         return raw;
@@ -128,10 +127,21 @@
             const current = filterMeal.value;
             [...new Set(list.map(p => p.meal_type).filter(Boolean))].sort()
                 .forEach(value => addOptionIfMissing(filterMeal, value, mealLabel(value)));
-            if (current && Array.from(filterMeal.options).some(option => option.value === current)) {
-                filterMeal.value = current;
-            }
+            if (current && Array.from(filterMeal.options).some(option => option.value === current)) filterMeal.value = current;
         }
+    }
+
+    function ensureExtraColumns(head, bodyRows) {
+        const headerRow = head.querySelector('tr');
+        if (!headerRow || headerRow.dataset.extraContactColumns === '1') return;
+        const actionHeader = Array.from(headerRow.children).find(th => th.textContent.trim() === '操作');
+        ['大人/小孩', '連絡電話'].forEach(label => {
+            const th = document.createElement('th');
+            th.textContent = label;
+            headerRow.insertBefore(th, actionHeader || null);
+        });
+        headerRow.dataset.extraContactColumns = '1';
+        bodyRows.forEach(row => { row.dataset.extraContactColumns = ''; });
     }
 
     function patchDashboardRows() {
@@ -143,41 +153,48 @@
         if (!list.length) return;
         patchDashboardFilters(list);
 
+        const rows = Array.from(tableBody.querySelectorAll('tr')).filter(row => row.children && row.children.length >= 2);
+        ensureExtraColumns(head, rows);
+
         const dataByEmployeeId = new Map(list.map(p => [String(p.employee_id), p]));
         const headers = Array.from(head.querySelectorAll('th')).map(th => th.textContent.trim());
         const deptIndex = headers.findIndex(text => text.includes('部門'));
         const typeIndex = headers.findIndex(text => text.includes('身分'));
         const mealIndex = headers.findIndex(text => text.includes('餐點'));
         const groupIndex = headers.findIndex(text => text.includes('組別'));
+        const actionIndex = headers.findIndex(text => text === '操作');
 
-        Array.from(tableBody.querySelectorAll('tr')).forEach(row => {
+        rows.forEach(row => {
             const cells = row.children;
-            if (!cells || cells.length < 2) return;
             const employeeId = cells[1].textContent.trim();
             const person = dataByEmployeeId.get(employeeId);
             if (!person) return;
 
-            if (deptIndex >= 0 && cells[deptIndex]) {
+            if (row.dataset.extraContactColumns !== '1' && actionIndex >= 0) {
+                const ageCell = document.createElement('td');
+                const phoneCell = document.createElement('td');
+                ageCell.innerHTML = person.age_group ? `<span class="badge bg-light text-dark border">${escapeHtml(person.age_group)}</span>` : '-';
+                phoneCell.innerHTML = person.phone ? `<span style="font-size:0.82rem;">${escapeHtml(person.phone)}</span>` : '-';
+                const actionCell = row.children[actionIndex] || row.lastElementChild;
+                row.insertBefore(ageCell, actionCell);
+                row.insertBefore(phoneCell, actionCell);
+                row.dataset.extraContactColumns = '1';
+            }
+
+            if (deptIndex >= 0 && row.children[deptIndex]) {
                 const fullDept = person.dept_code || '';
-                cells[deptIndex].textContent = truncateText(fullDept, 4);
-                cells[deptIndex].title = fullDept;
+                row.children[deptIndex].textContent = truncateText(fullDept, 4);
+                row.children[deptIndex].title = fullDept;
             }
-            if (typeIndex >= 0 && cells[typeIndex]) {
-                cells[typeIndex].innerHTML = participantBadge(person);
-            }
-            if (mealIndex >= 0 && cells[mealIndex]) {
-                cells[mealIndex].innerHTML = mealBadge(person.meal_type);
-            }
-            if (groupIndex >= 0 && cells[groupIndex]) {
-                cells[groupIndex].innerHTML = groupBadge(person.group_name);
-            }
+            if (typeIndex >= 0 && row.children[typeIndex]) row.children[typeIndex].innerHTML = participantBadge(person);
+            if (mealIndex >= 0 && row.children[mealIndex]) row.children[mealIndex].innerHTML = mealBadge(person.meal_type);
+            if (groupIndex >= 0 && row.children[groupIndex]) row.children[groupIndex].innerHTML = groupBadge(person.group_name);
         });
     }
 
     document.addEventListener('DOMContentLoaded', function () {
         const tableBody = document.getElementById('table-body');
         if (!tableBody) return;
-
         let ticking = false;
         const runPatch = function () {
             if (ticking) return;
@@ -187,9 +204,7 @@
                 ticking = false;
             }, 0);
         };
-
-        const observer = new MutationObserver(runPatch);
-        observer.observe(tableBody, { childList: true });
+        new MutationObserver(runPatch).observe(tableBody, { childList: true });
         window.setInterval(patchDashboardRows, 1500);
     });
 })();
