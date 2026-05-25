@@ -22,6 +22,7 @@ def create_app(config_class=Config):
     
     # 註冊 Admin 藍圖
     from app.admin.routes import bp as admin_bp
+    import app.admin.optimized_routes  # noqa: F401 - override memory-safe Excel import route
     app.register_blueprint(admin_bp, url_prefix='/admin')
 
     # 註冊 Checkin 藍圖
