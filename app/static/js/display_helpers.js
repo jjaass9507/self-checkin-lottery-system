@@ -15,15 +15,6 @@
         vendor: 'background:#fefce8;color:#a16207;border:1px solid #fde68a;'
     };
 
-    const MEAL_STYLES = {
-        A: 'background:linear-gradient(90deg,#065f46,#059669);color:#fff;border:1px solid #6ee7b7;',
-        B: 'background:linear-gradient(90deg,#0369a1,#0ea5e9);color:#fff;border:1px solid #93c5fd;',
-        DEFAULT: 'background:#f0f9ff;color:#075985;border:1px solid #bae6fd;'
-    };
-
-    let latestStatusList = [];
-    let latestLookupData = null;
-
     function escapeHtml(value) {
         return String(value ?? '')
             .replace(/&/g, '&amp;')
@@ -48,15 +39,16 @@
         return raw;
     }
 
-    function mealStyle(value) {
-        const upper = String(value || '').trim().toUpperCase();
-        return MEAL_STYLES[upper] || MEAL_STYLES.DEFAULT;
-    }
-
     function mealBadge(value) {
         const label = mealLabel(value);
         if (!label) return '-';
-        return `<span style="${mealStyle(value)}font-size:0.78rem;padding:3px 9px;border-radius:6px;font-weight:600;display:inline-block;max-width:220px;white-space:normal;line-height:1.35;">${escapeHtml(label)}</span>`;
+        const upper = String(value || '').trim().toUpperCase();
+        const style = upper === 'A'
+            ? 'background:linear-gradient(90deg,#065f46,#059669);color:#fff;border:1px solid #6ee7b7;'
+            : upper === 'B'
+                ? 'background:linear-gradient(90deg,#0369a1,#0ea5e9);color:#fff;border:1px solid #93c5fd;'
+                : 'background:#f0f9ff;color:#075985;border:1px solid #bae6fd;';
+        return `<span style="${style}font-size:0.78rem;padding:3px 9px;border-radius:6px;font-weight:600;display:inline-block;max-width:220px;white-space:normal;line-height:1.35;">${escapeHtml(label)}</span>`;
     }
 
     function participantBadge(person) {
@@ -72,28 +64,45 @@
 
     function addOptionIfMissing(select, value, label) {
         if (!select || !value) return;
-        const exists = Array.from(select.options).some(option => option.value === value);
-        if (!exists) select.appendChild(new Option(label, value));
+        if (!Array.from(select.options).some(option => option.value === value)) {
+            select.appendChild(new Option(label, value));
+        }
     }
 
-    function updateDashboardFilters(list) {
+    function getDashboardData() {
+        try {
+            // dashboard.html 內使用 let fullDataCache；這裡只讀取，不改寫。
+            if (Array.isArray(fullDataCache)) return fullDataCache;
+        } catch (e) {}
+        return [];
+    }
+
+    function patchDashboardFilters(list) {
         const filterType = document.getElementById('filter-type');
         addOptionIfMissing(filterType, 'vendor_contact', '外部廠商主要窗口');
         addOptionIfMissing(filterType, 'vendor', '外部廠商');
 
         const filterMeal = document.getElementById('filter-meal');
         if (filterMeal) {
-            const mealValues = [...new Set(list.map(p => p.meal_type).filter(Boolean))].sort();
-            mealValues.forEach(value => addOptionIfMissing(filterMeal, value, mealLabel(value)));
+            const current = filterMeal.value;
+            [...new Set(list.map(p => p.meal_type).filter(Boolean))].sort()
+                .forEach(value => addOptionIfMissing(filterMeal, value, mealLabel(value)));
+            if (current && Array.from(filterMeal.options).some(option => option.value === current)) {
+                filterMeal.value = current;
+            }
         }
     }
 
     function patchDashboardRows() {
         const tableBody = document.getElementById('table-body');
         const head = document.getElementById('table-head');
-        if (!tableBody || !head || !latestStatusList.length) return;
+        if (!tableBody || !head) return;
 
-        const dataByEmployeeId = new Map(latestStatusList.map(p => [String(p.employee_id), p]));
+        const list = getDashboardData();
+        if (!list.length) return;
+        patchDashboardFilters(list);
+
+        const dataByEmployeeId = new Map(list.map(p => [String(p.employee_id), p]));
         const headers = Array.from(head.querySelectorAll('th')).map(th => th.textContent.trim());
         const deptIndex = headers.findIndex(text => text.includes('部門'));
         const typeIndex = headers.findIndex(text => text.includes('身分'));
@@ -102,7 +111,6 @@
         Array.from(tableBody.querySelectorAll('tr')).forEach(row => {
             const cells = row.children;
             if (!cells || cells.length < 2) return;
-
             const employeeId = cells[1].textContent.trim();
             const person = dataByEmployeeId.get(employeeId);
             if (!person) return;
@@ -121,89 +129,22 @@
         });
     }
 
-    function patchLookupResult() {
-        if (!latestLookupData) return;
-
-        const typeBadge = document.getElementById('res-type-badge');
-        if (typeBadge) typeBadge.innerHTML = participantBadge(latestLookupData) === '-' ? '' : participantBadge(latestLookupData);
-
-        const linked = document.getElementById('res-linked');
-        if (linked) {
-            linked.textContent = latestLookupData.participant_type === 'dependent' && latestLookupData.linked_employee_id
-                ? `綁定員工：${latestLookupData.linked_employee_id}`
-                : '';
-        }
-
-        const mealBox = document.getElementById('res-meal-box');
-        const mealText = document.getElementById('res-meal-text');
-        if (mealBox && mealText) {
-            const label = mealLabel(latestLookupData.meal_type);
-            if (label) {
-                mealText.textContent = label;
-                mealBox.style.display = 'block';
-                mealBox.style.background = '#f0f9ff';
-                mealBox.style.border = '1px solid #bae6fd';
-                mealBox.style.color = '#075985';
-            } else {
-                mealBox.style.display = 'none';
-            }
-        }
-
-        if (Array.isArray(latestLookupData.dependents)) {
-            const depCards = Array.from(document.querySelectorAll('#dep-grid .dep-card'));
-            depCards.forEach((card, index) => {
-                const dep = latestLookupData.dependents[index];
-                if (!dep) return;
-
-                const meal = card.querySelector('.dep-meal-box');
-                if (meal && dep.meal_type) {
-                    meal.innerHTML = `<i class="bi bi-egg-fried me-1"></i>${escapeHtml(mealLabel(dep.meal_type))}`;
-                    meal.style.display = 'block';
-                    meal.style.background = '#f0f9ff';
-                    meal.style.border = '1px solid #bae6fd';
-                    meal.style.color = '#075985';
-                }
-            });
-        }
-    }
-
-    function patchFromData(data, url) {
-        if (!data || !data.success) return;
-
-        if (url.includes('/api/status_list') && Array.isArray(data.checkin_list)) {
-            latestStatusList = data.checkin_list;
-            updateDashboardFilters(latestStatusList);
-            setTimeout(patchDashboardRows, 0);
-        }
-
-        if (url.includes('/api/checkin_by_id') || url.includes('/api/search_by_id')) {
-            latestLookupData = data;
-            setTimeout(patchLookupResult, 0);
-        }
-    }
-
-    if (!window.__displayHelpersFetchPatched) {
-        window.__displayHelpersFetchPatched = true;
-        const originalFetch = window.fetch;
-        window.fetch = function () {
-            const url = String(arguments[0] || '');
-            return originalFetch.apply(this, arguments).then(response => {
-                if (url.includes('/api/status_list') || url.includes('/api/checkin_by_id') || url.includes('/api/search_by_id')) {
-                    response.clone().json().then(data => patchFromData(data, url)).catch(() => {});
-                }
-                return response;
-            });
-        };
-    }
-
-    document.addEventListener('DOMContentLoaded', () => {
+    document.addEventListener('DOMContentLoaded', function () {
         const tableBody = document.getElementById('table-body');
-        if (tableBody) {
-            const observer = new MutationObserver(() => patchDashboardRows());
-            observer.observe(tableBody, { childList: true, subtree: true });
-        }
+        if (!tableBody) return;
 
-        const bodyObserver = new MutationObserver(() => patchLookupResult());
-        bodyObserver.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['style'] });
+        let ticking = false;
+        const runPatch = function () {
+            if (ticking) return;
+            ticking = true;
+            window.setTimeout(function () {
+                patchDashboardRows();
+                ticking = false;
+            }, 0);
+        };
+
+        const observer = new MutationObserver(runPatch);
+        observer.observe(tableBody, { childList: true });
+        window.setInterval(patchDashboardRows, 1500);
     });
 })();
