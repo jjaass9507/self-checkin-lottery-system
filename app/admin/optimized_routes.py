@@ -2,22 +2,22 @@ import os
 from datetime import datetime
 from tempfile import NamedTemporaryFile
 
-import openpyxl
 from flask import flash, redirect, render_template, request, url_for
 
 from app import db
 from app.admin.routes import bp
+from app.admin.xlsx_stream import iter_xlsx_rows
 from app.models import AppSetting, CancellationLog, CheckinList
 
-IMPORT_BATCH_SIZE = 300
+IMPORT_BATCH_SIZE = 200
 
 
 def _clean(value):
     if value is None:
         return None
-    if isinstance(value, float) and value.is_integer():
-        value = int(value)
     text = str(value).strip()
+    if text.endswith('.0') and text[:-2].isdigit():
+        text = text[:-2]
     if not text or text.lower() == 'nan':
         return None
     return text
@@ -146,7 +146,6 @@ def optimized_import_page():
         return redirect(request.url)
 
     tmp_path = None
-    workbook = None
     imported_count = 0
     skipped_existing_count = 0
     skipped_invalid_count = 0
@@ -156,9 +155,7 @@ def optimized_import_page():
             file.save(tmp)
             tmp_path = tmp.name
 
-        workbook = openpyxl.load_workbook(tmp_path, read_only=True, data_only=True)
-        worksheet = workbook.active
-        row_iter = worksheet.iter_rows(values_only=True)
+        row_iter = iter_xlsx_rows(tmp_path)
         raw_headers = next(row_iter, None)
 
         if not raw_headers:
@@ -209,8 +206,6 @@ def optimized_import_page():
             flash(f"匯入時發生嚴重錯誤：{exc}", 'danger')
 
     finally:
-        if workbook:
-            workbook.close()
         if tmp_path and os.path.exists(tmp_path):
             os.remove(tmp_path)
 
