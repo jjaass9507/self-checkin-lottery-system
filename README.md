@@ -1,83 +1,332 @@
-# 企業活動報到與抽獎系統 (Corporate Event Check-in & Lottery System)
+# 企業活動報到與抽獎系統
 
-這是一套專為企業大型活動（如尾牙、春酒、研討會、家庭日）設計的即時報到與抽獎系統。系統基於 Python Flask 框架開發，具備現代化的 UI 介面，支援本地端離線部署與雲端 (Render + Neon) 部署。
+這是一套以 Flask 開發的企業活動報到與抽獎平台，適用於尾牙、春酒、家庭日、研討會等大型活動。系統支援後台名單匯入、前台自助報到、純查詢站、即時報到儀表板、尾數抽獎、公獎抽獎、中獎輪播與操作紀錄。
 
-本系統不僅支援傳統的**「尾號抽獎」**，更加入了**「公獎 (全碼) 抽獎」**與**「中獎輪播」**機制，結合即時報到狀態，確保抽獎過程公平、公正且透明。
-
----
-
-## 🚀 核心功能 (Key Features)
-
-本系統分為五大模組，共用一個核心資料庫，資料即時同步：
-
-### 1. 📱 自助報到與查詢站 (Kiosk & Query Station)
-* **極簡操作**：專為平板/觸控螢幕設計，員工僅需輸入「工號」即可完成報到。
-* **即時反饋與桌次顯示**：立即顯示報到成功、重複報到或查無此人，並顯示專屬「桌次」與「抽獎編號」。
-* **純查詢模式**：提供獨立的 `/query` 路由，僅供查詢個人狀態與桌次，不觸發報到動作。
-* **自動重置**：畫面於數秒後自動清空，避免排隊塞車與個資外洩。
-
-### 2. 📊 即時報到儀表板 (Live Dashboard)
-* **即時統計**：視覺化顯示總人數、已報到、未報到數據。
-* **多重進階篩選**：支援依「關鍵字」、「工號首碼」、「報到狀態」、「中獎狀態」、「所中獎項」、「站點(Site)」、「部門」進行交叉篩選。
-* **公差管理**：支援標記「公差 (Business Trip)」人員，系統視同已報到並給予專屬標籤。
-* **後台手動操作**：提供管理員一鍵補簽、取消報到，以及「領獎狀態」的核銷功能。
-
-### 3. 🎰 雙軌抽獎系統 (Lottery System)
-* **尾數抽獎 (Tail Number)**：依據抽獎編號尾數抽選，支援「一般抽出 (未中獎者)」與「加碼抽出 (已中獎者)」。並依據站點 (HR/FAC) 智慧分流顯示名單。
-* **公獎抽獎 (Public Prize)**：針對全碼 (3位數) 進行逐步揭曉抽獎，支援輸入號碼即時比對剩餘符合資格的候選人。
-* **智慧防呆**：系統僅鎖定「已報到」且「符合條件」的人員，杜絕重複中獎或未到場中獎。
-
-### 4. 🏆 中獎輪播展示 (Winners Carousel)
-* **動態輪播**：依據獎項抽出順序，動態輪播所有已中獎人員名單，適合投影於活動現場大螢幕。
-* **自適應排版**：自動根據中獎人數調整卡片與字體大小，確保畫面不跑版。
-
-### 5. 🛠️ 後台管理與安全機制 (Admin & Logs)
-* **權限控管**：簡單直覺的密碼登入攔截機制。
-* **Excel 批次匯入**：支援匯入包含桌次、站點、部門與公差註記的完整名單。
-* **獎項管理**：可自由新增、修改、刪除「尾數獎」與「公獎」的名稱與額度，並可單獨重置特定獎項的中獎紀錄。
-* **操作日誌 (Logs)**：完整記錄所有「取消報到」的執行者工號與時間，便於事後稽核。
+目前專案已針對 Render 免費方案的 512MB 記憶體限制做過匯入流程最佳化：Excel 匯入不再依賴 pandas / numpy，改用低記憶體 `.xlsx` 串流解析，並以批次寫入資料庫。
 
 ---
 
-## 💻 技術堆疊 (Tech Stack)
+## 核心功能
 
-* **Backend**: Python 3, Flask
-* **Database**: 
-  * Local: SQLite (`event.db`)
-  * Cloud: PostgreSQL (via [Neon.tech](https://neon.tech/))
-* **ORM & Migrations**: SQLAlchemy, Flask-Migrate
-* **Frontend**: HTML5, Bootstrap 5, JavaScript (Vanilla JS + Fetch API), CSS3 Animations
-* **Server**: Waitress (Windows Local), Gunicorn (Cloud/Linux)
+### 自助報到與查詢站
+
+- 前台自助報到站可輸入工號完成報到。
+- 純查詢站可查詢報到狀態、桌次、抽獎編號、身份與餐點資訊，不會觸發報到。
+- 支援員工、眷屬、外部廠商主要窗口、外部廠商等身份。
+- 眷屬可綁定員工工號。
+
+### 即時報到儀表板
+
+- 顯示總人數、已報到、未報到等即時統計。
+- 支援關鍵字、工號首碼、狀態、中獎狀態、獎項、站點、部門、身份、餐點、分組等篩選。
+- 可手動補簽、取消報到、確認領獎。
+- 部門顯示以畫面易讀為主，儀表板上最多顯示 4 個字；資料庫仍保留完整部門內容。
+
+### 抽獎系統
+
+- 尾數抽獎：依抽獎編號尾數抽出中獎者。
+- 公獎抽獎：依完整抽獎編號比對候選人。
+- 支援一般抽出與加碼抽出。
+- 中獎狀態與領獎狀態可於後台管理。
+
+### 後台管理
+
+- 後台密碼登入。
+- Excel 名單匯入。
+- 欄位顯示設定。
+- 獎項新增、修改、刪除。
+- 清除名單、重置報到、重置抽獎、重置單一獎項。
+- 取消報到紀錄會寫入 `cancellation_log` 供稽核使用。
 
 ---
 
-## 📂 專案結構
+## 技術堆疊
+
+- Backend：Python 3、Flask
+- Database：SQLite（本機）、PostgreSQL（Render / Neon）
+- ORM / Migration：SQLAlchemy、Flask-Migrate、Alembic
+- Excel：openpyxl 用於範本產生；匯入使用專案內低記憶體 XLSX stream parser
+- Frontend：Bootstrap 5、Vanilla JavaScript、Fetch API
+- Server：Gunicorn（Render / Linux）
+
+---
+
+## 專案結構
 
 ```text
-/checkin-system
-|-- app/                      # 核心應用程式 (App Factory)
-|   |-- models.py             # 資料庫模型 (報到名單、開獎紀錄、獎項設定、取消日誌)
-|   |-- admin/                # 後台模組 (匯入、重置、獎項管理、Log)
-|   |-- checkin/              # 報到模組 (Kiosk, Query, Dashboard, API)
-|   |-- lottery/              # 抽獎模組 (尾數抽獎, 公獎, 輪播, 日誌, API)
-|   `-- templates/            # HTML 模板
-|-- migrations/               # 資料庫遷移紀錄 (Alembic)
-|-- .env                      # 環境變數設定檔 (需自行建立)
-|-- config.py                 # 系統設定檔
-|-- run.py                    # 啟動入口
-|-- test.py                   # 測試腳本 (一鍵全員報到)
-|-- update_data.py            # 資料更新腳本 (從 Excel 更新現有桌次等資料)
-`-- requirements.txt          # 套件依賴清單
-🛠️ 本地開發與執行 (Local Setup)適用於活動現場無對外網路，或開發測試環境。建立並啟用虛擬環境:Bashpython -m venv venv
+.
+├── app/
+│   ├── __init__.py                 # Flask app factory
+│   ├── models.py                   # DB models
+│   ├── admin/
+│   │   ├── routes.py               # 原後台路由
+│   │   ├── optimized_routes.py     # Render 低記憶體匯入與清除名單 override
+│   │   └── xlsx_stream.py          # 低記憶體 XLSX 串流解析器
+│   ├── checkin/                    # 報到、查詢、儀表板 API
+│   ├── lottery/                    # 抽獎功能
+│   ├── static/
+│   └── templates/
+├── migrations/                     # Alembic migrations
+├── config.py
+├── gunicorn.conf.py                # Render 免費方案建議 Gunicorn 設定
+├── pandas.py                       # 輕量 pandas 相容層，避免載入 pandas/numpy
+├── requirements.txt
+└── run.py
+```
 
-# Windows 啟用:
+---
+
+## 本地開發
+
+### 1. 建立虛擬環境
+
+```bash
+python -m venv venv
+```
+
+Windows：
+
+```bash
 .\venv\Scripts\activate
-# Mac/Linux 啟用:
+```
+
+macOS / Linux：
+
+```bash
 source venv/bin/activate
-安裝依賴套件:Bashpip install -r requirements.txt
-設定環境變數 (.env):在專案根目錄建立 .env 檔案，輸入以下內容：程式碼片段SECRET_KEY="your-secret-key"
-ADMIN_PASSWORD="your-admin-password" # 後台登入密碼
-# 若要使用本地 SQLite，請不要設定 DATABASE_URL
-初始化資料庫:Bashflask db upgrade
-啟動伺服器:請勿在正式場合使用 flask run。請使用 Waitress 以處理併發請求：Bashwaitress-serve --host 0.0.0.0 --port 5000 --call "run:create_app"
-本機連線: http://localhost:5000區網連線: http://[您的電腦IP]:5000 (需允許防火牆通過)☁️ 雲端部署 (Cloud Deployment via Render + Neon)本專案已優化，可直接部署於 Render 免費版並串接 Neon Serverless Postgres。準備資料庫 (Neon):註冊 Neon.tech 取得連線字串 (DATABASE_URL)。準備平台 (Render):新增 Web Service，連結您的 GitHub Repo。Render 設定:Build Command: pip install -r requirements.txtStart Command: flask db upgrade && gunicorn --bind 0.0.0.0:10000 run:create_app()Environment Variables:DATABASE_URL: postgresql://... (注意：若是 postgres:// 請改為 postgresql://)ADMIN_PASSWORD: 您自訂的後台密碼SECRET_KEY: 隨機亂碼字串🔄 資料庫管理：年度活動重置與備份策略 (重要！)當一次活動結束，準備迎來下一場活動（例如從 2026 尾牙切換到 2027 尾牙）時，強烈建議不要使用後台的「危險區重置」功能，以避免歷史資料遺失。請採用以下最佳實務：使用 Neon 分支 (Branching) 建立全新平台Neon 提供了類似 Git 的資料庫分支功能，讓您可以一秒建立乾淨的新環境，並保留舊資料隨時可查。登入 Neon 控制台，進入專案。點擊 Branches -> New Branch。命名新分支（例：2027-event），並在資料選項中選擇 Schema only (只複製結構，不複製資料)。請確保不要勾選 "Automatically delete branch"。獲取這個新分支的 DATABASE_URL。前往 Render (或您的 .env 檔案)，將 DATABASE_URL 替換為新分支的網址。重新啟動伺服器。此時您將擁有一個架構完整、但資料全空的全新系統！注意：因切換至全新 Schema，您需要重新登入後台匯入名單，並重新建立「獎項設定」。若日後需要查詢舊活動資料，只需將 DATABASE_URL 改回舊分支的網址即可瞬間切換。📝 Excel 名單匯入格式規範由後台匯入的 Excel (.xlsx) 檔案，標題列必須包含以下欄位名稱 (大小寫需一致)：欄位名稱 (必填/選填)說明範例name (必填)員工姓名王小明employee_id (必填)員工工號 (做為登入與唯一識別)K12345lottery_number (選填)抽獎編號 (通常為 3 碼數字)005, 123site (選填)站點或廠區 (用於抽獎名單分流顯示)HR, FACdept_code (選填)部門代碼 (用於儀表板篩選)RD-01table_number (選填)桌次編號VIP-1, 15is_business_trip (選填)是否為公差 (系統視同報到)。填 1, Y, yes, 是 皆可Y
+```
+
+### 2. 安裝套件
+
+```bash
+pip install -r requirements.txt
+```
+
+### 3. 建立 `.env`
+
+```env
+SECRET_KEY=your-secret-key
+ADMIN_PASSWORD=your-admin-password
+```
+
+本機使用 SQLite 時，不需要設定 `DATABASE_URL`。
+
+### 4. 初始化或升級資料庫
+
+```bash
+flask db upgrade
+```
+
+### 5. 啟動
+
+開發測試可使用：
+
+```bash
+flask run
+```
+
+正式活動現場不建議使用 Flask development server。可改用 Gunicorn 或其他正式 WSGI server。
+
+---
+
+## Render + Neon 部署
+
+### Neon
+
+建立 PostgreSQL database，取得連線字串並設定到 Render 的 `DATABASE_URL`。
+
+注意：若 Neon 給的是 `postgres://...`，請改成 `postgresql://...`。
+
+### Render Web Service
+
+Build Command：
+
+```bash
+pip install -r requirements.txt
+```
+
+Start Command 建議使用：
+
+```bash
+flask db upgrade && gunicorn -c gunicorn.conf.py --bind 0.0.0.0:$PORT run:app
+```
+
+若 Render 介面沒有正確帶入 `$PORT`，可暫時使用 Render 顯示的固定 port，但建議仍以 `$PORT` 為主。
+
+### Render Environment Variables
+
+```env
+DATABASE_URL=postgresql://...
+ADMIN_PASSWORD=your-admin-password
+SECRET_KEY=your-random-secret
+```
+
+### Render 免費方案注意事項
+
+Render 免費方案記憶體只有 512MB，本專案已做以下處理：
+
+- 移除 pandas / numpy 依賴，避免 import 時吃掉大量記憶體。
+- 使用 `app/admin/xlsx_stream.py` 直接串流解析 `.xlsx` 內部 XML。
+- 匯入時每批寫入資料庫，避免 SQLAlchemy session 累積過多物件。
+- `gunicorn.conf.py` 固定 `workers = 1`、`threads = 1`，並將 `timeout` 調高。
+
+若匯入超大 Excel 仍出現 `Worker was sent SIGKILL! Perhaps out of memory?`，請優先確認：
+
+1. Start Command 是否有使用 `-c gunicorn.conf.py`。
+2. Excel 是否包含大量格式、圖片、公式或隱藏工作表；建議另存成乾淨的新 `.xlsx`。
+3. 可以將名單拆成多份分批匯入。
+
+---
+
+## Excel 名單匯入格式
+
+檔案格式必須為 `.xlsx`。第一列為標題列，欄位名稱需與下方一致。
+
+### 必填欄位
+
+| 欄位 | 說明 | 範例 |
+|---|---|---|
+| `name` | 姓名 | 王小明 |
+| `employee_id` | 員工工號 / 身份識別欄 | A001 |
+
+### 選填欄位
+
+| 欄位 | 說明 | 範例 |
+|---|---|---|
+| `lottery_number` | 抽獎編號 | 001、168 |
+| `site` | 站點 / 廠區 | HR、FAC、Taipei |
+| `dept_code` | 部門 | RD01、資訊部、總務課 |
+| `table_number` | 桌次 | 5、VIP-1 |
+| `is_business_trip` | 是否公差，填 `1`、`Y`、`YES`、`TRUE`、`是` 皆視為是 | Y |
+| `participant_type` | 身份 | 員工、眷屬、外部廠商主要窗口、外部廠商 |
+| `linked_employee_id` | 綁定員工工號；通常由眷屬規則自動產生，不一定要填 | A001 |
+| `meal_type` | 餐點，可填代碼或完整描述 | A、B、C餐:滷味+綠豆冰沙 |
+| `group_name` | 分組 | 第一組、A組 |
+
+---
+
+## 身份欄位規則
+
+`participant_type` 支援以下值。
+
+| Excel 可填值 | 系統內部值 | 顯示名稱 |
+|---|---|---|
+| `employee`、`emp`、`員工`、`同仁` | `employee` | 員工 |
+| `dependent`、`dep`、`眷屬`、`家屬` | `dependent` | 眷屬 |
+| `vendor_contact`、`external_vendor_contact`、`外部廠商主要窗口`、`廠商主要窗口`、`主要窗口` | `vendor_contact` | 外部廠商主要窗口 |
+| `vendor`、`external_vendor`、`外部廠商`、`廠商` | `vendor` | 外部廠商 |
+
+### 眷屬 employee_id 規則
+
+如果 `participant_type` 是 `眷屬` / `dependent`：
+
+- Excel 的 `employee_id` 代表「原員工工號」。
+- 匯入時會把該值寫入 `linked_employee_id`。
+- 系統會自動產生眷屬自己的 `employee_id`。
+- 格式為：`原工號_流水號`。
+
+範例：
+
+| Excel name | Excel employee_id | Excel participant_type | 實際 employee_id | linked_employee_id |
+|---|---|---|---|---|
+| 王小明眷屬1 | A001 | 眷屬 | A001_1 | A001 |
+| 王小明眷屬2 | A001 | 眷屬 | A001_2 | A001 |
+| 王小明眷屬3 | A001 | 眷屬 | A001_3 | A001 |
+
+---
+
+## 餐點欄位規則
+
+`meal_type` 會保留 Excel 的原始文字，不再限制只能是 A / B。
+
+可填範例：
+
+```text
+A
+B
+C餐:滷味+綠豆冰沙
+素食餐
+兒童餐
+```
+
+資料庫欄位長度已由 migration 放大為 `String(100)`。部署時會透過：
+
+```bash
+flask db upgrade
+```
+
+自動套用 migration。
+
+---
+
+## 清除與重置資料
+
+後台提供多種重置功能：
+
+- 清除所有名單
+- 重置報到狀態
+- 重置抽獎狀態
+- 重置單一獎項
+
+因 `cancellation_log.checkin_list_id` 有 foreign key 指向 `checkin_list.id`，清除所有名單時必須先刪除 `cancellation_log`，再刪除 `checkin_list`。目前 `optimized_reset_list()` 已處理此順序，避免 PostgreSQL FK violation。
+
+若要保留歷史活動資料，建議不要直接清除正式資料庫，改用 Neon branch 建立新活動資料庫。
+
+---
+
+## 年度活動資料策略
+
+建議每一場大型活動使用獨立 Neon branch：
+
+1. 在 Neon 建立新 branch。
+2. 選擇只複製 schema，不複製舊活動資料。
+3. 取得新 branch 的 `DATABASE_URL`。
+4. 更新 Render 環境變數。
+5. 重新部署並匯入新活動名單。
+
+這樣可以保留舊活動資料，又能快速建立乾淨的新活動環境。
+
+---
+
+## 常見問題
+
+### 匯入 Excel 時出現 Internal Server Error / SIGKILL
+
+通常是 Render 免費方案記憶體不足或 Gunicorn timeout。
+
+請確認 Start Command：
+
+```bash
+flask db upgrade && gunicorn -c gunicorn.conf.py --bind 0.0.0.0:$PORT run:app
+```
+
+並確認 `requirements.txt` 沒有重新加入 pandas / numpy。
+
+### 清除所有名單時出現 ForeignKeyViolation
+
+代表目前執行到舊的清除邏輯，或 Render 尚未部署到最新版本。最新版本會先刪 `cancellation_log` 再刪 `checkin_list`。
+
+請重新部署 main，並確認 `app.__init__` 有覆寫：
+
+```python
+app.view_functions['admin.reset_list'] = admin_optimized_routes.optimized_reset_list
+```
+
+### 新餐點顯示不完整
+
+請確認 Render 部署時有成功執行：
+
+```bash
+flask db upgrade
+```
+
+並確認 migration 已將 `checkin_list.meal_type` 放大到 `String(100)`。
+
+---
+
+## 重要實作備註
+
+- `pandas.py` 是專案內的輕量相容層，用來避免實際載入 pandas / numpy。不要移除，除非整個匯入流程已完全不再參考 `import pandas as pd`。
+- `app/admin/optimized_routes.py` 會 override 原本的後台匯入與清除名單 route。
+- `app/admin/xlsx_stream.py` 是目前 Render 免費方案匯入大型 Excel 的主要最佳化來源。
+- `gunicorn.conf.py` 是 Render 免費方案建議配置。
