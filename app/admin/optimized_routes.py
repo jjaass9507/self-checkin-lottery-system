@@ -11,6 +11,28 @@ from app.models import AppSetting, CancellationLog, CheckinList
 
 IMPORT_BATCH_SIZE = 200
 
+PARTICIPANT_TYPE_ALIASES = {
+    'employee': 'employee',
+    'emp': 'employee',
+    '員工': 'employee',
+    '同仁': 'employee',
+    'dependent': 'dependent',
+    'dep': 'dependent',
+    '眷屬': 'dependent',
+    '家屬': 'dependent',
+    'vendor_contact': 'vendor_contact',
+    'external_vendor_contact': 'vendor_contact',
+    'vendor_main_contact': 'vendor_contact',
+    'main_vendor_contact': 'vendor_contact',
+    '主要窗口': 'vendor_contact',
+    '廠商主要窗口': 'vendor_contact',
+    '外部廠商主要窗口': 'vendor_contact',
+    'vendor': 'vendor',
+    'external_vendor': 'vendor',
+    '外部廠商': 'vendor',
+    '廠商': 'vendor',
+}
+
 
 def _clean(value):
     if value is None:
@@ -36,12 +58,13 @@ def _parse_business_trip(value):
 
 
 def _parse_participant_type(value):
-    raw = (_clean(value) or '').lower()
-    if raw in ['dependent', '眷屬', 'dep']:
-        return 'dependent'
-    if raw in ['employee', '員工', 'emp']:
-        return 'employee'
-    return None
+    raw = (_clean(value) or '').strip()
+    normalized = raw.lower().replace('-', '_').replace(' ', '_')
+    return (
+        PARTICIPANT_TYPE_ALIASES.get(raw)
+        or PARTICIPANT_TYPE_ALIASES.get(raw.lower())
+        or PARTICIPANT_TYPE_ALIASES.get(normalized)
+    )
 
 
 def _parse_meal_type(value):
@@ -49,11 +72,27 @@ def _parse_meal_type(value):
     return raw if raw in ['A', 'B'] else None
 
 
-def _build_row_data(row, headers):
+def _next_dependent_employee_id(original_employee_id, dependent_serials):
+    current = dependent_serials.get(original_employee_id, 0) + 1
+    dependent_serials[original_employee_id] = current
+    return f'{original_employee_id}_{current}'
+
+
+def _build_row_data(row, headers, dependent_serials):
     name = _get(row, headers, 'name')
-    employee_id = _get(row, headers, 'employee_id')
-    if not name or not employee_id:
+    raw_employee_id = _get(row, headers, 'employee_id')
+    if not name or not raw_employee_id:
         return None
+
+    participant_type = _parse_participant_type(_get(row, headers, 'participant_type'))
+    employee_id = raw_employee_id
+    linked_employee_id = _get(row, headers, 'linked_employee_id')
+
+    # 眷屬匯入規則：Excel 的 employee_id 欄位代表「綁定員工工號」。
+    # 系統存入時會把該值移到 linked_employee_id，並用「原工號_流水號」產生眷屬自己的 employee_id。
+    if participant_type == 'dependent':
+        linked_employee_id = raw_employee_id
+        employee_id = _next_dependent_employee_id(raw_employee_id, dependent_serials)
 
     is_business_trip = _parse_business_trip(_get(row, headers, 'is_business_trip'))
 
@@ -67,8 +106,8 @@ def _build_row_data(row, headers):
         'is_business_trip': is_business_trip,
         'status': 'CheckedIn' if is_business_trip else 'Registered',
         'check_in_time': datetime.now() if is_business_trip else None,
-        'participant_type': _parse_participant_type(_get(row, headers, 'participant_type')),
-        'linked_employee_id': _get(row, headers, 'linked_employee_id'),
+        'participant_type': participant_type,
+        'linked_employee_id': linked_employee_id,
         'meal_type': _parse_meal_type(_get(row, headers, 'meal_type')),
         'group_name': _get(row, headers, 'group_name'),
     }
@@ -173,8 +212,9 @@ def optimized_import_page():
             return redirect(request.url)
 
         batch = []
+        dependent_serials = {}
         for row in row_iter:
-            row_data = _build_row_data(row, headers)
+            row_data = _build_row_data(row, headers, dependent_serials)
             if not row_data:
                 skipped_invalid_count += 1
                 continue
