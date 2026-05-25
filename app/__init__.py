@@ -25,6 +25,7 @@ def create_app(config_class=Config):
     from app.admin import optimized_routes as admin_optimized_routes
     app.register_blueprint(admin_bp, url_prefix='/admin')
     app.view_functions['admin.import_page'] = admin_optimized_routes.optimized_import_page
+    app.view_functions['admin.reset_list'] = admin_optimized_routes.optimized_reset_list
 
     # 註冊 Checkin 藍圖
     from app.checkin.routes import bp as checkin_bp
