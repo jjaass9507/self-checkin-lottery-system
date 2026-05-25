@@ -34,18 +34,18 @@ class CheckinList(db.Model):
     table_number = db.Column(db.String(20), nullable=True)
     is_business_trip = db.Column(db.Boolean, default=False)
 
-    # 報到流水號（依餐別分配，例如 A001 / B003 / 001）
+    # 報到流水號（依餐別分配，例如 A001 / B003 / C002 / 001）
     checkin_seq = db.Column(db.String(10), nullable=True)
 
     # ===== 活動額外欄位 (外部活動/眷屬支援) =====
     participant_type   = db.Column(db.String(20), nullable=True, default=None)
-    # 值: 'employee' (員工) | 'dependent' (眷屬) | None (不區分，向後相容尾牙)
+    # 值: 'employee' (員工) | 'dependent' (眷屬) | 'vendor_contact' (外部廠商主要窗口) | 'vendor' (外部廠商) | None
 
     linked_employee_id = db.Column(db.String(50), nullable=True, default=None)
     # 眷屬所綁定的員工工號，participant_type='dependent' 時才有意義
 
-    meal_type = db.Column(db.String(10), nullable=True, default=None)
-    # 餐點類型: 'A' | 'B' | None
+    meal_type = db.Column(db.String(100), nullable=True, default=None)
+    # 餐點類型/描述，例如: 'A', 'B', 'C餐:滷味+綠豆冰沙'
 
     group_name = db.Column(db.String(50), nullable=True, default=None)
     # 活動分組名稱，例如: 'A組', '第1組', 'Red Team'
