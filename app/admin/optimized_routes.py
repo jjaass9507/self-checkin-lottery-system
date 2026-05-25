@@ -25,9 +25,13 @@ PARTICIPANT_TYPE_ALIASES = {
     'vendor_main_contact': 'vendor_contact',
     'main_vendor_contact': 'vendor_contact',
     '主要窗口': 'vendor_contact',
+    '主窗口': 'vendor_contact',
     '廠商主要窗口': 'vendor_contact',
+    '廠商主窗口': 'vendor_contact',
     '外部廠商主要窗口': 'vendor_contact',
+    '外部廠商主窗口': 'vendor_contact',
     '外部廠商主要聯絡人': 'vendor_contact',
+    '外部廠商主聯絡人': 'vendor_contact',
     'vendor': 'vendor',
     'external_vendor': 'vendor',
     '外部廠商': 'vendor',
@@ -79,8 +83,6 @@ def _parse_participant_type(value):
 
 
 def _parse_meal_type(value):
-    # 餐點可能是 A、B，也可能是「C餐:滷味+綠豆冰沙」這類完整餐點描述。
-    # 這裡保留 Excel 原始文字，讓前端與查詢站直接顯示完整餐點內容。
     return _clean(value)
 
 
@@ -100,8 +102,6 @@ def _build_row_data(row, headers, dependent_serials):
     employee_id = raw_employee_id
     linked_employee_id = _get(row, headers, 'linked_employee_id')
 
-    # 眷屬匯入規則：Excel 的 employee_id 欄位代表「綁定員工工號」。
-    # 系統存入時會把該值移到 linked_employee_id，並用「原工號_流水號」產生眷屬自己的 employee_id。
     if participant_type == 'dependent':
         linked_employee_id = raw_employee_id
         employee_id = _next_dependent_employee_id(raw_employee_id, dependent_serials)
