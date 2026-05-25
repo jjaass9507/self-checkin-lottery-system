@@ -1,7 +1,7 @@
 """add age_group and phone
 
 Revision ID: 9a8b7c6d5e4f
-Revises: 651c6c783d29
+Revises: c9f1e2d3a4b5
 Create Date: 2026-05-25 14:30:00.000000
 
 """
@@ -11,7 +11,7 @@ import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
 revision = '9a8b7c6d5e4f'
-down_revision = '651c6c783d29'
+down_revision = 'c9f1e2d3a4b5'
 branch_labels = None
 depends_on = None
 
