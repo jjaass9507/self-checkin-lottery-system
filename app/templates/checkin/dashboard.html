@@ -12,183 +12,35 @@
 {% block content %}
 <div class="container-fluid px-4 mt-2 mb-5">
 
-    {# ===== 主統計卡 ===== #}
     <div class="row g-3 mb-3" id="main-stats">
-        <div class="col-6 col-md-4">
-            <div class="card stat-card sc-primary">
-                <div class="card-body d-flex justify-content-between align-items-center py-3">
-                    <div>
-                        <div class="filter-label">總人數</div>
-                        <div class="stat-number" id="stat-total" style="color:var(--ocean-dark);">…</div>
-                    </div>
-                    <i class="bi bi-people-fill stat-icon" style="color:var(--ocean);"></i>
-                </div>
-            </div>
-        </div>
-        <div class="col-6 col-md-4">
-            <div class="card stat-card sc-success">
-                <div class="card-body d-flex justify-content-between align-items-center py-3">
-                    <div>
-                        <div class="filter-label">已報到</div>
-                        <div class="stat-number" id="stat-checkedin" style="color:var(--nature);">…</div>
-                    </div>
-                    <i class="bi bi-person-check-fill stat-icon" style="color:var(--nature);"></i>
-                </div>
-            </div>
-        </div>
-        <div class="col-6 col-md-4">
-            <div class="card stat-card sc-warning">
-                <div class="card-body d-flex justify-content-between align-items-center py-3">
-                    <div>
-                        <div class="filter-label">未報到</div>
-                        <div class="stat-number" id="stat-pending" style="color:var(--sand);">…</div>
-                    </div>
-                    <i class="bi bi-person-x-fill stat-icon" style="color:var(--sand);"></i>
-                </div>
-            </div>
-        </div>
+        <div class="col-6 col-md-4"><div class="card stat-card sc-primary"><div class="card-body d-flex justify-content-between align-items-center py-3"><div><div class="filter-label">總人數</div><div class="stat-number" id="stat-total" style="color:var(--ocean-dark);">…</div></div><i class="bi bi-people-fill stat-icon" style="color:var(--ocean);"></i></div></div></div>
+        <div class="col-6 col-md-4"><div class="card stat-card sc-success"><div class="card-body d-flex justify-content-between align-items-center py-3"><div><div class="filter-label">已報到</div><div class="stat-number" id="stat-checkedin" style="color:var(--nature);">…</div></div><i class="bi bi-person-check-fill stat-icon" style="color:var(--nature);"></i></div></div></div>
+        <div class="col-6 col-md-4"><div class="card stat-card sc-warning"><div class="card-body d-flex justify-content-between align-items-center py-3"><div><div class="filter-label">未報到</div><div class="stat-number" id="stat-pending" style="color:var(--sand);">…</div></div><i class="bi bi-person-x-fill stat-icon" style="color:var(--sand);"></i></div></div></div>
     </div>
 
-    {# ===== 餐點統計卡（有 meal_type 資料時才顯示） ===== #}
-    <div class="row g-3 mb-3" id="meal-stats-row" style="display:none;">
-        <div class="col-6 col-md-3">
-            <div class="card stat-card sc-success">
-                <div class="card-body d-flex justify-content-between align-items-center py-3">
-                    <div>
-                        <div class="filter-label">A 餐（總計）</div>
-                        <div class="stat-number" id="stat-meal-a" style="color:var(--nature);">0</div>
-                    </div>
-                    <i class="bi bi-egg-fried stat-icon" style="color:var(--nature);"></i>
-                </div>
-            </div>
-        </div>
-        <div class="col-6 col-md-3">
-            <div class="card stat-card sc-primary">
-                <div class="card-body d-flex justify-content-between align-items-center py-3">
-                    <div>
-                        <div class="filter-label">B 餐（總計）</div>
-                        <div class="stat-number" id="stat-meal-b" style="color:var(--ocean);">0</div>
-                    </div>
-                    <i class="bi bi-cup-hot stat-icon" style="color:var(--ocean);"></i>
-                </div>
-            </div>
-        </div>
-        <div class="col-6 col-md-3">
-            <div class="card stat-card sc-success">
-                <div class="card-body d-flex justify-content-between align-items-center py-3">
-                    <div>
-                        <div class="filter-label">A 餐（已報到）</div>
-                        <div class="stat-number" id="stat-meal-a-in" style="color:var(--nature);">0</div>
-                    </div>
-                    <i class="bi bi-egg-fried stat-icon" style="color:var(--nature);"></i>
-                </div>
-            </div>
-        </div>
-        <div class="col-6 col-md-3">
-            <div class="card stat-card sc-primary">
-                <div class="card-body d-flex justify-content-between align-items-center py-3">
-                    <div>
-                        <div class="filter-label">B 餐（已報到）</div>
-                        <div class="stat-number" id="stat-meal-b-in" style="color:var(--ocean);">0</div>
-                    </div>
-                    <i class="bi bi-cup-hot stat-icon" style="color:var(--ocean);"></i>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    {# ===== 名單卡 ===== #}
     <div class="card">
         <div class="card-header d-flex justify-content-between align-items-center">
-            <span style="color:var(--ocean-dark);font-weight:700;">
-                <i class="bi bi-table me-2"></i>報到名單
-                （<span id="display-count">0</span> 人）
-            </span>
-            <span id="last-updated" class="small text-muted">
-                <span class="spinner-border spinner-border-sm me-1" style="color:var(--ocean);"></span>連線中…
-            </span>
+            <span style="color:var(--ocean-dark);font-weight:700;"><i class="bi bi-table me-2"></i>報到名單（<span id="display-count">0</span> 人）</span>
+            <span id="last-updated" class="small text-muted"><span class="spinner-border spinner-border-sm me-1" style="color:var(--ocean);"></span>連線中…</span>
         </div>
 
-        {# ===== 篩選區 ===== #}
         <div class="filter-section">
             <div class="row g-2 mb-2">
-                <div class="col-6 col-md-3">
-                    <div class="filter-label">關鍵字搜尋</div>
-                    <input type="text" class="form-control form-control-sm" id="search-box"
-                           placeholder="工號 / 姓名 / 站點…">
-                </div>
-                <div class="col-6 col-md-2">
-                    <div class="filter-label">報到狀態</div>
-                    <select class="form-select form-select-sm" id="filter-status">
-                        <option value="ALL">所有狀態</option>
-                        <option value="CheckedIn">已報到</option>
-                        <option value="Registered">未報到</option>
-                    </select>
-                </div>
-                <div class="col-6 col-md-2">
-                    <div class="filter-label">站點 (Site)</div>
-                    <select class="form-select form-select-sm" id="filter-site">
-                        <option value="ALL">所有站點</option>
-                    </select>
-                </div>
-                <div class="col-6 col-md-2">
-                    <div class="filter-label">部門代碼</div>
-                    <select class="form-select form-select-sm" id="filter-dept">
-                        <option value="ALL">所有部門</option>
-                    </select>
-                </div>
-                <div class="col-6 col-md-3">
-                    <div class="filter-label">中獎狀態</div>
-                    <select class="form-select form-select-sm" id="filter-win">
-                        <option value="ALL">所有情形</option>
-                        <option value="WON">已中獎</option>
-                        <option value="NOT_WON">未中獎</option>
-                    </select>
-                </div>
+                <div class="col-6 col-md-3"><div class="filter-label">關鍵字搜尋</div><input type="text" class="form-control form-control-sm" id="search-box" placeholder="工號 / 姓名 / 站點…"></div>
+                <div class="col-6 col-md-2"><div class="filter-label">報到狀態</div><select class="form-select form-select-sm" id="filter-status"><option value="ALL">所有狀態</option><option value="CheckedIn">已報到</option><option value="Registered">未報到</option></select></div>
+                <div class="col-6 col-md-2"><div class="filter-label">站點 (Site)</div><select class="form-select form-select-sm" id="filter-site"><option value="ALL">所有站點</option></select></div>
+                <div class="col-6 col-md-2"><div class="filter-label">部門代碼</div><select class="form-select form-select-sm" id="filter-dept"><option value="ALL">所有部門</option></select></div>
+                <div class="col-6 col-md-3"><div class="filter-label">中獎狀態</div><select class="form-select form-select-sm" id="filter-win"><option value="ALL">所有情形</option><option value="WON">已中獎</option><option value="NOT_WON">未中獎</option></select></div>
             </div>
-
             <div class="row g-2 mb-2">
-                <div class="col-6 col-md-3">
-                    <div class="filter-label">特定獎項</div>
-                    <select class="form-select form-select-sm" id="filter-prize">
-                        <option value="ALL">所有獎項</option>
-                    </select>
-                </div>
-                {# 活動額外欄位篩選器 #}
-                <div class="col-6 col-md-2" id="filter-type-col">
-                    <div class="filter-label">身分類別</div>
-                    <select class="form-select form-select-sm" id="filter-type">
-                        <option value="ALL">所有身分</option>
-                        <option value="employee">員工</option>
-                        <option value="dependent">眷屬</option>
-                        <option value="NONE">未指定</option>
-                    </select>
-                </div>
-                <div class="col-6 col-md-2" id="filter-meal-col">
-                    <div class="filter-label">餐點類型</div>
-                    <select class="form-select form-select-sm" id="filter-meal">
-                        <option value="ALL">所有餐點</option>
-                        <option value="A">A 餐</option>
-                        <option value="B">B 餐</option>
-                        <option value="NONE">未指定</option>
-                    </select>
-                </div>
-                <div class="col-6 col-md-3" id="filter-group-col">
-                    <div class="filter-label">組別</div>
-                    <select class="form-select form-select-sm" id="filter-group">
-                        <option value="ALL">所有組別</option>
-                    </select>
-                </div>
+                <div class="col-6 col-md-3"><div class="filter-label">特定獎項</div><select class="form-select form-select-sm" id="filter-prize"><option value="ALL">所有獎項</option></select></div>
+                <div class="col-6 col-md-2" id="filter-type-col"><div class="filter-label">身分類別</div><select class="form-select form-select-sm" id="filter-type"><option value="ALL">所有身分</option><option value="employee">員工</option><option value="dependent">眷屬</option><option value="vendor_contact">外部廠商主要窗口</option><option value="vendor">外部廠商</option><option value="NONE">未指定</option></select></div>
+                <div class="col-6 col-md-2" id="filter-meal-col"><div class="filter-label">餐點類型</div><select class="form-select form-select-sm" id="filter-meal"><option value="ALL">所有餐點</option><option value="NONE">未指定</option></select></div>
+                <div class="col-6 col-md-3" id="filter-group-col"><div class="filter-label">組別</div><select class="form-select form-select-sm" id="filter-group"><option value="ALL">所有組別</option></select></div>
             </div>
-
-            <div class="pt-1" id="prefix-filters">
-                <small class="text-muted me-2">工號首碼：</small>
-                <button class="btn btn-sm btn-outline-secondary filter-btn active"
-                        onclick="setPrefixFilter('ALL', this)">全部</button>
-            </div>
+            <div class="pt-1" id="prefix-filters"><small class="text-muted me-2">工號首碼：</small><button class="btn btn-sm btn-outline-secondary filter-btn active" onclick="setPrefixFilter('ALL', this)">全部</button></div>
         </div>
 
-        {# ===== 表格 ===== #}
         <div class="card-body p-0 table-container">
             <table class="table table-hover table-striped mb-0 align-middle">
                 <thead id="table-head">
@@ -201,6 +53,8 @@
                         {% if dash_fields.table %}<th>桌次</th>{% endif %}
                         {% if dash_fields.business_trip %}<th>公差</th>{% endif %}
                         {% if dash_fields.participant_type %}<th>身分</th>{% endif %}
+                        {% if dash_fields.age_group %}<th>大人/小孩</th>{% endif %}
+                        {% if dash_fields.phone %}<th>連絡電話</th>{% endif %}
                         {% if dash_fields.meal %}<th>餐點</th>{% endif %}
                         {% if dash_fields.group %}<th>組別</th>{% endif %}
                         {% if lottery_enabled and dash_fields.lottery_number %}<th>抽獎號碼</th>{% endif %}
@@ -210,13 +64,7 @@
                         <th class="text-end">操作</th>
                     </tr>
                 </thead>
-                <tbody id="table-body">
-                    <tr>
-                        <td colspan="99" class="text-center p-5">
-                            <div class="spinner-border" style="color:var(--ocean);"></div>
-                        </td>
-                    </tr>
-                </tbody>
+                <tbody id="table-body"><tr><td colspan="99" class="text-center p-5"><div class="spinner-border" style="color:var(--ocean);"></div></td></tr></tbody>
             </table>
         </div>
     </div>
@@ -227,327 +75,142 @@
 <script>
     const LOTTERY = {{ lottery_enabled | tojson }};
     const DF = {{ dash_fields | tojson }};
-
-    // ===== DOM 參考 =====
-    const statTotalEl     = document.getElementById('stat-total');
+    const statTotalEl = document.getElementById('stat-total');
     const statCheckedInEl = document.getElementById('stat-checkedin');
-    const statPendingEl   = document.getElementById('stat-pending');
-    const statMealAEl     = document.getElementById('stat-meal-a');
-    const statMealBEl     = document.getElementById('stat-meal-b');
-    const statMealAInEl   = document.getElementById('stat-meal-a-in');
-    const statMealBInEl   = document.getElementById('stat-meal-b-in');
-    const mealStatsRow    = document.getElementById('meal-stats-row');
-
-    const tableBodyEl   = document.getElementById('table-body');
+    const statPendingEl = document.getElementById('stat-pending');
+    const tableBodyEl = document.getElementById('table-body');
     const lastUpdatedEl = document.getElementById('last-updated');
-    const displayCountEl= document.getElementById('display-count');
-
-    const searchBoxEl   = document.getElementById('search-box');
-    const filterStatusEl= document.getElementById('filter-status');
-    const filterWinEl   = document.getElementById('filter-win');
+    const displayCountEl = document.getElementById('display-count');
+    const searchBoxEl = document.getElementById('search-box');
+    const filterStatusEl = document.getElementById('filter-status');
+    const filterWinEl = document.getElementById('filter-win');
     const filterPrizeEl = document.getElementById('filter-prize');
-    const filterSiteEl  = document.getElementById('filter-site');
-    const filterDeptEl  = document.getElementById('filter-dept');
-    const filterTypeEl  = document.getElementById('filter-type');
-    const filterMealEl  = document.getElementById('filter-meal');
+    const filterSiteEl = document.getElementById('filter-site');
+    const filterDeptEl = document.getElementById('filter-dept');
+    const filterTypeEl = document.getElementById('filter-type');
+    const filterMealEl = document.getElementById('filter-meal');
     const filterGroupEl = document.getElementById('filter-group');
     const prefixFiltersEl = document.getElementById('prefix-filters');
-
     let fullDataCache = [];
     let currentPrefixFilter = 'ALL';
     let dropdownsInitialized = false;
 
-    // ===== 撈資料 =====
+    function esc(v) { return String(v ?? '').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+    function mealLabel(v) { if (!v) return ''; const s = String(v).trim(); return /^[A-Z]$/i.test(s) ? `${s.toUpperCase()} 餐` : s; }
+    function mealBadge(v) { return v ? `<span style="background:#f0f9ff;color:#075985;border:1px solid #bae6fd;font-size:0.78rem;padding:3px 9px;border-radius:6px;font-weight:600;display:inline-block;max-width:240px;white-space:normal;line-height:1.35;">${esc(mealLabel(v))}</span>` : '-'; }
+    function groupStyle(v) {
+        const m = String(v || '').trim().toUpperCase().match(/^([A-F])\s*(組|$)/);
+        const map = {
+            A:'background:#fff7ed;color:#c2410c;border:1px solid #fdba74;',
+            B:'background:#fefce8;color:#a16207;border:1px solid #fde68a;',
+            C:'background:#fdf2f8;color:#be185d;border:1px solid #fbcfe8;',
+            D:'background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;',
+            E:'background:#faf5ff;color:#7c3aed;border:1px solid #ddd6fe;',
+            F:'background:#ecfdf5;color:#065f46;border:1px solid #a7f3d0;'
+        };
+        return map[m ? m[1] : ''] || 'background:#f8fafc;color:#475569;border:1px solid #cbd5e1;';
+    }
+    function groupBadge(v) { return v ? `<span style="${groupStyle(v)}font-size:0.75rem;padding:2px 7px;border-radius:5px;font-weight:600;display:inline-block;">${esc(v)}</span>` : '-'; }
+    function typeBadge(p) {
+        const labels = {employee:'員工', dependent:'眷屬', vendor_contact:'外部廠商主要窗口', vendor:'外部廠商'};
+        const styles = {employee:'background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;', dependent:'background:#faf5ff;color:#7c3aed;border:1px solid #ddd6fe;', vendor_contact:'background:#fff7ed;color:#c2410c;border:1px solid #fed7aa;', vendor:'background:#fefce8;color:#a16207;border:1px solid #fde68a;'};
+        if (!labels[p.participant_type]) return '-';
+        let html = `<span style="${styles[p.participant_type]}font-size:0.75rem;padding:2px 7px;border-radius:5px;font-weight:600;display:inline-block;">${labels[p.participant_type]}</span>`;
+        if (p.participant_type === 'dependent' && p.linked_employee_id) html += `<br><small class="text-muted" style="font-size:0.7rem;">→ ${esc(p.linked_employee_id)}</small>`;
+        return html;
+    }
+    function deptShort(v) { const a = Array.from(String(v || '')); return a.length > 4 ? a.slice(0,4).join('') : (v || '-'); }
+
     async function fetchData() {
         try {
             const res = await fetch("{{ url_for('checkin.api_status_list') }}");
             if (!res.ok) throw new Error('API Error');
             const data = await res.json();
-
             if (data.success) {
-                const total     = data.total_count || data.checkin_list.length;
+                const total = data.total_count || data.checkin_list.length;
                 const checkedIn = data.checked_in_count || data.checkin_list.filter(p => p.status === 'CheckedIn').length;
-
-                statTotalEl.innerText     = total;
+                statTotalEl.innerText = total;
                 statCheckedInEl.innerText = checkedIn;
-                statPendingEl.innerText   = total - checkedIn;
-
-                // 餐點統計
-                const mealA    = data.checkin_list.filter(p => p.meal_type === 'A').length;
-                const mealB    = data.checkin_list.filter(p => p.meal_type === 'B').length;
-                const mealAIn  = data.checkin_list.filter(p => p.meal_type === 'A' && p.status === 'CheckedIn').length;
-                const mealBIn  = data.checkin_list.filter(p => p.meal_type === 'B' && p.status === 'CheckedIn').length;
-                if (mealA > 0 || mealB > 0) {
-                    mealStatsRow.style.display = 'flex';
-                    statMealAEl.innerText   = mealA;
-                    statMealBEl.innerText   = mealB;
-                    statMealAInEl.innerText = mealAIn;
-                    statMealBInEl.innerText = mealBIn;
-                }
-
-                if (!dropdownsInitialized && data.checkin_list.length > 0) {
-                    generatePrefixButtons(data.checkin_list);
-                    updatePrizeDropdown(data.checkin_list);
-                    updateSiteAndDeptDropdowns(data.checkin_list);
-                    updateGroupDropdown(data.checkin_list);
+                statPendingEl.innerText = total - checkedIn;
+                fullDataCache = data.checkin_list;
+                if (!dropdownsInitialized && fullDataCache.length > 0) {
+                    generatePrefixButtons(fullDataCache); updatePrizeDropdown(fullDataCache); updateSiteAndDeptDropdowns(fullDataCache); updateGroupDropdown(fullDataCache); updateMealDropdown(fullDataCache);
                     dropdownsInitialized = true;
                 }
-
-                fullDataCache = data.checkin_list;
                 renderTable();
                 lastUpdatedEl.innerText = `更新: ${new Date().toLocaleTimeString()}`;
             }
-        } catch (e) {
-            lastUpdatedEl.innerText = '更新失敗';
-            console.error(e);
-        }
+        } catch (e) { lastUpdatedEl.innerText = '更新失敗'; console.error(e); }
     }
 
-    // ===== 下拉選單初始化 =====
     function updateSiteAndDeptDropdowns(list) {
-        const sites = [...new Set(list.map(p => p.site).filter(Boolean))].sort();
-        filterSiteEl.innerHTML = '<option value="ALL">所有站點</option>';
-        sites.forEach(s => filterSiteEl.appendChild(new Option(s, s)));
-
-        const depts = [...new Set(list.map(p => p.dept_code).filter(Boolean))].sort();
-        filterDeptEl.innerHTML = '<option value="ALL">所有部門</option>';
-        depts.forEach(d => filterDeptEl.appendChild(new Option(d, d)));
+        filterSiteEl.innerHTML = '<option value="ALL">所有站點</option>'; [...new Set(list.map(p => p.site).filter(Boolean))].sort().forEach(s => filterSiteEl.appendChild(new Option(s, s)));
+        filterDeptEl.innerHTML = '<option value="ALL">所有部門</option>'; [...new Set(list.map(p => p.dept_code).filter(Boolean))].sort().forEach(d => filterDeptEl.appendChild(new Option(d, d)));
     }
+    function updateGroupDropdown(list) { filterGroupEl.innerHTML = '<option value="ALL">所有組別</option>'; const groups = [...new Set(list.map(p => p.group_name).filter(Boolean))].sort(); if (groups.length) filterGroupEl.appendChild(new Option('未指定','NONE')); groups.forEach(g => filterGroupEl.appendChild(new Option(g,g))); }
+    function updateMealDropdown(list) { const cur = filterMealEl.value; filterMealEl.innerHTML = '<option value="ALL">所有餐點</option><option value="NONE">未指定</option>'; [...new Set(list.map(p => p.meal_type).filter(Boolean))].sort().forEach(m => filterMealEl.appendChild(new Option(mealLabel(m), m))); if ([...filterMealEl.options].some(o => o.value === cur)) filterMealEl.value = cur; }
+    function updatePrizeDropdown(list) { const prizes = [...new Set(list.map(p => p.prize_info).filter(p => p && p !== ''))].sort(); const cur = filterPrizeEl.value; filterPrizeEl.innerHTML = '<option value="ALL">所有獎項</option>'; prizes.forEach(prize => filterPrizeEl.appendChild(new Option(prize, prize))); if (prizes.includes(cur)) filterPrizeEl.value = cur; }
+    function generatePrefixButtons(list) { const prefixes = [...new Set(list.map(p => p.employee_id.charAt(0).toUpperCase()))].sort(); prefixFiltersEl.innerHTML = `<small class="text-muted me-2">工號首碼：</small><button class="btn btn-sm btn-outline-secondary filter-btn active" onclick="setPrefixFilter('ALL', this)">全部</button>`; prefixes.forEach(c => { const btn = document.createElement('button'); btn.className = 'btn btn-sm btn-outline-secondary filter-btn'; btn.innerText = c; btn.onclick = () => setPrefixFilter(c, btn); prefixFiltersEl.appendChild(btn); }); }
+    function setPrefixFilter(val, btn) { document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active')); btn.classList.add('active'); currentPrefixFilter = val; renderTable(); }
 
-    function updateGroupDropdown(list) {
-        const groups = [...new Set(list.map(p => p.group_name).filter(Boolean))].sort();
-        filterGroupEl.innerHTML = '<option value="ALL">所有組別</option>';
-        if (groups.length > 0) {
-            filterGroupEl.appendChild(new Option('未指定', 'NONE'));
-            groups.forEach(g => filterGroupEl.appendChild(new Option(g, g)));
-        }
-    }
-
-    function updatePrizeDropdown(list) {
-        const prizes = [...new Set(list.map(p => p.prize_info).filter(p => p && p !== ''))].sort();
-        const cur = filterPrizeEl.value;
-        filterPrizeEl.innerHTML = '<option value="ALL">所有獎項</option>';
-        prizes.forEach(prize => filterPrizeEl.appendChild(new Option(prize, prize)));
-        if (prizes.includes(cur)) filterPrizeEl.value = cur;
-    }
-
-    function generatePrefixButtons(list) {
-        const prefixes = [...new Set(list.map(p => p.employee_id.charAt(0).toUpperCase()))].sort();
-        prefixFiltersEl.innerHTML = `
-            <small class="text-muted me-2">工號首碼：</small>
-            <button class="btn btn-sm btn-outline-secondary filter-btn active"
-                    onclick="setPrefixFilter('ALL', this)">全部</button>`;
-        prefixes.forEach(c => {
-            const btn = document.createElement('button');
-            btn.className = 'btn btn-sm btn-outline-secondary filter-btn';
-            btn.innerText = c;
-            btn.onclick = () => setPrefixFilter(c, btn);
-            prefixFiltersEl.appendChild(btn);
-        });
-    }
-
-    function setPrefixFilter(val, btn) {
-        document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        currentPrefixFilter = val;
-        renderTable();
-    }
-
-    // ===== 渲染表格 =====
     function renderTable() {
-        const searchText  = searchBoxEl.value.toLowerCase();
-        const statusFilter= filterStatusEl.value;
-        const winFilter   = filterWinEl.value;
-        const prizeFilter = filterPrizeEl.value;
-        const siteFilter  = filterSiteEl.value;
-        const deptFilter  = filterDeptEl.value;
-        const typeFilter  = filterTypeEl.value;
-        const mealFilter  = filterMealEl.value;
-        const groupFilter = filterGroupEl.value;
-
+        const searchText = searchBoxEl.value.toLowerCase();
         const filtered = fullDataCache.filter(p => {
-            const matchSearch = p.name.toLowerCase().includes(searchText) ||
-                                p.employee_id.toLowerCase().includes(searchText) ||
-                                (p.site && p.site.toLowerCase().includes(searchText)) ||
-                                (p.lottery_number && p.lottery_number.includes(searchText)) ||
-                                (p.group_name && p.group_name.toLowerCase().includes(searchText));
-
-            const matchPrefix = currentPrefixFilter === 'ALL' ||
-                                p.employee_id.toUpperCase().startsWith(currentPrefixFilter);
-
-            const matchStatus = statusFilter === 'ALL' || p.status === statusFilter;
-            const matchSite   = siteFilter === 'ALL'   || p.site === siteFilter;
-            const matchDept   = deptFilter === 'ALL'   || p.dept_code === deptFilter;
-            const matchPrize  = prizeFilter === 'ALL'  || (p.prize_info && p.prize_info.includes(prizeFilter));
-
+            const matchSearch = p.name.toLowerCase().includes(searchText) || p.employee_id.toLowerCase().includes(searchText) || (p.site && p.site.toLowerCase().includes(searchText)) || (p.lottery_number && p.lottery_number.includes(searchText)) || (p.group_name && p.group_name.toLowerCase().includes(searchText)) || (p.phone && p.phone.includes(searchText));
             const isWinner = p.has_won || p.has_won_public;
-            let matchWin = true;
-            if (winFilter === 'WON')     matchWin = isWinner;
-            if (winFilter === 'NOT_WON') matchWin = !isWinner;
-
-            const matchType = typeFilter === 'ALL' ||
-                              (typeFilter === 'NONE' && !p.participant_type) ||
-                              p.participant_type === typeFilter;
-
-            const matchMeal = mealFilter === 'ALL' ||
-                              (mealFilter === 'NONE' && !p.meal_type) ||
-                              p.meal_type === mealFilter;
-
-            const matchGroup = groupFilter === 'ALL' ||
-                               (groupFilter === 'NONE' && !p.group_name) ||
-                               p.group_name === groupFilter;
-
-            return matchSearch && matchPrefix && matchStatus && matchSite &&
-                   matchDept && matchPrize && matchWin && matchType && matchMeal && matchGroup;
+            return matchSearch &&
+                (currentPrefixFilter === 'ALL' || p.employee_id.toUpperCase().startsWith(currentPrefixFilter)) &&
+                (filterStatusEl.value === 'ALL' || p.status === filterStatusEl.value) &&
+                (filterSiteEl.value === 'ALL' || p.site === filterSiteEl.value) &&
+                (filterDeptEl.value === 'ALL' || p.dept_code === filterDeptEl.value) &&
+                (filterPrizeEl.value === 'ALL' || (p.prize_info && p.prize_info.includes(filterPrizeEl.value))) &&
+                (filterWinEl.value === 'ALL' || (filterWinEl.value === 'WON' ? isWinner : !isWinner)) &&
+                (filterTypeEl.value === 'ALL' || (filterTypeEl.value === 'NONE' && !p.participant_type) || p.participant_type === filterTypeEl.value) &&
+                (filterMealEl.value === 'ALL' || (filterMealEl.value === 'NONE' && !p.meal_type) || p.meal_type === filterMealEl.value) &&
+                (filterGroupEl.value === 'ALL' || (filterGroupEl.value === 'NONE' && !p.group_name) || p.group_name === filterGroupEl.value);
         });
-
         displayCountEl.innerText = filtered.length;
-
-        if (filtered.length === 0) {
-            tableBodyEl.innerHTML = `<tr><td colspan="99" class="text-center p-4 text-muted">查無符合資料</td></tr>`;
-            return;
-        }
-
+        if (!filtered.length) { tableBodyEl.innerHTML = `<tr><td colspan="99" class="text-center p-4 text-muted">查無符合資料</td></tr>`; return; }
         tableBodyEl.innerHTML = filtered.map(p => {
-            // 狀態徽章
-            const statusBadge = p.status === 'CheckedIn'
-                ? `<span class="badge" style="background:#d1fae5;color:#065f46;border:1px solid #a7f3d0;">已報到</span>`
-                : `<span class="badge" style="background:#f1f5f9;color:#94a3b8;border:1px solid #e2e8f0;">未報到</span>`;
-
-            // 公差徽章
-            const bizBadge = p.is_business_trip
-                ? `<span class="badge" style="background:#e0f2fe;color:#0369a1;border:1px solid #bae6fd;">公差</span>`
-                : `-`;
-
-            // 身分徽章
-            let typeBadge = `-`;
-            if (p.participant_type === 'employee') {
-                typeBadge = `<span class="badge-employee">員工</span>`;
-            } else if (p.participant_type === 'dependent') {
-                typeBadge = `<span class="badge-dependent">眷屬</span>`;
-                if (p.linked_employee_id) {
-                    typeBadge += `<br><small class="text-muted" style="font-size:0.7rem;">→ ${p.linked_employee_id}</small>`;
-                }
-            }
-
-            // 餐點徽章
-            let mealBadge = `-`;
-            if (p.meal_type === 'A') mealBadge = `<span class="badge-meal-a">A 餐</span>`;
-            if (p.meal_type === 'B') mealBadge = `<span class="badge-meal-b">B 餐</span>`;
-
-            // 組別
-            const groupText = p.group_name
-                ? `<span class="badge-group">${p.group_name}</span>`
-                : `-`;
-
-            // 中獎資訊
+            const statusBadge = p.status === 'CheckedIn' ? `<span class="badge" style="background:#d1fae5;color:#065f46;border:1px solid #a7f3d0;">已報到</span>` : `<span class="badge" style="background:#f1f5f9;color:#94a3b8;border:1px solid #e2e8f0;">未報到</span>`;
+            const bizBadge = p.is_business_trip ? `<span class="badge" style="background:#e0f2fe;color:#0369a1;border:1px solid #bae6fd;">公差</span>` : '-';
             let prizeHtml = '';
-            if (p.tail_prize_info) prizeHtml += `<div class="small mb-1" style="color:#dc2626;"><i class="bi bi-ticket-perforated-fill me-1"></i>${p.tail_prize_info}</div>`;
-            if (p.public_prize_info) prizeHtml += `<div class="small" style="color:var(--ocean-dark);"><i class="bi bi-trophy-fill me-1"></i>${p.public_prize_info}</div>`;
+            if (p.tail_prize_info) prizeHtml += `<div class="small mb-1" style="color:#dc2626;"><i class="bi bi-ticket-perforated-fill me-1"></i>${esc(p.tail_prize_info)}</div>`;
+            if (p.public_prize_info) prizeHtml += `<div class="small" style="color:var(--ocean-dark);"><i class="bi bi-trophy-fill me-1"></i>${esc(p.public_prize_info)}</div>`;
             if (!prizeHtml) prizeHtml = `<span class="text-muted">-</span>`;
-
-            // 領獎按鈕
             let claimHtml = '';
-            if (p.has_won) {
-                claimHtml += p.prize_claimed
-                    ? `<button class="btn btn-sm mb-1 me-1" style="font-size:0.72rem;background:#d1fae5;color:#065f46;border:1px solid #6ee7b7;" onclick="toggleClaim(${p.id},'tail')"><i class="bi bi-check-circle-fill me-1"></i>尾數已領</button>`
-                    : `<button class="btn btn-sm mb-1 me-1" style="font-size:0.72rem;background:#fee2e2;color:#991b1b;border:1px solid #fca5a5;" onclick="toggleClaim(${p.id},'tail')">領取尾數</button>`;
-            }
-            if (p.has_won_public) {
-                claimHtml += p.public_prize_claimed
-                    ? `<button class="btn btn-sm" style="font-size:0.72rem;background:#dbeafe;color:#1d4ed8;border:1px solid #93c5fd;" onclick="toggleClaim(${p.id},'public')"><i class="bi bi-check-circle-fill me-1"></i>公獎已領</button>`
-                    : `<button class="btn btn-sm" style="font-size:0.72rem;background:#ede9fe;color:#7c3aed;border:1px solid #ddd6fe;" onclick="toggleClaim(${p.id},'public')">領取公獎</button>`;
-            }
+            if (p.has_won) claimHtml += p.prize_claimed ? `<button class="btn btn-sm mb-1 me-1" style="font-size:0.72rem;background:#d1fae5;color:#065f46;border:1px solid #6ee7b7;" onclick="toggleClaim(${p.id},'tail')">尾數已領</button>` : `<button class="btn btn-sm mb-1 me-1" style="font-size:0.72rem;background:#fee2e2;color:#991b1b;border:1px solid #fca5a5;" onclick="toggleClaim(${p.id},'tail')">領取尾數</button>`;
+            if (p.has_won_public) claimHtml += p.public_prize_claimed ? `<button class="btn btn-sm" style="font-size:0.72rem;background:#dbeafe;color:#1d4ed8;border:1px solid #93c5fd;" onclick="toggleClaim(${p.id},'public')">公獎已領</button>` : `<button class="btn btn-sm" style="font-size:0.72rem;background:#ede9fe;color:#7c3aed;border:1px solid #ddd6fe;" onclick="toggleClaim(${p.id},'public')">領取公獎</button>`;
             if (!claimHtml) claimHtml = `<span class="text-muted">-</span>`;
-
-            // 操作按鈕
-            let actionBtn = '';
-            if (p.is_business_trip) {
-                actionBtn = `<span class="badge" style="background:#e0f2fe;color:#0369a1;border:1px solid #bae6fd;">公差視同報到</span>`;
-            } else if (p.status === 'CheckedIn') {
-                actionBtn = `<button class="btn btn-sm btn-outline-secondary" onclick="adminCancelCheckIn(${p.id},'${p.name}')">取消</button>`;
-            } else {
-                actionBtn = `<button class="btn btn-sm btn-outline-success" onclick="adminCheckIn(${p.id},'${p.name}')">簽到</button>`;
-            }
-
-            // 流水號徽章
-            const seqBadge = p.checkin_seq
-                ? `<span style="font-family:'Nunito',sans-serif;font-weight:800;color:#7c3aed;">${p.checkin_seq}</span>`
-                : `-`;
-
+            const actionBtn = p.is_business_trip ? `<span class="badge" style="background:#e0f2fe;color:#0369a1;border:1px solid #bae6fd;">公差視同報到</span>` : (p.status === 'CheckedIn' ? `<button class="btn btn-sm btn-outline-secondary" onclick="adminCancelCheckIn(${p.id},'${esc(p.name)}')">取消</button>` : `<button class="btn btn-sm btn-outline-success" onclick="adminCheckIn(${p.id},'${esc(p.name)}')">簽到</button>`);
             return `<tr>
-                <td><b>${p.name}</b></td>
-                <td class="text-muted">${p.employee_id}</td>
-                ${DF.checkin_seq ? `<td>${seqBadge}</td>` : ''}
-                ${DF.site ? `<td>${p.site || '-'}</td>` : ''}
-                ${DF.dept ? `<td>${p.dept_code || '-'}</td>` : ''}
-                ${DF.table ? `<td style="color:var(--sand);font-weight:700;">${p.table_number || '-'}</td>` : ''}
+                <td><b>${esc(p.name)}</b></td><td class="text-muted">${esc(p.employee_id)}</td>
+                ${DF.checkin_seq ? `<td>${p.checkin_seq ? `<span style="font-family:'Nunito',sans-serif;font-weight:800;color:#7c3aed;">${esc(p.checkin_seq)}</span>` : '-'}</td>` : ''}
+                ${DF.site ? `<td>${esc(p.site || '-')}</td>` : ''}
+                ${DF.dept ? `<td title="${esc(p.dept_code || '')}">${esc(deptShort(p.dept_code))}</td>` : ''}
+                ${DF.table ? `<td style="color:var(--sand);font-weight:700;">${esc(p.table_number || '-')}</td>` : ''}
                 ${DF.business_trip ? `<td>${bizBadge}</td>` : ''}
-                ${DF.participant_type ? `<td>${typeBadge}</td>` : ''}
-                ${DF.meal ? `<td>${mealBadge}</td>` : ''}
-                ${DF.group ? `<td>${groupText}</td>` : ''}
-                ${LOTTERY && DF.lottery_number ? `<td style="font-weight:700;color:var(--ocean-dark);">${p.lottery_number || '-'}</td>` : ''}
+                ${DF.participant_type ? `<td>${typeBadge(p)}</td>` : ''}
+                ${DF.age_group ? `<td>${p.age_group ? `<span class="badge bg-light text-dark border">${esc(p.age_group)}</span>` : '-'}</td>` : ''}
+                ${DF.phone ? `<td>${esc(p.phone || '-')}</td>` : ''}
+                ${DF.meal ? `<td>${mealBadge(p.meal_type)}</td>` : ''}
+                ${DF.group ? `<td>${groupBadge(p.group_name)}</td>` : ''}
+                ${LOTTERY && DF.lottery_number ? `<td style="font-weight:700;color:var(--ocean-dark);">${esc(p.lottery_number || '-')}</td>` : ''}
                 ${DF.status ? `<td>${statusBadge}</td>` : ''}
                 ${LOTTERY && DF.prize ? `<td>${prizeHtml}</td><td>${claimHtml}</td>` : ''}
-                ${DF.checkin_time ? `<td class="text-muted" style="font-size:0.8rem;">${p.check_in_time || ''}</td>` : ''}
+                ${DF.checkin_time ? `<td class="text-muted" style="font-size:0.8rem;">${esc(p.check_in_time || '')}</td>` : ''}
                 <td class="text-end">${actionBtn}</td>
             </tr>`;
         }).join('');
     }
 
-    // ===== API 操作 =====
-    async function toggleClaim(id, type) {
-        try {
-            const res = await fetch("{{ url_for('checkin.api_toggle_claim') }}", {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({id, type})
-            });
-            const data = await res.json();
-            if (data.success) fetchData();
-            else alert(data.message);
-        } catch (e) { console.error(e); alert('操作失敗'); }
-    }
+    async function toggleClaim(id, type) { try { const res = await fetch("{{ url_for('checkin.api_toggle_claim') }}", {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({id,type})}); const data = await res.json(); if (data.success) fetchData(); else alert(data.message); } catch(e) { alert('操作失敗'); } }
+    async function adminCheckIn(id, name) { if (!confirm(`確認幫 [ ${name} ] 簽到？`)) return; try { const res = await fetch("{{ url_for('checkin.api_admin_checkin') }}", {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({id})}); const data = await res.json(); if (data.success) fetchData(); else alert(data.message); } catch(e) { alert('Error'); } }
+    async function adminCancelCheckIn(id, name) { const cancellerId = prompt(`【警告】確認要取消 [ ${name} ] 的報到狀態嗎？\n\n為保留紀錄，請輸入您的工號：`); if (cancellerId === null) return; if (!cancellerId.trim()) return alert('未輸入工號，無法執行。'); try { const res = await fetch("{{ url_for('checkin.api_admin_cancel_checkin') }}", {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({id, canceller_id:cancellerId.trim()})}); const data = await res.json(); if (data.success) { alert(data.message); fetchData(); } else alert(data.message); } catch(e) { alert('發生錯誤'); } }
 
-    async function adminCheckIn(id, name) {
-        if (!confirm(`確認幫 [ ${name} ] 簽到？`)) return;
-        try {
-            const res = await fetch("{{ url_for('checkin.api_admin_checkin') }}", {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({id})
-            });
-            const data = await res.json();
-            if (data.success) fetchData();
-            else alert(data.message);
-        } catch (e) { alert('Error'); }
-    }
-
-    async function adminCancelCheckIn(id, name) {
-        const cancellerId = prompt(`【警告】確認要取消 [ ${name} ] 的報到狀態嗎？\n\n為保留紀錄，請輸入您的工號：`);
-        if (cancellerId === null) return;
-        if (!cancellerId.trim()) return alert('未輸入工號，無法執行。');
-
-        try {
-            const res = await fetch("{{ url_for('checkin.api_admin_cancel_checkin') }}", {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({id, canceller_id: cancellerId.trim()})
-            });
-            const data = await res.json();
-            if (data.success) { alert(data.message); fetchData(); }
-            else alert(data.message);
-        } catch (e) { console.error(e); alert('發生錯誤'); }
-    }
-
-    // ===== 初始化 =====
     document.addEventListener('DOMContentLoaded', () => {
-        fetchData();
-        setInterval(fetchData, 5000);
-
-        [searchBoxEl, filterStatusEl, filterWinEl, filterPrizeEl,
-         filterSiteEl, filterDeptEl, filterTypeEl, filterMealEl, filterGroupEl]
-            .forEach(el => el.addEventListener('change', renderTable));
+        fetchData(); setInterval(fetchData, 5000);
+        [searchBoxEl, filterStatusEl, filterWinEl, filterPrizeEl, filterSiteEl, filterDeptEl, filterTypeEl, filterMealEl, filterGroupEl].forEach(el => el.addEventListener('change', renderTable));
         searchBoxEl.addEventListener('input', renderTable);
     });
 </script>
