@@ -50,6 +50,12 @@ class CheckinList(db.Model):
     group_name = db.Column(db.String(50), nullable=True, default=None)
     # 活動分組名稱，例如: 'A組', '第1組', 'Red Team'
 
+    age_group = db.Column(db.String(20), nullable=True, default=None)
+    # 大人/小孩，例如: '大人', '小孩', '成人', '兒童'
+
+    phone = db.Column(db.String(30), nullable=True, default=None)
+    # 聯絡電話
+
     def __repr__(self):
         return f'<CheckinList {self.name} ({self.employee_id})>'
 
