@@ -27,6 +27,7 @@ PARTICIPANT_TYPE_ALIASES = {
     '主要窗口': 'vendor_contact',
     '廠商主要窗口': 'vendor_contact',
     '外部廠商主要窗口': 'vendor_contact',
+    '外部廠商主要聯絡人': 'vendor_contact',
     'vendor': 'vendor',
     'external_vendor': 'vendor',
     '外部廠商': 'vendor',
@@ -57,19 +58,30 @@ def _parse_business_trip(value):
     return bool(value and value.upper() in ['1', 'Y', 'YES', 'TRUE', '是'])
 
 
+def _canonical_key(value):
+    value = (_clean(value) or '').strip()
+    return value.lower().replace('-', '_').replace(' ', '_')
+
+
 def _parse_participant_type(value):
     raw = (_clean(value) or '').strip()
-    normalized = raw.lower().replace('-', '_').replace(' ', '_')
+    compact = ''.join(raw.split())
+    normalized = _canonical_key(raw)
+    normalized_compact = _canonical_key(compact)
     return (
         PARTICIPANT_TYPE_ALIASES.get(raw)
         or PARTICIPANT_TYPE_ALIASES.get(raw.lower())
+        or PARTICIPANT_TYPE_ALIASES.get(compact)
+        or PARTICIPANT_TYPE_ALIASES.get(compact.lower())
         or PARTICIPANT_TYPE_ALIASES.get(normalized)
+        or PARTICIPANT_TYPE_ALIASES.get(normalized_compact)
     )
 
 
 def _parse_meal_type(value):
-    raw = (_clean(value) or '').upper()
-    return raw if raw in ['A', 'B'] else None
+    # 餐點可能是 A、B，也可能是「C餐:滷味+綠豆冰沙」這類完整餐點描述。
+    # 這裡保留 Excel 原始文字，讓前端與查詢站直接顯示完整餐點內容。
+    return _clean(value)
 
 
 def _next_dependent_employee_id(original_employee_id, dependent_serials):
