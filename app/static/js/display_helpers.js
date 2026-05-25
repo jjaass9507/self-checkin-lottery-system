@@ -27,6 +27,17 @@
         DEFAULT: 'background:#f8fafc;color:#475569;border:1px solid #cbd5e1;'
     };
 
+    const FILTER_MAP = {
+        status: { id: 'filter-status', empty: 'NONE', actual: p => p.status },
+        site: { id: 'filter-site', empty: 'NONE', actual: p => p.site },
+        dept: { id: 'filter-dept', empty: 'NONE', actual: p => p.dept_code },
+        win: { id: 'filter-win', empty: 'NONE', actual: p => (p.has_won || p.has_won_public) ? 'WON' : 'NOT_WON' },
+        prize: { id: 'filter-prize', empty: 'NONE', actual: p => p.prize_info || '' },
+        participant_type: { id: 'filter-type', empty: 'NONE', actual: p => p.participant_type },
+        meal: { id: 'filter-meal', empty: 'NONE', actual: p => p.meal_type },
+        group: { id: 'filter-group', empty: 'NONE', actual: p => p.group_name }
+    };
+
     function escapeHtml(value) {
         return String(value ?? '')
             .replace(/&/g, '&amp;')
@@ -104,6 +115,67 @@
         }
     }
 
+    function getMultiValues(select) {
+        const stored = select && select.dataset.multiValues;
+        if (stored) return stored.split('|').filter(Boolean);
+        return select ? Array.from(select.selectedOptions).map(option => option.value) : ['ALL'];
+    }
+
+    function matchMulti(values, actual, emptyToken, contains) {
+        if (!values.length || values.includes('ALL')) return true;
+        if (values.includes(emptyToken) && !actual) return true;
+        if (contains) return values.some(value => actual && String(actual).includes(value));
+        return values.includes(actual || '');
+    }
+
+    function applyMultiFilterVisibility() {
+        const tableBody = document.getElementById('table-body');
+        const displayCount = document.getElementById('display-count');
+        if (!tableBody) return;
+        const list = getDashboardData();
+        const dataByEmployeeId = new Map(list.map(p => [String(p.employee_id), p]));
+        let visibleCount = 0;
+        Array.from(tableBody.querySelectorAll('tr')).forEach(row => {
+            if (!row.children || row.children.length < 2) return;
+            const person = dataByEmployeeId.get(row.children[1].textContent.trim());
+            if (!person) return;
+            let ok = true;
+            Object.keys(FILTER_MAP).forEach(key => {
+                const meta = FILTER_MAP[key];
+                const select = document.getElementById(meta.id);
+                if (!select || !select.multiple) return;
+                ok = ok && matchMulti(getMultiValues(select), meta.actual(person), meta.empty, key === 'prize');
+            });
+            row.style.display = ok ? '' : 'none';
+            if (ok) visibleCount += 1;
+        });
+        if (displayCount) displayCount.innerText = visibleCount;
+    }
+
+    function enableDashboardFilterModes(modes) {
+        Object.keys(FILTER_MAP).forEach(key => {
+            const select = document.getElementById(FILTER_MAP[key].id);
+            if (!select) return;
+            const useMulti = modes && modes[key] !== false;
+            select.multiple = useMulti;
+            select.size = useMulti ? Math.min(Math.max(select.options.length, 3), 6) : 1;
+            if (useMulti) {
+                select.dataset.multiValues = 'ALL';
+                select.title = '可按 Ctrl / Command 複選';
+                select.addEventListener('change', function () {
+                    const values = Array.from(select.selectedOptions).map(option => option.value);
+                    select.dataset.multiValues = values.length ? values.join('|') : 'ALL';
+                    Array.from(select.options).forEach(option => option.selected = option.value === 'ALL');
+                    window.setTimeout(() => {
+                        const restore = select.dataset.multiValues.split('|').filter(Boolean);
+                        Array.from(select.options).forEach(option => option.selected = restore.includes(option.value));
+                        applyMultiFilterVisibility();
+                    }, 0);
+                }, true);
+            }
+        });
+    }
+
     function patchDashboardRows() {
         const tableBody = document.getElementById('table-body');
         const head = document.getElementById('table-head');
@@ -139,9 +211,35 @@
             if (ageIndex >= 0 && row.children[ageIndex]) row.children[ageIndex].innerHTML = person.age_group ? `<span class="badge bg-light text-dark border">${escapeHtml(person.age_group)}</span>` : '-';
             if (phoneIndex >= 0 && row.children[phoneIndex]) row.children[phoneIndex].innerHTML = person.phone ? `<span style="font-size:0.82rem;">${escapeHtml(person.phone)}</span>` : '-';
         });
+        applyMultiFilterVisibility();
+    }
+
+    function injectAdminFilterModeCard() {
+        if (!location.pathname.includes('/admin')) return;
+        if (document.getElementById('filter-mode-settings-card')) return;
+        const queryCardTitle = Array.from(document.querySelectorAll('.card-header span')).find(el => el.textContent.trim() === '查詢站顯示欄位');
+        if (!queryCardTitle) return;
+        fetch('/admin/api/filter_modes').then(r => r.json()).then(data => {
+            if (!data.success) return;
+            const card = document.createElement('div');
+            card.className = 'card mb-4';
+            card.id = 'filter-mode-settings-card';
+            const rows = Object.entries(data.filter_mode_labels).map(([key, label]) => {
+                const isMulti = data.filter_modes[key] !== false;
+                return `<div class="col-6 col-md-4"><label class="form-label small fw-bold">${escapeHtml(label)}</label><select class="form-select form-select-sm" name="filter_multi_${escapeHtml(key)}"><option value="true" ${isMulti ? 'selected' : ''}>複選</option><option value="false" ${!isMulti ? 'selected' : ''}>單選</option></select></div>`;
+            }).join('');
+            card.innerHTML = `<div class="card-header ch-info d-flex align-items-center gap-2"><i class="bi bi-funnel fs-5"></i><span>報到名單篩選模式</span></div><div class="card-body p-4"><p class="small text-muted mb-3">設定 Dashboard 篩選欄位要使用單選或複選。預設皆為複選。</p><form action="/admin/filter_modes" method="POST"><div class="row g-3 mb-3">${rows}</div><div class="d-grid"><button type="submit" class="btn btn-ocean"><i class="bi bi-save me-1"></i>儲存篩選設定</button></div></form></div>`;
+            queryCardTitle.closest('.card').before(card);
+        }).catch(() => {});
     }
 
     document.addEventListener('DOMContentLoaded', function () {
+        injectAdminFilterModeCard();
+        if (document.getElementById('table-body')) {
+            fetch('/admin/api/filter_modes').then(r => r.json()).then(data => {
+                if (data.success) enableDashboardFilterModes(data.filter_modes);
+            }).catch(() => enableDashboardFilterModes({}));
+        }
         const tableBody = document.getElementById('table-body');
         if (!tableBody) return;
         let ticking = false;
