@@ -29,6 +29,7 @@ class CheckinList(db.Model):
     # 領獎確認
     prize_claimed = db.Column(db.Boolean, default=False)        # 尾數獎
     public_prize_claimed = db.Column(db.Boolean, default=False) # 公獎
+    vendor_gift_claimed = db.Column(db.Boolean, default=False, nullable=False) # 外部廠商主要窗口公司禮品
 
     # 桌次 / 公差
     table_number = db.Column(db.String(20), nullable=True)
