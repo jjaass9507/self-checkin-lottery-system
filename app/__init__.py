@@ -55,6 +55,30 @@ def create_app(config_class=Config):
             modes[key] = (setting.value != 'false') if setting else True
         return modes
 
+    @app.route('/checkin/api/toggle_vendor_gift', methods=['POST'])
+    def toggle_vendor_gift():
+        from app.models import CheckinList
+        try:
+            data = request.get_json() or {}
+            person_id = data.get('id')
+            claimed = data.get('claimed')
+            person = CheckinList.query.get(person_id)
+            if not person:
+                return jsonify({'success': False, 'message': '找不到人員'}), 404
+            if person.participant_type != 'vendor_contact':
+                return jsonify({'success': False, 'message': '只有外部廠商主要窗口需要確認公司禮品'}), 400
+            person.vendor_gift_claimed = bool(claimed)
+            db.session.commit()
+            status_text = '已領取' if person.vendor_gift_claimed else '未領取'
+            return jsonify({
+                'success': True,
+                'message': f'{person.name} 公司禮品狀態已更新為{status_text}',
+                'vendor_gift_claimed': person.vendor_gift_claimed,
+            })
+        except Exception as e:
+            db.session.rollback()
+            return jsonify({'success': False, 'message': str(e)}), 500
+
     @app.route('/admin/filter_modes', methods=['POST'])
     def toggle_filter_modes():
         from app.models import AppSetting
