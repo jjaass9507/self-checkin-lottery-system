@@ -6,28 +6,28 @@
 <style>
     .stat-number { font-size: 2rem; font-weight: 800; line-height: 1.1; }
     .stat-icon   { font-size: 2.2rem; opacity: 0.25; }
-    .recent-action-row > td {
-        background: #fff7ed !important;
-        box-shadow: inset 4px 0 0 #fb923c;
-        transition: background-color 0.2s ease;
-    }
-    .recent-action-note {
-        display: inline-block;
-        margin-left: 6px;
-        padding: 2px 6px;
-        border-radius: 999px;
-        background: #ffedd5;
-        color: #c2410c;
-        border: 1px solid #fdba74;
-        font-size: 0.72rem;
-        font-weight: 700;
+    .recent-action-row > td { background: #fff7ed !important; box-shadow: inset 4px 0 0 #fb923c; transition: background-color 0.2s ease; }
+    .recent-action-note { display: inline-block; margin-left: 6px; padding: 2px 6px; border-radius: 999px; background: #ffedd5; color: #c2410c; border: 1px solid #fdba74; font-size: 0.72rem; font-weight: 700; }
+    .multi-filter { position: relative; }
+    .multi-filter-toggle { width: 100%; min-height: 31px; justify-content: space-between; text-align: left; background: #fff; border-color: #cbd5e1; color: #1e3a5f; }
+    .multi-filter-toggle .filter-summary { display: inline-block; max-width: calc(100% - 18px); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .multi-filter-menu { display: none; position: absolute; z-index: 1070; left: 0; right: 0; top: calc(100% + 4px); max-height: 280px; overflow-y: auto; background: #fff; border: 1px solid #bae6fd; border-radius: 12px; box-shadow: 0 12px 30px rgba(2,132,199,0.18); padding: 8px; }
+    .multi-filter.open .multi-filter-menu { display: block; }
+    .multi-filter-actions { display: flex; gap: 6px; padding-bottom: 6px; margin-bottom: 6px; border-bottom: 1px solid #e0f2fe; }
+    .multi-filter-actions button { flex: 1; min-height: 30px; font-size: 0.75rem; padding: 2px 6px; }
+    .multi-filter-option { display: flex; align-items: center; gap: 8px; padding: 7px 8px; border-radius: 8px; cursor: pointer; font-size: 0.88rem; }
+    .multi-filter-option:hover { background: #f0f9ff; }
+    .multi-filter-option input { flex: 0 0 auto; }
+    .multi-filter-empty { padding: 8px; color: #94a3b8; font-size: 0.85rem; text-align: center; }
+    @media (max-width: 767.98px) {
+        .multi-filter-toggle { min-height: 40px; }
+        .multi-filter-menu { position: static; margin-top: 6px; max-height: 220px; box-shadow: none; }
     }
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="container-fluid px-4 mt-2 mb-5">
-
     <div class="row g-3 mb-3" id="main-stats">
         <div class="col-6 col-md-4"><div class="card stat-card sc-primary"><div class="card-body d-flex justify-content-between align-items-center py-3"><div><div class="filter-label">總人數</div><div class="stat-number" id="stat-total" style="color:var(--ocean-dark);">…</div></div><i class="bi bi-people-fill stat-icon" style="color:var(--ocean);"></i></div></div></div>
         <div class="col-6 col-md-4"><div class="card stat-card sc-success"><div class="card-body d-flex justify-content-between align-items-center py-3"><div><div class="filter-label">已報到</div><div class="stat-number" id="stat-checkedin" style="color:var(--nature);">…</div></div><i class="bi bi-person-check-fill stat-icon" style="color:var(--nature);"></i></div></div></div>
@@ -43,43 +43,39 @@
         <div class="filter-section">
             <div class="row g-2 mb-2">
                 <div class="col-6 col-md-3"><div class="filter-label">關鍵字搜尋</div><input type="text" class="form-control form-control-sm" id="search-box" placeholder="工號 / 姓名 / 站點…"></div>
-                <div class="col-6 col-md-2"><div class="filter-label">報到狀態</div><select class="form-select form-select-sm" id="filter-status"><option value="ALL">所有狀態</option><option value="CheckedIn">已報到</option><option value="Registered">未報到</option></select></div>
-                <div class="col-6 col-md-2"><div class="filter-label">站點 (Site)</div><select class="form-select form-select-sm" id="filter-site"><option value="ALL">所有站點</option></select></div>
-                <div class="col-6 col-md-2"><div class="filter-label">部門代碼</div><select class="form-select form-select-sm" id="filter-dept"><option value="ALL">所有部門</option></select></div>
-                <div class="col-6 col-md-3"><div class="filter-label">中獎狀態</div><select class="form-select form-select-sm" id="filter-win"><option value="ALL">所有情形</option><option value="WON">已中獎</option><option value="NOT_WON">未中獎</option></select></div>
+                <div class="col-6 col-md-2"><div class="filter-label">報到狀態</div><div id="filter-status" class="multi-filter"></div></div>
+                <div class="col-6 col-md-2"><div class="filter-label">站點 (Site)</div><div id="filter-site" class="multi-filter"></div></div>
+                <div class="col-6 col-md-2"><div class="filter-label">部門代碼</div><div id="filter-dept" class="multi-filter"></div></div>
+                <div class="col-6 col-md-3"><div class="filter-label">中獎狀態</div><div id="filter-win" class="multi-filter"></div></div>
             </div>
             <div class="row g-2 mb-2">
-                <div class="col-6 col-md-3"><div class="filter-label">特定獎項</div><select class="form-select form-select-sm" id="filter-prize"><option value="ALL">所有獎項</option></select></div>
-                <div class="col-6 col-md-2" id="filter-type-col"><div class="filter-label">身分類別</div><select class="form-select form-select-sm" id="filter-type"><option value="ALL">所有身分</option><option value="employee">員工</option><option value="dependent">眷屬</option><option value="vendor_contact">外部廠商主要窗口</option><option value="vendor">外部廠商</option><option value="NONE">未指定</option></select></div>
-                <div class="col-6 col-md-2" id="filter-meal-col"><div class="filter-label">餐點類型</div><select class="form-select form-select-sm" id="filter-meal"><option value="ALL">所有餐點</option><option value="NONE">未指定</option></select></div>
-                <div class="col-6 col-md-3" id="filter-group-col"><div class="filter-label">組別</div><select class="form-select form-select-sm" id="filter-group"><option value="ALL">所有組別</option></select></div>
+                <div class="col-6 col-md-3"><div class="filter-label">特定獎項</div><div id="filter-prize" class="multi-filter"></div></div>
+                <div class="col-6 col-md-2" id="filter-type-col"><div class="filter-label">身分類別</div><div id="filter-type" class="multi-filter"></div></div>
+                <div class="col-6 col-md-2" id="filter-meal-col"><div class="filter-label">餐點類型</div><div id="filter-meal" class="multi-filter"></div></div>
+                <div class="col-6 col-md-3" id="filter-group-col"><div class="filter-label">組別</div><div id="filter-group" class="multi-filter"></div></div>
             </div>
             <div class="pt-1" id="prefix-filters"><small class="text-muted me-2">工號首碼：</small><button class="btn btn-sm btn-outline-secondary filter-btn active" onclick="setPrefixFilter('ALL', this)">全部</button></div>
         </div>
 
         <div class="card-body p-0 table-container">
             <table class="table table-hover table-striped mb-0 align-middle">
-                <thead id="table-head">
-                    <tr>
-                        <th>姓名</th>
-                        <th>操作</th>
-                        <th>工號</th>
-                        {% if dash_fields.checkin_seq %}<th>流水號</th>{% endif %}
-                        {% if dash_fields.site %}<th>Site</th>{% endif %}
-                        {% if dash_fields.dept %}<th>部門</th>{% endif %}
-                        {% if dash_fields.table %}<th>桌次</th>{% endif %}
-                        {% if dash_fields.business_trip %}<th>公差</th>{% endif %}
-                        {% if dash_fields.participant_type %}<th>身分</th>{% endif %}
-                        {% if dash_fields.age_group %}<th>大人/小孩</th>{% endif %}
-                        {% if dash_fields.phone %}<th>連絡電話</th>{% endif %}
-                        {% if dash_fields.meal %}<th>餐點</th>{% endif %}
-                        {% if dash_fields.group %}<th>組別</th>{% endif %}
-                        {% if lottery_enabled and dash_fields.lottery_number %}<th>抽獎號碼</th>{% endif %}
-                        {% if dash_fields.status %}<th>狀態</th>{% endif %}
-                        {% if lottery_enabled and dash_fields.prize %}<th>中獎資訊</th><th>領獎確認</th>{% endif %}
-                        {% if dash_fields.checkin_time %}<th>時間</th>{% endif %}
-                    </tr>
-                </thead>
+                <thead id="table-head"><tr>
+                    <th>姓名</th><th>操作</th><th>工號</th>
+                    {% if dash_fields.checkin_seq %}<th>流水號</th>{% endif %}
+                    {% if dash_fields.site %}<th>Site</th>{% endif %}
+                    {% if dash_fields.dept %}<th>部門</th>{% endif %}
+                    {% if dash_fields.table %}<th>桌次</th>{% endif %}
+                    {% if dash_fields.business_trip %}<th>公差</th>{% endif %}
+                    {% if dash_fields.participant_type %}<th>身分</th>{% endif %}
+                    {% if dash_fields.age_group %}<th>大人/小孩</th>{% endif %}
+                    {% if dash_fields.phone %}<th>連絡電話</th>{% endif %}
+                    {% if dash_fields.meal %}<th>餐點</th>{% endif %}
+                    {% if dash_fields.group %}<th>組別</th>{% endif %}
+                    {% if lottery_enabled and dash_fields.lottery_number %}<th>抽獎號碼</th>{% endif %}
+                    {% if dash_fields.status %}<th>狀態</th>{% endif %}
+                    {% if lottery_enabled and dash_fields.prize %}<th>中獎資訊</th><th>領獎確認</th>{% endif %}
+                    {% if dash_fields.checkin_time %}<th>時間</th>{% endif %}
+                </tr></thead>
                 <tbody id="table-body"><tr><td colspan="99" class="text-center p-5"><div class="spinner-border" style="color:var(--ocean);"></div></td></tr></tbody>
             </table>
         </div>
@@ -98,15 +94,8 @@
     const lastUpdatedEl = document.getElementById('last-updated');
     const displayCountEl = document.getElementById('display-count');
     const searchBoxEl = document.getElementById('search-box');
-    const filterStatusEl = document.getElementById('filter-status');
-    const filterWinEl = document.getElementById('filter-win');
-    const filterPrizeEl = document.getElementById('filter-prize');
-    const filterSiteEl = document.getElementById('filter-site');
-    const filterDeptEl = document.getElementById('filter-dept');
-    const filterTypeEl = document.getElementById('filter-type');
-    const filterMealEl = document.getElementById('filter-meal');
-    const filterGroupEl = document.getElementById('filter-group');
     const prefixFiltersEl = document.getElementById('prefix-filters');
+    const filterIds = ['filter-status','filter-site','filter-dept','filter-win','filter-prize','filter-type','filter-meal','filter-group'];
     let fullDataCache = [];
     let currentPrefixFilter = 'ALL';
     let dropdownsInitialized = false;
@@ -121,26 +110,65 @@
     function typeBadge(p) { const labels = {employee:'員工', dependent:'眷屬', vendor_contact:'外部廠商主要窗口', vendor:'外部廠商'}; const styles = {employee:'background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;', dependent:'background:#faf5ff;color:#7c3aed;border:1px solid #ddd6fe;', vendor_contact:'background:#fff7ed;color:#c2410c;border:1px solid #fed7aa;', vendor:'background:#fefce8;color:#a16207;border:1px solid #fde68a;'}; if (!labels[p.participant_type]) return '-'; let html = `<span style="${styles[p.participant_type]}font-size:0.75rem;padding:2px 7px;border-radius:5px;font-weight:600;display:inline-block;">${labels[p.participant_type]}</span>`; if (p.participant_type === 'dependent' && p.linked_employee_id) html += `<br><small class="text-muted" style="font-size:0.7rem;">→ ${esc(p.linked_employee_id)}</small>`; return html; }
     function deptShort(v) { const a = Array.from(String(v || '')); return a.length > 4 ? a.slice(0,4).join('') : (v || '-'); }
 
-    function updateStatsFromCache() {
-        const total = fullDataCache.length;
-        const checkedIn = fullDataCache.filter(p => p.status === 'CheckedIn').length;
-        statTotalEl.innerText = total;
-        statCheckedInEl.innerText = checkedIn;
-        statPendingEl.innerText = total - checkedIn;
+    function buildMultiFilter(id, placeholder, options) {
+        const el = document.getElementById(id);
+        const previous = selectedValues(id);
+        const optionHtml = options.length ? options.map(o => `
+            <label class="multi-filter-option">
+                <input class="form-check-input" type="checkbox" value="${esc(o.value)}" ${previous.includes(String(o.value)) ? 'checked' : ''}>
+                <span>${esc(o.label)}</span>
+            </label>`).join('') : '<div class="multi-filter-empty">沒有可篩選項目</div>';
+        el.innerHTML = `
+            <button type="button" class="btn btn-sm multi-filter-toggle" onclick="toggleMultiFilter(event, '${id}')">
+                <span class="filter-summary" data-placeholder="${esc(placeholder)}">${esc(placeholder)}</span><i class="bi bi-chevron-down"></i>
+            </button>
+            <div class="multi-filter-menu" onclick="event.stopPropagation()">
+                <div class="multi-filter-actions">
+                    <button type="button" class="btn btn-sm btn-outline-primary" onclick="selectAllFilter('${id}', true)">全選</button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" onclick="selectAllFilter('${id}', false)">清除</button>
+                </div>
+                ${optionHtml}
+            </div>`;
+        el.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.addEventListener('change', () => { pinnedPersonId = null; updateFilterSummary(id); renderTable(); }));
+        updateFilterSummary(id);
     }
 
-    function pinPerson(id) {
-        pinnedPersonId = Number(id);
-        pinnedUntil = Date.now() + 45000;
+    function selectedValues(id) { const el = document.getElementById(id); if (!el) return []; return [...el.querySelectorAll('input[type="checkbox"]:checked')].map(cb => cb.value); }
+    function filterMatches(id, value) { const selected = selectedValues(id); return selected.length === 0 || selected.includes(String(value ?? 'NONE')); }
+    function filterIncludes(id, value) { const selected = selectedValues(id); if (selected.length === 0) return true; return selected.some(v => String(value || '').includes(v)); }
+    function toggleMultiFilter(event, id) { event.stopPropagation(); document.querySelectorAll('.multi-filter.open').forEach(el => { if (el.id !== id) el.classList.remove('open'); }); document.getElementById(id).classList.toggle('open'); }
+    function selectAllFilter(id, checked) { document.querySelectorAll(`#${id} input[type="checkbox"]`).forEach(cb => cb.checked = checked); pinnedPersonId = null; updateFilterSummary(id); renderTable(); }
+    function updateFilterSummary(id) {
+        const el = document.getElementById(id);
+        const summary = el.querySelector('.filter-summary');
+        if (!summary) return;
+        const checked = [...el.querySelectorAll('input[type="checkbox"]:checked')];
+        const total = el.querySelectorAll('input[type="checkbox"]').length;
+        const placeholder = summary.dataset.placeholder || '全部';
+        if (checked.length === 0 || checked.length === total) summary.textContent = placeholder;
+        else if (checked.length <= 2) summary.textContent = checked.map(cb => cb.nextElementSibling.textContent).join('、');
+        else summary.textContent = `已選 ${checked.length} 項`;
     }
 
-    function clearExpiredPin() {
-        if (pinnedPersonId && Date.now() > pinnedUntil) pinnedPersonId = null;
+    document.addEventListener('click', () => document.querySelectorAll('.multi-filter.open').forEach(el => el.classList.remove('open')));
+
+    function initFilters(list) {
+        buildMultiFilter('filter-status', '所有狀態', [{value:'CheckedIn', label:'已報到'}, {value:'Registered', label:'未報到'}]);
+        buildMultiFilter('filter-win', '所有情形', [{value:'WON', label:'已中獎'}, {value:'NOT_WON', label:'未中獎'}]);
+        buildMultiFilter('filter-type', '所有身分', [{value:'employee', label:'員工'}, {value:'dependent', label:'眷屬'}, {value:'vendor_contact', label:'外部廠商主要窗口'}, {value:'vendor', label:'外部廠商'}, {value:'NONE', label:'未指定'}]);
+        buildMultiFilter('filter-site', '所有站點', [...new Set(list.map(p => p.site).filter(Boolean))].sort().map(v => ({value:v, label:v})));
+        buildMultiFilter('filter-dept', '所有部門', [...new Set(list.map(p => p.dept_code).filter(Boolean))].sort().map(v => ({value:v, label:v})));
+        buildMultiFilter('filter-prize', '所有獎項', [...new Set(list.map(p => p.prize_info).filter(p => p && p !== ''))].sort().map(v => ({value:v, label:v})));
+        const meals = [...new Set(list.map(p => p.meal_type).filter(Boolean))].sort().map(v => ({value:v, label:mealLabel(v)}));
+        buildMultiFilter('filter-meal', '所有餐點', [{value:'NONE', label:'未指定'}, ...meals]);
+        const groups = [...new Set(list.map(p => p.group_name).filter(Boolean))].sort().map(v => ({value:v, label:v}));
+        buildMultiFilter('filter-group', '所有組別', [{value:'NONE', label:'未指定'}, ...groups]);
     }
 
-    function getCurrentTimeText() {
-        return new Date().toLocaleTimeString('zh-TW', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
-    }
+    function updateStatsFromCache() { const total = fullDataCache.length; const checkedIn = fullDataCache.filter(p => p.status === 'CheckedIn').length; statTotalEl.innerText = total; statCheckedInEl.innerText = checkedIn; statPendingEl.innerText = total - checkedIn; }
+    function pinPerson(id) { pinnedPersonId = Number(id); pinnedUntil = Date.now() + 45000; }
+    function clearExpiredPin() { if (pinnedPersonId && Date.now() > pinnedUntil) pinnedPersonId = null; }
+    function getCurrentTimeText() { return new Date().toLocaleTimeString('zh-TW', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' }); }
 
     async function fetchData() {
         try {
@@ -150,34 +178,31 @@
             if (data.success) {
                 fullDataCache = data.checkin_list;
                 updateStatsFromCache();
-                if (!dropdownsInitialized && fullDataCache.length > 0) { generatePrefixButtons(fullDataCache); updatePrizeDropdown(fullDataCache); updateSiteAndDeptDropdowns(fullDataCache); updateGroupDropdown(fullDataCache); updateMealDropdown(fullDataCache); dropdownsInitialized = true; }
+                if (!dropdownsInitialized && fullDataCache.length > 0) { generatePrefixButtons(fullDataCache); initFilters(fullDataCache); dropdownsInitialized = true; }
                 renderTable();
                 lastUpdatedEl.innerText = `更新: ${new Date().toLocaleTimeString()}`;
             }
         } catch (e) { lastUpdatedEl.innerText = '更新失敗'; console.error(e); }
     }
 
-    function updateSiteAndDeptDropdowns(list) { filterSiteEl.innerHTML = '<option value="ALL">所有站點</option>'; [...new Set(list.map(p => p.site).filter(Boolean))].sort().forEach(s => filterSiteEl.appendChild(new Option(s, s))); filterDeptEl.innerHTML = '<option value="ALL">所有部門</option>'; [...new Set(list.map(p => p.dept_code).filter(Boolean))].sort().forEach(d => filterDeptEl.appendChild(new Option(d, d))); }
-    function updateGroupDropdown(list) { filterGroupEl.innerHTML = '<option value="ALL">所有組別</option>'; const groups = [...new Set(list.map(p => p.group_name).filter(Boolean))].sort(); if (groups.length) filterGroupEl.appendChild(new Option('未指定','NONE')); groups.forEach(g => filterGroupEl.appendChild(new Option(g,g))); }
-    function updateMealDropdown(list) { const cur = filterMealEl.value; filterMealEl.innerHTML = '<option value="ALL">所有餐點</option><option value="NONE">未指定</option>'; [...new Set(list.map(p => p.meal_type).filter(Boolean))].sort().forEach(m => filterMealEl.appendChild(new Option(mealLabel(m), m))); if ([...filterMealEl.options].some(o => o.value === cur)) filterMealEl.value = cur; }
-    function updatePrizeDropdown(list) { const prizes = [...new Set(list.map(p => p.prize_info).filter(p => p && p !== ''))].sort(); const cur = filterPrizeEl.value; filterPrizeEl.innerHTML = '<option value="ALL">所有獎項</option>'; prizes.forEach(prize => filterPrizeEl.appendChild(new Option(prize, prize))); if (prizes.includes(cur)) filterPrizeEl.value = cur; }
     function generatePrefixButtons(list) { const prefixes = [...new Set(list.map(p => p.employee_id.charAt(0).toUpperCase()))].sort(); prefixFiltersEl.innerHTML = `<small class="text-muted me-2">工號首碼：</small><button class="btn btn-sm btn-outline-secondary filter-btn active" onclick="setPrefixFilter('ALL', this)">全部</button>`; prefixes.forEach(c => { const btn = document.createElement('button'); btn.className = 'btn btn-sm btn-outline-secondary filter-btn'; btn.innerText = c; btn.onclick = () => setPrefixFilter(c, btn); prefixFiltersEl.appendChild(btn); }); }
     function setPrefixFilter(val, btn) { pinnedPersonId = null; document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active')); btn.classList.add('active'); currentPrefixFilter = val; renderTable(); }
 
     function matchesCurrentFilters(p) {
         const searchText = searchBoxEl.value.toLowerCase();
-        const matchSearch = p.name.toLowerCase().includes(searchText) || p.employee_id.toLowerCase().includes(searchText) || (p.site && p.site.toLowerCase().includes(searchText)) || (p.lottery_number && p.lottery_number.includes(searchText)) || (p.group_name && p.group_name.toLowerCase().includes(searchText)) || (p.phone && p.phone.includes(searchText));
+        const matchSearch = p.name.toLowerCase().includes(searchText) || p.employee_id.toLowerCase().includes(searchText) || (p.site && p.site.toLowerCase().includes(searchText)) || (p.lottery_number && String(p.lottery_number).includes(searchText)) || (p.group_name && p.group_name.toLowerCase().includes(searchText)) || (p.phone && p.phone.includes(searchText));
         const isWinner = p.has_won || p.has_won_public;
+        const winValue = isWinner ? 'WON' : 'NOT_WON';
         return matchSearch &&
             (currentPrefixFilter === 'ALL' || p.employee_id.toUpperCase().startsWith(currentPrefixFilter)) &&
-            (filterStatusEl.value === 'ALL' || p.status === filterStatusEl.value) &&
-            (filterSiteEl.value === 'ALL' || p.site === filterSiteEl.value) &&
-            (filterDeptEl.value === 'ALL' || p.dept_code === filterDeptEl.value) &&
-            (filterPrizeEl.value === 'ALL' || (p.prize_info && p.prize_info.includes(filterPrizeEl.value))) &&
-            (filterWinEl.value === 'ALL' || (filterWinEl.value === 'WON' ? isWinner : !isWinner)) &&
-            (filterTypeEl.value === 'ALL' || (filterTypeEl.value === 'NONE' && !p.participant_type) || p.participant_type === filterTypeEl.value) &&
-            (filterMealEl.value === 'ALL' || (filterMealEl.value === 'NONE' && !p.meal_type) || p.meal_type === filterMealEl.value) &&
-            (filterGroupEl.value === 'ALL' || (filterGroupEl.value === 'NONE' && !p.group_name) || p.group_name === filterGroupEl.value);
+            filterMatches('filter-status', p.status) &&
+            filterMatches('filter-site', p.site) &&
+            filterMatches('filter-dept', p.dept_code) &&
+            filterIncludes('filter-prize', p.prize_info) &&
+            filterMatches('filter-win', winValue) &&
+            filterMatches('filter-type', p.participant_type) &&
+            filterMatches('filter-meal', p.meal_type) &&
+            filterMatches('filter-group', p.group_name);
     }
 
     function renderTable() {
@@ -230,14 +255,8 @@
         try {
             const res = await fetch("{{ url_for('checkin.api_admin_checkin') }}", {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({id})});
             const data = await res.json();
-            if (data.success) {
-                const person = fullDataCache.find(p => Number(p.id) === Number(id));
-                if (person) { person.status = 'CheckedIn'; person.check_in_time = getCurrentTimeText(); }
-                pinPerson(id);
-                updateStatsFromCache();
-                renderTable();
-                lastUpdatedEl.innerText = `已簽到: ${name}`;
-            } else alert(data.message);
+            if (data.success) { const person = fullDataCache.find(p => Number(p.id) === Number(id)); if (person) { person.status = 'CheckedIn'; person.check_in_time = getCurrentTimeText(); } pinPerson(id); updateStatsFromCache(); renderTable(); lastUpdatedEl.innerText = `已簽到: ${name}`; }
+            else alert(data.message);
         } catch(e) { alert('Error'); }
     }
 
@@ -248,20 +267,13 @@
         try {
             const res = await fetch("{{ url_for('checkin.api_admin_cancel_checkin') }}", {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({id, canceller_id:cancellerId.trim()})});
             const data = await res.json();
-            if (data.success) {
-                const person = fullDataCache.find(p => Number(p.id) === Number(id));
-                if (person) { person.status = 'Registered'; person.check_in_time = ''; person.checkin_seq = null; }
-                pinPerson(id);
-                updateStatsFromCache();
-                renderTable();
-                lastUpdatedEl.innerText = `已取消: ${name}`;
-            } else alert(data.message);
+            if (data.success) { const person = fullDataCache.find(p => Number(p.id) === Number(id)); if (person) { person.status = 'Registered'; person.check_in_time = ''; person.checkin_seq = null; } pinPerson(id); updateStatsFromCache(); renderTable(); lastUpdatedEl.innerText = `已取消: ${name}`; }
+            else alert(data.message);
         } catch(e) { alert('發生錯誤'); }
     }
 
     document.addEventListener('DOMContentLoaded', () => {
         fetchData(); setInterval(fetchData, 5000);
-        [searchBoxEl, filterStatusEl, filterWinEl, filterPrizeEl, filterSiteEl, filterDeptEl, filterTypeEl, filterMealEl, filterGroupEl].forEach(el => el.addEventListener('change', () => { pinnedPersonId = null; renderTable(); }));
         searchBoxEl.addEventListener('input', () => { pinnedPersonId = null; renderTable(); });
     });
 </script>
