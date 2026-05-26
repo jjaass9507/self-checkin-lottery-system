@@ -28,7 +28,6 @@
             padding: 32px 16px 40px;
         }
 
-        /* ── 搜尋卡片 ── */
         .query-card {
             background: #ffffff;
             border: 2px solid #b2ebf2;
@@ -56,14 +55,8 @@
             margin-bottom: 6px;
             text-transform: uppercase;
         }
-        .wave-deco {
-            font-size: 1.4rem;
-            letter-spacing: 4px;
-            opacity: 0.4;
-            margin-bottom: 18px;
-        }
+        .wave-deco { font-size: 1.4rem; letter-spacing: 4px; opacity: 0.4; margin-bottom: 18px; }
 
-        /* 輸入框 */
         .form-control-lg {
             border: 2px solid #b2ebf2 !important;
             background: #f8fafc !important;
@@ -82,7 +75,6 @@
         }
         .form-control-lg::placeholder { color: #94a3b8; }
 
-        /* 查詢按鈕 */
         .btn-query {
             background: linear-gradient(90deg, #0891b2, #06b6d4);
             border: none;
@@ -104,7 +96,6 @@
 
         #msg-area { min-height: 22px; margin-top: 8px; font-size: 0.95rem; color: #0891b2; font-weight: 600; }
 
-        /* ── 結果區域 ── */
         #result-section {
             width: 100%;
             max-width: 820px;
@@ -116,7 +107,6 @@
             to   { opacity: 1; transform: translateY(0); }
         }
 
-        /* ── 主要結果卡片 ── */
         .main-result-card {
             background: #ffffff;
             border: 2px solid #b2ebf2;
@@ -136,7 +126,6 @@
         }
         .res-name { color: #0c4a6e; font-size: 1.5rem; font-weight: 800; }
 
-        /* 抽獎號碼框 */
         .lottery-box {
             margin: 14px 0;
             padding: 12px;
@@ -152,7 +141,6 @@
             letter-spacing: 4px;
         }
 
-        /* 桌次 */
         .table-badge {
             font-family: 'Nunito', sans-serif;
             font-size: 3.2rem;
@@ -162,7 +150,6 @@
             margin: 8px 0 14px 0;
         }
 
-        /* 餐點 */
         .meal-box {
             display: none;
             margin: 10px 0;
@@ -174,7 +161,6 @@
         .meal-box.meal-a { background: #d1fae5; border: 1px solid #6ee7b7; color: #065f46; }
         .meal-box.meal-b { background: #dbeafe; border: 1px solid #93c5fd; color: #1e3a8a; }
 
-        /* 組別 */
         .group-box {
             display: none;
             margin: 8px 0;
@@ -187,20 +173,10 @@
             color: #065f46;
         }
 
-        /* 身分徽章 */
-        .type-badge-employee  {
-            background: #eff6ff; color: #1d4ed8;
-            border: 1px solid #bfdbfe; border-radius: 6px;
-            padding: 3px 10px; font-size: 0.8rem; font-weight: 600;
-        }
-        .type-badge-dependent {
-            background: #faf5ff; color: #7c3aed;
-            border: 1px solid #ddd6fe; border-radius: 6px;
-            padding: 3px 10px; font-size: 0.8rem; font-weight: 600;
-        }
+        .type-badge-employee  { background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; border-radius: 6px; padding: 3px 10px; font-size: 0.8rem; font-weight: 600; }
+        .type-badge-dependent { background: #faf5ff; color: #7c3aed; border: 1px solid #ddd6fe; border-radius: 6px; padding: 3px 10px; font-size: 0.8rem; font-weight: 600; }
         .linked-text { color: #7c3aed; font-size: 0.82rem; }
 
-        /* 中獎卡 */
         .prize-card {
             background: linear-gradient(135deg, #dc2626, #b91c1c);
             color: #fff;
@@ -219,17 +195,11 @@
             font-weight: 400;
             border: 1px solid #e2e8f0;
         }
-        @keyframes pulse {
-            0%, 100% { transform: scale(1); }
-            50%       { transform: scale(1.02); }
-        }
+        @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.02); } }
 
         .divider { border-color: #e0f2fe; margin: 14px 0; }
 
-        /* ── 眷屬區塊 ── */
-        .dep-section {
-            margin-top: 20px;
-        }
+        .dep-section { margin-top: 20px; }
         .dep-header {
             display: flex;
             align-items: center;
@@ -239,8 +209,7 @@
             font-size: 1rem;
             color: #7c3aed;
         }
-        .dep-header::before,
-        .dep-header::after {
+        .dep-header::before, .dep-header::after {
             content: '';
             flex: 1;
             height: 2px;
@@ -248,13 +217,7 @@
             border-radius: 2px;
         }
 
-        .dep-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-            gap: 14px;
-        }
-
-        /* 眷屬小卡 */
+        .dep-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 14px; }
         .dep-card {
             background: #faf5ff;
             border: 1.5px solid #ddd6fe;
@@ -263,112 +226,39 @@
             text-align: center;
             box-shadow: 0 4px 16px rgba(124, 58, 237, 0.07);
         }
-        .dep-card-title {
-            font-size: 0.72rem;
-            letter-spacing: 2px;
-            color: #7c3aed;
-            font-weight: 700;
-            text-transform: uppercase;
-            margin-bottom: 6px;
-        }
-        .dep-name {
-            font-size: 1.15rem;
-            font-weight: 800;
-            color: #3b0764;
-            margin-bottom: 8px;
-        }
-        .dep-lottery-box {
-            margin: 8px 0;
-            padding: 7px 10px;
-            background: #ede9fe;
-            border-radius: 8px;
-            border: 1px solid #ddd6fe;
-        }
-        .dep-lottery-num {
-            font-family: 'Nunito', sans-serif;
-            font-size: 1.6rem;
-            color: #7c3aed;
-            font-weight: 900;
-            letter-spacing: 3px;
-        }
-        .dep-table-badge {
-            font-family: 'Nunito', sans-serif;
-            font-size: 2rem;
-            font-weight: 900;
-            color: #5b21b6;
-            line-height: 1;
-            margin: 6px 0 10px;
-        }
-        .dep-meal-box {
-            display: none;
-            margin: 6px 0;
-            padding: 6px 10px;
-            border-radius: 8px;
-            font-size: 1rem;
-            font-weight: 800;
-        }
+        .dep-card-title { font-size: 0.72rem; letter-spacing: 2px; color: #7c3aed; font-weight: 700; text-transform: uppercase; margin-bottom: 6px; }
+        .dep-name { font-size: 1.15rem; font-weight: 800; color: #3b0764; margin-bottom: 8px; }
+        .dep-lottery-box { margin: 8px 0; padding: 7px 10px; background: #ede9fe; border-radius: 8px; border: 1px solid #ddd6fe; }
+        .dep-lottery-num { font-family: 'Nunito', sans-serif; font-size: 1.6rem; color: #7c3aed; font-weight: 900; letter-spacing: 3px; }
+        .dep-table-badge { font-family: 'Nunito', sans-serif; font-size: 2rem; font-weight: 900; color: #5b21b6; line-height: 1; margin: 6px 0 10px; }
+        .dep-meal-box { display: none; margin: 6px 0; padding: 6px 10px; border-radius: 8px; font-size: 1rem; font-weight: 800; }
         .dep-meal-box.meal-a { background: #d1fae5; border: 1px solid #6ee7b7; color: #065f46; }
         .dep-meal-box.meal-b { background: #dbeafe; border: 1px solid #93c5fd; color: #1e3a8a; }
-        .dep-group-box {
-            display: none;
-            margin: 5px 0;
-            padding: 5px 10px;
-            border-radius: 8px;
-            background: #ecfdf5;
-            border: 1px solid #a7f3d0;
-            font-size: 0.88rem;
-            font-weight: 700;
-            color: #065f46;
-        }
-        .dep-prize-card {
-            background: linear-gradient(135deg, #dc2626, #b91c1c);
-            color: #fff;
-            padding: 10px 12px;
-            border-radius: 10px;
-            font-weight: 700;
-            font-size: 0.85rem;
-            box-shadow: 0 4px 12px rgba(220,38,38,0.25);
-            animation: pulse 2s infinite;
-            margin-top: 8px;
-        }
-        .dep-prize-card.no-prize {
-            background: #f1f5f9;
-            color: #94a3b8;
-            box-shadow: none;
-            animation: none;
-            font-weight: 400;
-            border: 1px solid #e2e8f0;
-        }
+        .dep-group-box { display: none; margin: 5px 0; padding: 5px 10px; border-radius: 8px; background: #ecfdf5; border: 1px solid #a7f3d0; font-size: 0.88rem; font-weight: 700; color: #065f46; }
+        .dep-prize-card { background: linear-gradient(135deg, #dc2626, #b91c1c); color: #fff; padding: 10px 12px; border-radius: 10px; font-weight: 700; font-size: 0.85rem; box-shadow: 0 4px 12px rgba(220,38,38,0.25); animation: pulse 2s infinite; margin-top: 8px; }
+        .dep-prize-card.no-prize { background: #f1f5f9; color: #94a3b8; box-shadow: none; animation: none; font-weight: 400; border: 1px solid #e2e8f0; }
     </style>
 </head>
 <body>
 
-<!-- 搜尋卡片 -->
 <div class="query-card">
     <i class="bi bi-search title-icon"></i>
     <div class="main-title">Query Info</div>
     <div class="wave-deco">🌿 🌊 🌿</div>
 
     <div class="mb-3">
-        <input type="text" id="emp-id" class="form-control form-control-lg"
-               placeholder="請輸入工號查詢" autocomplete="off" autofocus>
+        <input type="text" id="emp-id" class="form-control form-control-lg" placeholder="請輸入工號查詢" autocomplete="off" autofocus>
     </div>
 
     <div class="d-grid">
-        <button class="btn btn-query" id="btn-submit">
-            <i class="bi bi-search me-1"></i>開始查詢
-        </button>
+        <button class="btn btn-query" id="btn-submit"><i class="bi bi-search me-1"></i>開始查詢</button>
     </div>
 
     <div id="msg-area"></div>
 </div>
 
-<!-- 結果區域 (隱藏直到查詢) -->
 <div id="result-section" style="display:none;">
-
-    <!-- 主要人員卡片 -->
     <div class="main-result-card">
-        <!-- 姓名 + 身分 + 報到狀態 -->
         <div class="res-name mb-1" id="res-name"></div>
         <div class="d-flex align-items-center justify-content-center gap-2 mb-1" id="res-id-row">
             <span id="res-id" class="text-muted small"></span>
@@ -377,47 +267,30 @@
         <div id="res-linked" class="small mb-2 linked-text"></div>
         <div id="res-status" class="mb-3"></div>
 
-        <!-- 抽獎號碼 -->
         <div class="lottery-box" id="res-lottery-box">
             <div class="res-label">抽獎號碼</div>
             <div class="lottery-num" id="res-lottery-num">---</div>
         </div>
 
-        <!-- 桌次 -->
         <div id="res-table-section">
             <hr class="divider">
             <div class="res-label">您的桌次</div>
             <div class="table-badge"><span id="res-table">-</span></div>
         </div>
 
-        <!-- 餐點 -->
-        <div id="res-meal-box" class="meal-box">
-            <i class="bi bi-egg-fried me-2"></i>
-            <span id="res-meal-text">-</span>
-        </div>
+        <div id="res-meal-box" class="meal-box"><i class="bi bi-egg-fried me-2"></i><span id="res-meal-text">-</span></div>
+        <div id="res-group-box" class="group-box"><i class="bi bi-people-fill me-2"></i><span id="res-group-text">-</span></div>
 
-        <!-- 組別 -->
-        <div id="res-group-box" class="group-box">
-            <i class="bi bi-people-fill me-2"></i>
-            <span id="res-group-text">-</span>
-        </div>
-
-        <!-- 中獎資訊 -->
         <div id="res-prize-section">
             <hr class="divider">
             <div id="prize-container"></div>
         </div>
     </div>
 
-    <!-- 眷屬區塊 -->
     <div class="dep-section" id="dep-section" style="display:none;">
-        <div class="dep-header">
-            <i class="bi bi-people-fill"></i>
-            眷屬資訊（<span id="dep-count">0</span> 位）
-        </div>
+        <div class="dep-header"><i class="bi bi-people-fill"></i>眷屬資訊（<span id="dep-count">0</span> 位）</div>
         <div class="dep-grid" id="dep-grid"></div>
     </div>
-
 </div>
 
 <script>
@@ -426,7 +299,6 @@
     const msgArea     = document.getElementById('msg-area');
     const resultSection = document.getElementById('result-section');
 
-    // 主卡元素
     const resName       = document.getElementById('res-name');
     const resIdRow      = document.getElementById('res-id-row');
     const resId         = document.getElementById('res-id');
@@ -444,7 +316,6 @@
     const resPrizeSec   = document.getElementById('res-prize-section');
     const prizeContainer = document.getElementById('prize-container');
 
-    // 眷屬區塊元素
     const depSection = document.getElementById('dep-section');
     const depCount   = document.getElementById('dep-count');
     const depGrid    = document.getElementById('dep-grid');
@@ -454,11 +325,7 @@
 
     function show(el) { el.style.display = ''; }
     function hide(el) { el.style.display = 'none'; }
-
-    // 依後台設定決定是否顯示某區塊
-    function applyField(show_flag, el) {
-        el.style.display = show_flag ? '' : 'none';
-    }
+    function applyField(show_flag, el) { el.style.display = show_flag ? '' : 'none'; }
 
     async function doSearch() {
         const empId = empInput.value.trim();
@@ -481,24 +348,20 @@
                 msgArea.innerText = '';
                 const fs = data.field_settings || {};
 
-                // ── 渲染主卡 ──
                 renderMainCard(data, fs);
 
-                // ── 渲染眷屬 ──
                 if (data.dependents && data.dependents.length > 0) {
                     depCount.innerText = data.dependents.length;
                     depGrid.innerHTML  = '';
-                    data.dependents.forEach((dep, i) => {
-                        depGrid.appendChild(buildDepCard(dep, i + 1, fs));
-                    });
+                    data.dependents.forEach((dep, i) => depGrid.appendChild(buildDepCard(dep, i + 1, fs)));
                     show(depSection);
                 } else {
                     hide(depSection);
                 }
 
                 show(resultSection);
-                setTimeout(resetForm, 12000);
-
+                resetBtn();
+                empInput.select();
             } else {
                 msgArea.innerText = data.message;
                 shakeInput();
@@ -513,12 +376,9 @@
 
     function renderMainCard(data, fs) {
         resName.innerText = data.name;
-
-        // 工號
         resId.innerText = data.employee_id;
         applyField(fs.employee_id !== false, resIdRow);
 
-        // 報到狀態
         if (fs.status !== false) {
             if (data.status === 'CheckedIn') {
                 resStatus.innerHTML = '<span class="badge rounded-pill px-3 py-2" style="background:#d1fae5;color:#065f46;border:1px solid #6ee7b7;"><i class="bi bi-check-circle-fill me-1"></i>已報到</span>';
@@ -530,7 +390,6 @@
             hide(resStatus);
         }
 
-        // 身分徽章
         if (fs.participant_type !== false) {
             if (data.participant_type === 'employee') {
                 resTypeBadge.innerHTML = '<span class="type-badge-employee">員工</span>';
@@ -547,15 +406,12 @@
             resLinked.innerText = '';
         }
 
-        // 抽獎號碼
         resLotteryNum.innerText = data.lottery_number || '---';
         applyField(fs.lottery_number !== false, resLotteryBox);
 
-        // 桌次
         resTable.innerText = data.table_number || '未分配';
         applyField(fs.table_number !== false, resTableSec);
 
-        // 餐點（注意：.meal-box CSS 預設 display:none，必須明確設 block）
         if (fs.meal_type !== false && data.meal_type) {
             resMealBox.className = 'meal-box meal-' + data.meal_type.toLowerCase();
             resMealText.innerText = data.meal_type + ' 餐';
@@ -564,7 +420,6 @@
             resMealBox.style.display = 'none';
         }
 
-        // 組別（同上）
         if (fs.group_name !== false && data.group_name) {
             resGroupText.innerText = data.group_name;
             resGroupBox.style.display = 'block';
@@ -572,19 +427,11 @@
             resGroupBox.style.display = 'none';
         }
 
-        // 中獎資訊
         if (fs.prize_info !== false) {
             if (data.is_winner) {
-                prizeContainer.innerHTML = `
-                    <div class="prize-card">
-                        <i class="bi bi-gift-fill me-2"></i>恭喜獲得<br>
-                        <span style="color:#fde68a;font-size:1.1em;">${data.prize_info}</span>
-                    </div>`;
+                prizeContainer.innerHTML = `<div class="prize-card"><i class="bi bi-gift-fill me-2"></i>恭喜獲得<br><span style="color:#fde68a;font-size:1.1em;">${data.prize_info}</span></div>`;
             } else {
-                prizeContainer.innerHTML = `
-                    <div class="prize-card no-prize">
-                        <i class="bi bi-stars me-1"></i> ${data.prize_info}
-                    </div>`;
+                prizeContainer.innerHTML = `<div class="prize-card no-prize"><i class="bi bi-stars me-1"></i> ${data.prize_info}</div>`;
             }
             show(resPrizeSec);
         } else {
@@ -599,12 +446,8 @@
         let html = `<div class="dep-card-title">👨‍👩‍👦 眷屬 ${index}</div>`;
         html += `<div class="dep-name">${dep.name}</div>`;
 
-        // 工號
-        if (fs.employee_id !== false) {
-            html += `<div class="text-muted small mb-1">${dep.employee_id}</div>`;
-        }
+        if (fs.employee_id !== false) html += `<div class="text-muted small mb-1">${dep.employee_id}</div>`;
 
-        // 報到狀態
         if (fs.status !== false) {
             if (dep.status === 'CheckedIn') {
                 html += `<div class="mb-2"><span class="badge rounded-pill px-2 py-1" style="background:#d1fae5;color:#065f46;border:1px solid #6ee7b7;font-size:0.78rem;"><i class="bi bi-check-circle-fill me-1"></i>已報到</span></div>`;
@@ -613,60 +456,33 @@
             }
         }
 
-        // 抽獎號碼
         if (fs.lottery_number !== false) {
-            html += `<div class="dep-lottery-box">
-                        <div style="font-size:0.68rem;color:#7c3aed;letter-spacing:1px;font-weight:600;">抽獎號碼</div>
-                        <div class="dep-lottery-num">${dep.lottery_number || '---'}</div>
-                     </div>`;
+            html += `<div class="dep-lottery-box"><div style="font-size:0.68rem;color:#7c3aed;letter-spacing:1px;font-weight:600;">抽獎號碼</div><div class="dep-lottery-num">${dep.lottery_number || '---'}</div></div>`;
         }
 
-        // 桌次
         if (fs.table_number !== false) {
-            html += `<div style="font-size:0.68rem;color:#64748b;letter-spacing:1px;font-weight:500;margin-top:8px;">桌次</div>
-                     <div class="dep-table-badge">${dep.table_number || '未分配'}</div>`;
+            html += `<div style="font-size:0.68rem;color:#64748b;letter-spacing:1px;font-weight:500;margin-top:8px;">桌次</div><div class="dep-table-badge">${dep.table_number || '未分配'}</div>`;
         }
 
-        // 餐點
         if (fs.meal_type !== false && dep.meal_type) {
             const mealClass = dep.meal_type === 'A' ? 'meal-a' : 'meal-b';
-            html += `<div class="dep-meal-box ${mealClass}" style="display:block;">
-                        <i class="bi bi-egg-fried me-1"></i>${dep.meal_type} 餐
-                     </div>`;
+            html += `<div class="dep-meal-box ${mealClass}" style="display:block;"><i class="bi bi-egg-fried me-1"></i>${dep.meal_type} 餐</div>`;
         }
 
-        // 組別
         if (fs.group_name !== false && dep.group_name) {
-            html += `<div class="dep-group-box" style="display:block;">
-                        <i class="bi bi-people-fill me-1"></i>${dep.group_name}
-                     </div>`;
+            html += `<div class="dep-group-box" style="display:block;"><i class="bi bi-people-fill me-1"></i>${dep.group_name}</div>`;
         }
 
-        // 中獎資訊
         if (fs.prize_info !== false) {
             if (dep.is_winner) {
-                html += `<div class="dep-prize-card">
-                            <i class="bi bi-gift-fill me-1"></i>
-                            <span style="color:#fde68a;">${dep.prize_info}</span>
-                         </div>`;
+                html += `<div class="dep-prize-card"><i class="bi bi-gift-fill me-1"></i><span style="color:#fde68a;">${dep.prize_info}</span></div>`;
             } else {
-                html += `<div class="dep-prize-card no-prize">
-                            <i class="bi bi-stars me-1"></i> ${dep.prize_info}
-                         </div>`;
+                html += `<div class="dep-prize-card no-prize"><i class="bi bi-stars me-1"></i> ${dep.prize_info}</div>`;
             }
         }
 
         card.innerHTML = html;
         return card;
-    }
-
-    function resetForm() {
-        empInput.value = '';
-        hide(resultSection);
-        hide(depSection);
-        msgArea.innerText = '';
-        resetBtn();
-        empInput.focus();
     }
 
     function resetBtn() {
