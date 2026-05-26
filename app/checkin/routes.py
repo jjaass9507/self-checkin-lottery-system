@@ -222,6 +222,7 @@ def api_admin_cancel_checkin():
         db.session.add(CancellationLog(checkin_list_id=person.id, cancelled_by=canceller_id, timestamp=datetime.now()))
         person.status = 'Registered'
         person.check_in_time = None
+        person.checkin_seq = None
         db.session.commit()
         return jsonify({"success": True, "message": f"已取消 {person.name} 的報到狀態"})
     except Exception as e:
