@@ -11,6 +11,13 @@ from datetime import datetime
 
 bp = Blueprint('admin', __name__)
 
+DASH_FIELD_KEYS = ['checkin_seq', 'site', 'dept', 'table', 'business_trip',
+                   'participant_type', 'age_group', 'phone', 'meal', 'group', 'lottery_number',
+                   'status', 'prize', 'checkin_time']
+QUERY_FIELD_KEYS = ['employee_id', 'status', 'lottery_number', 'prize_info',
+                    'table_number', 'meal_type', 'group_name', 'participant_type',
+                    'age_group', 'phone']
+
 # --- (新增) 1. 權限卡控攔截器 ---
 @bp.before_request
 def require_login():
@@ -95,6 +102,10 @@ def import_page():
                         participant_type = 'dependent'
                     elif pt_raw in ['employee', '員工', 'emp']:
                         participant_type = 'employee'
+                    elif pt_raw in ['vendor_contact', '外部廠商主要窗口', '主要窗口']:
+                        participant_type = 'vendor_contact'
+                    elif pt_raw in ['vendor', '外部廠商', '廠商']:
+                        participant_type = 'vendor'
                     else:
                         participant_type = None
 
@@ -102,13 +113,19 @@ def import_page():
                     linked_raw = str(row.get('linked_employee_id', '')).strip()
                     linked_employee_id = linked_raw if linked_raw and linked_raw.lower() != 'nan' else None
 
-                    # 餐點類型
-                    meal_raw = str(row.get('meal_type', '')).strip().upper()
-                    meal_type = meal_raw if meal_raw in ['A', 'B'] else None
+                    # 餐點類型：保留完整描述，流水號會取第一個英文字母
+                    meal_raw = str(row.get('meal_type', '')).strip()
+                    meal_type = meal_raw if meal_raw and meal_raw.lower() != 'nan' else None
 
                     # 分組
                     group_raw = str(row.get('group_name', '')).strip()
                     group_name = group_raw if group_raw and group_raw.lower() != 'nan' else None
+
+                    age_raw = str(row.get('age_group', '')).strip()
+                    age_group = age_raw if age_raw and age_raw.lower() != 'nan' else None
+
+                    phone_raw = str(row.get('phone', '')).strip()
+                    phone = phone_raw if phone_raw and phone_raw.lower() != 'nan' else None
 
                     if not employee_id:
                         continue
@@ -134,6 +151,8 @@ def import_page():
                             linked_employee_id=linked_employee_id,
                             meal_type=meal_type,
                             group_name=group_name,
+                            age_group=age_group,
+                            phone=phone,
                         )
                         db.session.add(new_item)
                         imported_count += 1
@@ -147,18 +166,13 @@ def import_page():
             
             return redirect(url_for('admin.import_page'))
 
-    query_field_keys = ['employee_id', 'status', 'lottery_number', 'prize_info',
-                        'table_number', 'meal_type', 'group_name', 'participant_type']
     query_fields = {}
-    for key in query_field_keys:
+    for key in QUERY_FIELD_KEYS:
         setting = AppSetting.query.get(f'query_show_{key}')
         query_fields[key] = (setting.value != 'false') if setting else True
 
-    dash_field_keys = ['checkin_seq', 'site', 'dept', 'table', 'business_trip',
-                       'participant_type', 'meal', 'group', 'lottery_number',
-                       'status', 'prize', 'checkin_time']
     dash_fields = {}
-    for key in dash_field_keys:
+    for key in DASH_FIELD_KEYS:
         setting = AppSetting.query.get(f'dash_show_{key}')
         dash_fields[key] = (setting.value != 'false') if setting else True
 
@@ -167,10 +181,7 @@ def import_page():
 # --- (新功能) 0a. 報到名單欄位設定 ---
 @bp.route('/dash_fields', methods=['POST'])
 def toggle_dash_fields():
-    field_keys = ['checkin_seq', 'site', 'dept', 'table', 'business_trip',
-                  'participant_type', 'meal', 'group', 'lottery_number',
-                  'status', 'prize', 'checkin_time']
-    for key in field_keys:
+    for key in DASH_FIELD_KEYS:
         new_value = 'true' if request.form.get(f'show_{key}') else 'false'
         setting = AppSetting.query.get(f'dash_show_{key}')
         if setting:
@@ -184,9 +195,7 @@ def toggle_dash_fields():
 # --- (新功能) 0b. 查詢站欄位設定 ---
 @bp.route('/query_fields', methods=['POST'])
 def toggle_query_fields():
-    field_keys = ['employee_id', 'status', 'lottery_number', 'prize_info',
-                  'table_number', 'meal_type', 'group_name', 'participant_type']
-    for key in field_keys:
+    for key in QUERY_FIELD_KEYS:
         new_value = 'true' if request.form.get(f'show_{key}') else 'false'
         setting = AppSetting.query.get(f'query_show_{key}')
         if setting:
@@ -215,10 +224,11 @@ def reset_list():
 @bp.route('/reset/checkin', methods=['POST'])
 def reset_checkin():
     try:
-        # 將所有 status='CheckedIn' 改為 'Registered'，時間歸零
+        # 將所有 status='CheckedIn' 改為 'Registered'，時間與流水號歸零
         updated = CheckinList.query.filter_by(status='CheckedIn').update({
             'status': 'Registered',
-            'check_in_time': None
+            'check_in_time': None,
+            'checkin_seq': None,
         })
         db.session.commit()
         flash(f"已重置所有報到狀態 (共 {updated} 人變回未報到)。", 'warning')
@@ -356,14 +366,15 @@ def download_template():
     headers = [
         'name', 'employee_id', 'lottery_number',
         'site', 'dept_code', 'table_number', 'is_business_trip',
-        'participant_type', 'linked_employee_id', 'meal_type', 'group_name'
+        'participant_type', 'linked_employee_id', 'meal_type', 'group_name',
+        'age_group', 'phone'
     ]
     ws.append(headers)
 
     # 範例資料列
-    ws.append(['王小明', 'A001', '101', 'Taipei', 'IT', '5', '', 'employee', '', 'A', '第一組'])
-    ws.append(['李小花', 'B002', '202', '', '', '', '', 'dependent', 'A001', 'B', '第一組'])
-    ws.append(['陳大雄', 'C003', '303', 'Hsinchu', 'RD', '8', 'Y', '', '', '', ''])
+    ws.append(['王小明', 'A001', '101', 'Taipei', 'IT', '5', '', 'employee', '', 'A餐:便當', 'A組', '大人', '0912345678'])
+    ws.append(['李小花', 'B002', '202', '', '', '', '', 'dependent', 'A001', 'B餐:素食', 'A組', '小孩', ''])
+    ws.append(['陳大雄', 'C003', '303', 'Hsinchu', 'RD', '8', 'Y', 'vendor', '', 'C餐:滷味+綠豆冰沙', 'B組', '大人', ''])
 
     # 標題列樣式
     header_fill = PatternFill(start_color='0369a1', end_color='0369a1', fill_type='solid')
