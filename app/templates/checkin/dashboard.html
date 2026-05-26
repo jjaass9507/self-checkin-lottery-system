@@ -46,6 +46,7 @@
                 <thead id="table-head">
                     <tr>
                         <th>姓名</th>
+                        <th>操作</th>
                         <th>工號</th>
                         {% if dash_fields.checkin_seq %}<th>流水號</th>{% endif %}
                         {% if dash_fields.site %}<th>Site</th>{% endif %}
@@ -61,7 +62,6 @@
                         {% if dash_fields.status %}<th>狀態</th>{% endif %}
                         {% if lottery_enabled and dash_fields.prize %}<th>中獎資訊</th><th>領獎確認</th>{% endif %}
                         {% if dash_fields.checkin_time %}<th>時間</th>{% endif %}
-                        <th class="text-end">操作</th>
                     </tr>
                 </thead>
                 <tbody id="table-body"><tr><td colspan="99" class="text-center p-5"><div class="spinner-border" style="color:var(--ocean);"></div></td></tr></tbody>
@@ -184,7 +184,7 @@
             if (!claimHtml) claimHtml = `<span class="text-muted">-</span>`;
             const actionBtn = p.is_business_trip ? `<span class="badge" style="background:#e0f2fe;color:#0369a1;border:1px solid #bae6fd;">公差視同報到</span>` : (p.status === 'CheckedIn' ? `<button class="btn btn-sm btn-outline-secondary" onclick="adminCancelCheckIn(${p.id},'${esc(p.name)}')">取消</button>` : `<button class="btn btn-sm btn-outline-success" onclick="adminCheckIn(${p.id},'${esc(p.name)}')">簽到</button>`);
             return `<tr>
-                <td><b>${esc(p.name)}</b></td><td class="text-muted">${esc(p.employee_id)}</td>
+                <td><b>${esc(p.name)}</b></td><td>${actionBtn}</td><td class="text-muted">${esc(p.employee_id)}</td>
                 ${DF.checkin_seq ? `<td>${p.checkin_seq ? `<span style="font-family:'Nunito',sans-serif;font-weight:800;color:#7c3aed;">${esc(p.checkin_seq)}</span>` : '-'}</td>` : ''}
                 ${DF.site ? `<td>${esc(p.site || '-')}</td>` : ''}
                 ${DF.dept ? `<td title="${esc(p.dept_code || '')}">${esc(deptShort(p.dept_code))}</td>` : ''}
@@ -199,7 +199,6 @@
                 ${DF.status ? `<td>${statusBadge}</td>` : ''}
                 ${LOTTERY && DF.prize ? `<td>${prizeHtml}</td><td>${claimHtml}</td>` : ''}
                 ${DF.checkin_time ? `<td class="text-muted" style="font-size:0.8rem;">${esc(p.check_in_time || '')}</td>` : ''}
-                <td class="text-end">${actionBtn}</td>
             </tr>`;
         }).join('');
     }
