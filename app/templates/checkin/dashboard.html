@@ -6,6 +6,22 @@
 <style>
     .stat-number { font-size: 2rem; font-weight: 800; line-height: 1.1; }
     .stat-icon   { font-size: 2.2rem; opacity: 0.25; }
+    .recent-action-row > td {
+        background: #fff7ed !important;
+        box-shadow: inset 4px 0 0 #fb923c;
+        transition: background-color 0.2s ease;
+    }
+    .recent-action-note {
+        display: inline-block;
+        margin-left: 6px;
+        padding: 2px 6px;
+        border-radius: 999px;
+        background: #ffedd5;
+        color: #c2410c;
+        border: 1px solid #fdba74;
+        font-size: 0.72rem;
+        font-weight: 700;
+    }
 </style>
 {% endblock %}
 
@@ -94,32 +110,37 @@
     let fullDataCache = [];
     let currentPrefixFilter = 'ALL';
     let dropdownsInitialized = false;
+    let pinnedPersonId = null;
+    let pinnedUntil = 0;
 
     function esc(v) { return String(v ?? '').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
     function mealLabel(v) { if (!v) return ''; const s = String(v).trim(); return /^[A-Z]$/i.test(s) ? `${s.toUpperCase()} 餐` : s; }
     function mealBadge(v) { return v ? `<span style="background:#f0f9ff;color:#075985;border:1px solid #bae6fd;font-size:0.78rem;padding:3px 9px;border-radius:6px;font-weight:600;display:inline-block;max-width:240px;white-space:normal;line-height:1.35;">${esc(mealLabel(v))}</span>` : '-'; }
-    function groupStyle(v) {
-        const m = String(v || '').trim().toUpperCase().match(/^([A-F])\s*(組|$)/);
-        const map = {
-            A:'background:#fff7ed;color:#c2410c;border:1px solid #fdba74;',
-            B:'background:#fefce8;color:#a16207;border:1px solid #fde68a;',
-            C:'background:#fdf2f8;color:#be185d;border:1px solid #fbcfe8;',
-            D:'background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;',
-            E:'background:#faf5ff;color:#7c3aed;border:1px solid #ddd6fe;',
-            F:'background:#ecfdf5;color:#065f46;border:1px solid #a7f3d0;'
-        };
-        return map[m ? m[1] : ''] || 'background:#f8fafc;color:#475569;border:1px solid #cbd5e1;';
-    }
+    function groupStyle(v) { const m = String(v || '').trim().toUpperCase().match(/^([A-F])\s*(組|$)/); const map = { A:'background:#fff7ed;color:#c2410c;border:1px solid #fdba74;', B:'background:#fefce8;color:#a16207;border:1px solid #fde68a;', C:'background:#fdf2f8;color:#be185d;border:1px solid #fbcfe8;', D:'background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;', E:'background:#faf5ff;color:#7c3aed;border:1px solid #ddd6fe;', F:'background:#ecfdf5;color:#065f46;border:1px solid #a7f3d0;' }; return map[m ? m[1] : ''] || 'background:#f8fafc;color:#475569;border:1px solid #cbd5e1;'; }
     function groupBadge(v) { return v ? `<span style="${groupStyle(v)}font-size:0.75rem;padding:2px 7px;border-radius:5px;font-weight:600;display:inline-block;">${esc(v)}</span>` : '-'; }
-    function typeBadge(p) {
-        const labels = {employee:'員工', dependent:'眷屬', vendor_contact:'外部廠商主要窗口', vendor:'外部廠商'};
-        const styles = {employee:'background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;', dependent:'background:#faf5ff;color:#7c3aed;border:1px solid #ddd6fe;', vendor_contact:'background:#fff7ed;color:#c2410c;border:1px solid #fed7aa;', vendor:'background:#fefce8;color:#a16207;border:1px solid #fde68a;'};
-        if (!labels[p.participant_type]) return '-';
-        let html = `<span style="${styles[p.participant_type]}font-size:0.75rem;padding:2px 7px;border-radius:5px;font-weight:600;display:inline-block;">${labels[p.participant_type]}</span>`;
-        if (p.participant_type === 'dependent' && p.linked_employee_id) html += `<br><small class="text-muted" style="font-size:0.7rem;">→ ${esc(p.linked_employee_id)}</small>`;
-        return html;
-    }
+    function typeBadge(p) { const labels = {employee:'員工', dependent:'眷屬', vendor_contact:'外部廠商主要窗口', vendor:'外部廠商'}; const styles = {employee:'background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;', dependent:'background:#faf5ff;color:#7c3aed;border:1px solid #ddd6fe;', vendor_contact:'background:#fff7ed;color:#c2410c;border:1px solid #fed7aa;', vendor:'background:#fefce8;color:#a16207;border:1px solid #fde68a;'}; if (!labels[p.participant_type]) return '-'; let html = `<span style="${styles[p.participant_type]}font-size:0.75rem;padding:2px 7px;border-radius:5px;font-weight:600;display:inline-block;">${labels[p.participant_type]}</span>`; if (p.participant_type === 'dependent' && p.linked_employee_id) html += `<br><small class="text-muted" style="font-size:0.7rem;">→ ${esc(p.linked_employee_id)}</small>`; return html; }
     function deptShort(v) { const a = Array.from(String(v || '')); return a.length > 4 ? a.slice(0,4).join('') : (v || '-'); }
+
+    function updateStatsFromCache() {
+        const total = fullDataCache.length;
+        const checkedIn = fullDataCache.filter(p => p.status === 'CheckedIn').length;
+        statTotalEl.innerText = total;
+        statCheckedInEl.innerText = checkedIn;
+        statPendingEl.innerText = total - checkedIn;
+    }
+
+    function pinPerson(id) {
+        pinnedPersonId = Number(id);
+        pinnedUntil = Date.now() + 45000;
+    }
+
+    function clearExpiredPin() {
+        if (pinnedPersonId && Date.now() > pinnedUntil) pinnedPersonId = null;
+    }
+
+    function getCurrentTimeText() {
+        return new Date().toLocaleTimeString('zh-TW', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    }
 
     async function fetchData() {
         try {
@@ -127,90 +148,121 @@
             if (!res.ok) throw new Error('API Error');
             const data = await res.json();
             if (data.success) {
-                const total = data.total_count || data.checkin_list.length;
-                const checkedIn = data.checked_in_count || data.checkin_list.filter(p => p.status === 'CheckedIn').length;
-                statTotalEl.innerText = total;
-                statCheckedInEl.innerText = checkedIn;
-                statPendingEl.innerText = total - checkedIn;
                 fullDataCache = data.checkin_list;
-                if (!dropdownsInitialized && fullDataCache.length > 0) {
-                    generatePrefixButtons(fullDataCache); updatePrizeDropdown(fullDataCache); updateSiteAndDeptDropdowns(fullDataCache); updateGroupDropdown(fullDataCache); updateMealDropdown(fullDataCache);
-                    dropdownsInitialized = true;
-                }
+                updateStatsFromCache();
+                if (!dropdownsInitialized && fullDataCache.length > 0) { generatePrefixButtons(fullDataCache); updatePrizeDropdown(fullDataCache); updateSiteAndDeptDropdowns(fullDataCache); updateGroupDropdown(fullDataCache); updateMealDropdown(fullDataCache); dropdownsInitialized = true; }
                 renderTable();
                 lastUpdatedEl.innerText = `更新: ${new Date().toLocaleTimeString()}`;
             }
         } catch (e) { lastUpdatedEl.innerText = '更新失敗'; console.error(e); }
     }
 
-    function updateSiteAndDeptDropdowns(list) {
-        filterSiteEl.innerHTML = '<option value="ALL">所有站點</option>'; [...new Set(list.map(p => p.site).filter(Boolean))].sort().forEach(s => filterSiteEl.appendChild(new Option(s, s)));
-        filterDeptEl.innerHTML = '<option value="ALL">所有部門</option>'; [...new Set(list.map(p => p.dept_code).filter(Boolean))].sort().forEach(d => filterDeptEl.appendChild(new Option(d, d)));
-    }
+    function updateSiteAndDeptDropdowns(list) { filterSiteEl.innerHTML = '<option value="ALL">所有站點</option>'; [...new Set(list.map(p => p.site).filter(Boolean))].sort().forEach(s => filterSiteEl.appendChild(new Option(s, s))); filterDeptEl.innerHTML = '<option value="ALL">所有部門</option>'; [...new Set(list.map(p => p.dept_code).filter(Boolean))].sort().forEach(d => filterDeptEl.appendChild(new Option(d, d))); }
     function updateGroupDropdown(list) { filterGroupEl.innerHTML = '<option value="ALL">所有組別</option>'; const groups = [...new Set(list.map(p => p.group_name).filter(Boolean))].sort(); if (groups.length) filterGroupEl.appendChild(new Option('未指定','NONE')); groups.forEach(g => filterGroupEl.appendChild(new Option(g,g))); }
     function updateMealDropdown(list) { const cur = filterMealEl.value; filterMealEl.innerHTML = '<option value="ALL">所有餐點</option><option value="NONE">未指定</option>'; [...new Set(list.map(p => p.meal_type).filter(Boolean))].sort().forEach(m => filterMealEl.appendChild(new Option(mealLabel(m), m))); if ([...filterMealEl.options].some(o => o.value === cur)) filterMealEl.value = cur; }
     function updatePrizeDropdown(list) { const prizes = [...new Set(list.map(p => p.prize_info).filter(p => p && p !== ''))].sort(); const cur = filterPrizeEl.value; filterPrizeEl.innerHTML = '<option value="ALL">所有獎項</option>'; prizes.forEach(prize => filterPrizeEl.appendChild(new Option(prize, prize))); if (prizes.includes(cur)) filterPrizeEl.value = cur; }
     function generatePrefixButtons(list) { const prefixes = [...new Set(list.map(p => p.employee_id.charAt(0).toUpperCase()))].sort(); prefixFiltersEl.innerHTML = `<small class="text-muted me-2">工號首碼：</small><button class="btn btn-sm btn-outline-secondary filter-btn active" onclick="setPrefixFilter('ALL', this)">全部</button>`; prefixes.forEach(c => { const btn = document.createElement('button'); btn.className = 'btn btn-sm btn-outline-secondary filter-btn'; btn.innerText = c; btn.onclick = () => setPrefixFilter(c, btn); prefixFiltersEl.appendChild(btn); }); }
-    function setPrefixFilter(val, btn) { document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active')); btn.classList.add('active'); currentPrefixFilter = val; renderTable(); }
+    function setPrefixFilter(val, btn) { pinnedPersonId = null; document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active')); btn.classList.add('active'); currentPrefixFilter = val; renderTable(); }
+
+    function matchesCurrentFilters(p) {
+        const searchText = searchBoxEl.value.toLowerCase();
+        const matchSearch = p.name.toLowerCase().includes(searchText) || p.employee_id.toLowerCase().includes(searchText) || (p.site && p.site.toLowerCase().includes(searchText)) || (p.lottery_number && p.lottery_number.includes(searchText)) || (p.group_name && p.group_name.toLowerCase().includes(searchText)) || (p.phone && p.phone.includes(searchText));
+        const isWinner = p.has_won || p.has_won_public;
+        return matchSearch &&
+            (currentPrefixFilter === 'ALL' || p.employee_id.toUpperCase().startsWith(currentPrefixFilter)) &&
+            (filterStatusEl.value === 'ALL' || p.status === filterStatusEl.value) &&
+            (filterSiteEl.value === 'ALL' || p.site === filterSiteEl.value) &&
+            (filterDeptEl.value === 'ALL' || p.dept_code === filterDeptEl.value) &&
+            (filterPrizeEl.value === 'ALL' || (p.prize_info && p.prize_info.includes(filterPrizeEl.value))) &&
+            (filterWinEl.value === 'ALL' || (filterWinEl.value === 'WON' ? isWinner : !isWinner)) &&
+            (filterTypeEl.value === 'ALL' || (filterTypeEl.value === 'NONE' && !p.participant_type) || p.participant_type === filterTypeEl.value) &&
+            (filterMealEl.value === 'ALL' || (filterMealEl.value === 'NONE' && !p.meal_type) || p.meal_type === filterMealEl.value) &&
+            (filterGroupEl.value === 'ALL' || (filterGroupEl.value === 'NONE' && !p.group_name) || p.group_name === filterGroupEl.value);
+    }
 
     function renderTable() {
-        const searchText = searchBoxEl.value.toLowerCase();
-        const filtered = fullDataCache.filter(p => {
-            const matchSearch = p.name.toLowerCase().includes(searchText) || p.employee_id.toLowerCase().includes(searchText) || (p.site && p.site.toLowerCase().includes(searchText)) || (p.lottery_number && p.lottery_number.includes(searchText)) || (p.group_name && p.group_name.toLowerCase().includes(searchText)) || (p.phone && p.phone.includes(searchText));
-            const isWinner = p.has_won || p.has_won_public;
-            return matchSearch &&
-                (currentPrefixFilter === 'ALL' || p.employee_id.toUpperCase().startsWith(currentPrefixFilter)) &&
-                (filterStatusEl.value === 'ALL' || p.status === filterStatusEl.value) &&
-                (filterSiteEl.value === 'ALL' || p.site === filterSiteEl.value) &&
-                (filterDeptEl.value === 'ALL' || p.dept_code === filterDeptEl.value) &&
-                (filterPrizeEl.value === 'ALL' || (p.prize_info && p.prize_info.includes(filterPrizeEl.value))) &&
-                (filterWinEl.value === 'ALL' || (filterWinEl.value === 'WON' ? isWinner : !isWinner)) &&
-                (filterTypeEl.value === 'ALL' || (filterTypeEl.value === 'NONE' && !p.participant_type) || p.participant_type === filterTypeEl.value) &&
-                (filterMealEl.value === 'ALL' || (filterMealEl.value === 'NONE' && !p.meal_type) || p.meal_type === filterMealEl.value) &&
-                (filterGroupEl.value === 'ALL' || (filterGroupEl.value === 'NONE' && !p.group_name) || p.group_name === filterGroupEl.value);
-        });
+        clearExpiredPin();
+        const filtered = fullDataCache.filter(p => matchesCurrentFilters(p));
+        const pinned = pinnedPersonId ? fullDataCache.find(p => Number(p.id) === Number(pinnedPersonId)) : null;
+        if (pinned && !filtered.some(p => Number(p.id) === Number(pinnedPersonId))) filtered.unshift(pinned);
         displayCountEl.innerText = filtered.length;
         if (!filtered.length) { tableBodyEl.innerHTML = `<tr><td colspan="99" class="text-center p-4 text-muted">查無符合資料</td></tr>`; return; }
-        tableBodyEl.innerHTML = filtered.map(p => {
-            const statusBadge = p.status === 'CheckedIn' ? `<span class="badge" style="background:#d1fae5;color:#065f46;border:1px solid #a7f3d0;">已報到</span>` : `<span class="badge" style="background:#f1f5f9;color:#94a3b8;border:1px solid #e2e8f0;">未報到</span>`;
-            const bizBadge = p.is_business_trip ? `<span class="badge" style="background:#e0f2fe;color:#0369a1;border:1px solid #bae6fd;">公差</span>` : '-';
-            let prizeHtml = '';
-            if (p.tail_prize_info) prizeHtml += `<div class="small mb-1" style="color:#dc2626;"><i class="bi bi-ticket-perforated-fill me-1"></i>${esc(p.tail_prize_info)}</div>`;
-            if (p.public_prize_info) prizeHtml += `<div class="small" style="color:var(--ocean-dark);"><i class="bi bi-trophy-fill me-1"></i>${esc(p.public_prize_info)}</div>`;
-            if (!prizeHtml) prizeHtml = `<span class="text-muted">-</span>`;
-            let claimHtml = '';
-            if (p.has_won) claimHtml += p.prize_claimed ? `<button class="btn btn-sm mb-1 me-1" style="font-size:0.72rem;background:#d1fae5;color:#065f46;border:1px solid #6ee7b7;" onclick="toggleClaim(${p.id},'tail')">尾數已領</button>` : `<button class="btn btn-sm mb-1 me-1" style="font-size:0.72rem;background:#fee2e2;color:#991b1b;border:1px solid #fca5a5;" onclick="toggleClaim(${p.id},'tail')">領取尾數</button>`;
-            if (p.has_won_public) claimHtml += p.public_prize_claimed ? `<button class="btn btn-sm" style="font-size:0.72rem;background:#dbeafe;color:#1d4ed8;border:1px solid #93c5fd;" onclick="toggleClaim(${p.id},'public')">公獎已領</button>` : `<button class="btn btn-sm" style="font-size:0.72rem;background:#ede9fe;color:#7c3aed;border:1px solid #ddd6fe;" onclick="toggleClaim(${p.id},'public')">領取公獎</button>`;
-            if (!claimHtml) claimHtml = `<span class="text-muted">-</span>`;
-            const actionBtn = p.is_business_trip ? `<span class="badge" style="background:#e0f2fe;color:#0369a1;border:1px solid #bae6fd;">公差視同報到</span>` : (p.status === 'CheckedIn' ? `<button class="btn btn-sm btn-outline-secondary" onclick="adminCancelCheckIn(${p.id},'${esc(p.name)}')">取消</button>` : `<button class="btn btn-sm btn-outline-success" onclick="adminCheckIn(${p.id},'${esc(p.name)}')">簽到</button>`);
-            return `<tr>
-                <td><b>${esc(p.name)}</b></td><td>${actionBtn}</td><td class="text-muted">${esc(p.employee_id)}</td>
-                ${DF.checkin_seq ? `<td>${p.checkin_seq ? `<span style="font-family:'Nunito',sans-serif;font-weight:800;color:#7c3aed;">${esc(p.checkin_seq)}</span>` : '-'}</td>` : ''}
-                ${DF.site ? `<td>${esc(p.site || '-')}</td>` : ''}
-                ${DF.dept ? `<td title="${esc(p.dept_code || '')}">${esc(deptShort(p.dept_code))}</td>` : ''}
-                ${DF.table ? `<td style="color:var(--sand);font-weight:700;">${esc(p.table_number || '-')}</td>` : ''}
-                ${DF.business_trip ? `<td>${bizBadge}</td>` : ''}
-                ${DF.participant_type ? `<td>${typeBadge(p)}</td>` : ''}
-                ${DF.age_group ? `<td>${p.age_group ? `<span class="badge bg-light text-dark border">${esc(p.age_group)}</span>` : '-'}</td>` : ''}
-                ${DF.phone ? `<td>${esc(p.phone || '-')}</td>` : ''}
-                ${DF.meal ? `<td>${mealBadge(p.meal_type)}</td>` : ''}
-                ${DF.group ? `<td>${groupBadge(p.group_name)}</td>` : ''}
-                ${LOTTERY && DF.lottery_number ? `<td style="font-weight:700;color:var(--ocean-dark);">${esc(p.lottery_number || '-')}</td>` : ''}
-                ${DF.status ? `<td>${statusBadge}</td>` : ''}
-                ${LOTTERY && DF.prize ? `<td>${prizeHtml}</td><td>${claimHtml}</td>` : ''}
-                ${DF.checkin_time ? `<td class="text-muted" style="font-size:0.8rem;">${esc(p.check_in_time || '')}</td>` : ''}
-            </tr>`;
-        }).join('');
+        tableBodyEl.innerHTML = filtered.map(p => rowHtml(p)).join('');
+    }
+
+    function rowHtml(p) {
+        const isPinned = pinnedPersonId && Number(p.id) === Number(pinnedPersonId);
+        const statusBadge = p.status === 'CheckedIn' ? `<span class="badge" style="background:#d1fae5;color:#065f46;border:1px solid #a7f3d0;">已報到</span>` : `<span class="badge" style="background:#f1f5f9;color:#94a3b8;border:1px solid #e2e8f0;">未報到</span>`;
+        const bizBadge = p.is_business_trip ? `<span class="badge" style="background:#e0f2fe;color:#0369a1;border:1px solid #bae6fd;">公差</span>` : '-';
+        let prizeHtml = '';
+        if (p.tail_prize_info) prizeHtml += `<div class="small mb-1" style="color:#dc2626;"><i class="bi bi-ticket-perforated-fill me-1"></i>${esc(p.tail_prize_info)}</div>`;
+        if (p.public_prize_info) prizeHtml += `<div class="small" style="color:var(--ocean-dark);"><i class="bi bi-trophy-fill me-1"></i>${esc(p.public_prize_info)}</div>`;
+        if (!prizeHtml) prizeHtml = `<span class="text-muted">-</span>`;
+        let claimHtml = '';
+        if (p.has_won) claimHtml += p.prize_claimed ? `<button class="btn btn-sm mb-1 me-1" style="font-size:0.72rem;background:#d1fae5;color:#065f46;border:1px solid #6ee7b7;" onclick="toggleClaim(${p.id},'tail')">尾數已領</button>` : `<button class="btn btn-sm mb-1 me-1" style="font-size:0.72rem;background:#fee2e2;color:#991b1b;border:1px solid #fca5a5;" onclick="toggleClaim(${p.id},'tail')">領取尾數</button>`;
+        if (p.has_won_public) claimHtml += p.public_prize_claimed ? `<button class="btn btn-sm" style="font-size:0.72rem;background:#dbeafe;color:#1d4ed8;border:1px solid #93c5fd;" onclick="toggleClaim(${p.id},'public')">公獎已領</button>` : `<button class="btn btn-sm" style="font-size:0.72rem;background:#ede9fe;color:#7c3aed;border:1px solid #ddd6fe;" onclick="toggleClaim(${p.id},'public')">領取公獎</button>`;
+        if (!claimHtml) claimHtml = `<span class="text-muted">-</span>`;
+        const actionBtn = p.is_business_trip ? `<span class="badge" style="background:#e0f2fe;color:#0369a1;border:1px solid #bae6fd;">公差視同報到</span>` : (p.status === 'CheckedIn' ? `<button class="btn btn-sm btn-outline-secondary" onclick="adminCancelCheckIn(${p.id},'${esc(p.name)}')">取消</button>` : `<button class="btn btn-sm btn-outline-success" onclick="adminCheckIn(${p.id},'${esc(p.name)}')">簽到</button>`);
+        const pinnedNote = isPinned ? `<span class="recent-action-note">剛操作</span>` : '';
+        return `<tr class="${isPinned ? 'recent-action-row' : ''}" data-person-id="${p.id}">
+            <td><b>${esc(p.name)}</b>${pinnedNote}</td><td>${actionBtn}</td><td class="text-muted">${esc(p.employee_id)}</td>
+            ${DF.checkin_seq ? `<td>${p.checkin_seq ? `<span style="font-family:'Nunito',sans-serif;font-weight:800;color:#7c3aed;">${esc(p.checkin_seq)}</span>` : '-'}</td>` : ''}
+            ${DF.site ? `<td>${esc(p.site || '-')}</td>` : ''}
+            ${DF.dept ? `<td title="${esc(p.dept_code || '')}">${esc(deptShort(p.dept_code))}</td>` : ''}
+            ${DF.table ? `<td style="color:var(--sand);font-weight:700;">${esc(p.table_number || '-')}</td>` : ''}
+            ${DF.business_trip ? `<td>${bizBadge}</td>` : ''}
+            ${DF.participant_type ? `<td>${typeBadge(p)}</td>` : ''}
+            ${DF.age_group ? `<td>${p.age_group ? `<span class="badge bg-light text-dark border">${esc(p.age_group)}</span>` : '-'}</td>` : ''}
+            ${DF.phone ? `<td>${esc(p.phone || '-')}</td>` : ''}
+            ${DF.meal ? `<td>${mealBadge(p.meal_type)}</td>` : ''}
+            ${DF.group ? `<td>${groupBadge(p.group_name)}</td>` : ''}
+            ${LOTTERY && DF.lottery_number ? `<td style="font-weight:700;color:var(--ocean-dark);">${esc(p.lottery_number || '-')}</td>` : ''}
+            ${DF.status ? `<td>${statusBadge}</td>` : ''}
+            ${LOTTERY && DF.prize ? `<td>${prizeHtml}</td><td>${claimHtml}</td>` : ''}
+            ${DF.checkin_time ? `<td class="text-muted" style="font-size:0.8rem;">${esc(p.check_in_time || '')}</td>` : ''}
+        </tr>`;
     }
 
     async function toggleClaim(id, type) { try { const res = await fetch("{{ url_for('checkin.api_toggle_claim') }}", {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({id,type})}); const data = await res.json(); if (data.success) fetchData(); else alert(data.message); } catch(e) { alert('操作失敗'); } }
-    async function adminCheckIn(id, name) { if (!confirm(`確認幫 [ ${name} ] 簽到？`)) return; try { const res = await fetch("{{ url_for('checkin.api_admin_checkin') }}", {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({id})}); const data = await res.json(); if (data.success) fetchData(); else alert(data.message); } catch(e) { alert('Error'); } }
-    async function adminCancelCheckIn(id, name) { const cancellerId = prompt(`【警告】確認要取消 [ ${name} ] 的報到狀態嗎？\n\n為保留紀錄，請輸入您的工號：`); if (cancellerId === null) return; if (!cancellerId.trim()) return alert('未輸入工號，無法執行。'); try { const res = await fetch("{{ url_for('checkin.api_admin_cancel_checkin') }}", {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({id, canceller_id:cancellerId.trim()})}); const data = await res.json(); if (data.success) { alert(data.message); fetchData(); } else alert(data.message); } catch(e) { alert('發生錯誤'); } }
+
+    async function adminCheckIn(id, name) {
+        if (!confirm(`確認幫 [ ${name} ] 簽到？`)) return;
+        try {
+            const res = await fetch("{{ url_for('checkin.api_admin_checkin') }}", {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({id})});
+            const data = await res.json();
+            if (data.success) {
+                const person = fullDataCache.find(p => Number(p.id) === Number(id));
+                if (person) { person.status = 'CheckedIn'; person.check_in_time = getCurrentTimeText(); }
+                pinPerson(id);
+                updateStatsFromCache();
+                renderTable();
+                lastUpdatedEl.innerText = `已簽到: ${name}`;
+            } else alert(data.message);
+        } catch(e) { alert('Error'); }
+    }
+
+    async function adminCancelCheckIn(id, name) {
+        const cancellerId = prompt(`【警告】確認要取消 [ ${name} ] 的報到狀態嗎？\n\n為保留紀錄，請輸入您的工號：`);
+        if (cancellerId === null) return;
+        if (!cancellerId.trim()) return alert('未輸入工號，無法執行。');
+        try {
+            const res = await fetch("{{ url_for('checkin.api_admin_cancel_checkin') }}", {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({id, canceller_id:cancellerId.trim()})});
+            const data = await res.json();
+            if (data.success) {
+                const person = fullDataCache.find(p => Number(p.id) === Number(id));
+                if (person) { person.status = 'Registered'; person.check_in_time = ''; person.checkin_seq = null; }
+                pinPerson(id);
+                updateStatsFromCache();
+                renderTable();
+                lastUpdatedEl.innerText = `已取消: ${name}`;
+            } else alert(data.message);
+        } catch(e) { alert('發生錯誤'); }
+    }
 
     document.addEventListener('DOMContentLoaded', () => {
         fetchData(); setInterval(fetchData, 5000);
-        [searchBoxEl, filterStatusEl, filterWinEl, filterPrizeEl, filterSiteEl, filterDeptEl, filterTypeEl, filterMealEl, filterGroupEl].forEach(el => el.addEventListener('change', renderTable));
-        searchBoxEl.addEventListener('input', renderTable);
+        [searchBoxEl, filterStatusEl, filterWinEl, filterPrizeEl, filterSiteEl, filterDeptEl, filterTypeEl, filterMealEl, filterGroupEl].forEach(el => el.addEventListener('change', () => { pinnedPersonId = null; renderTable(); }));
+        searchBoxEl.addEventListener('input', () => { pinnedPersonId = null; renderTable(); });
     });
 </script>
 {% endblock %}
