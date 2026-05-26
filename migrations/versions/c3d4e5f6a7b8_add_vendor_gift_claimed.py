@@ -1,7 +1,7 @@
 """add vendor_gift_claimed to checkin_list
 
 Revision ID: c3d4e5f6a7b8
-Revises: a1b2c3d4e5f6
+Revises: 9a8b7c6d5e4f
 Create Date: 2026-05-26 00:00:00.000000
 
 """
@@ -11,7 +11,7 @@ import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
 revision = 'c3d4e5f6a7b8'
-down_revision = 'a1b2c3d4e5f6'
+down_revision = '9a8b7c6d5e4f'
 branch_labels = None
 depends_on = None
 
