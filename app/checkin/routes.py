@@ -66,8 +66,6 @@ def _assign_checkin_seq(person):
         except (ValueError, TypeError):
             saved_max = 0
 
-    # 向後相容：若這個 counter 是第一次建立，需同時參考目前名單已存在的最大流水號。
-    # 之後即使取消報到清空 checkin_seq，也會以 AppSetting 裡的 saved_max 繼續遞增，不會重複配發。
     next_num = max(saved_max, _max_existing_seq_num(prefix)) + 1
     person.checkin_seq = f'{prefix}{next_num:03d}'
 
@@ -84,6 +82,10 @@ def _participant_label(value):
         'vendor_contact': '外部廠商主要窗口',
         'vendor': '外部廠商',
     }.get(value, value)
+
+
+def _vendor_gift_claimed(person):
+    return bool(getattr(person, 'vendor_gift_claimed', False))
 
 
 @bp.route('/api/checkin_by_id', methods=['POST'])
@@ -144,6 +146,7 @@ def api_checkin_by_id():
         "checkin_seq": person.checkin_seq,
         "participant_type": person.participant_type,
         "participant_type_label": _participant_label(person.participant_type),
+        "vendor_gift_claimed": _vendor_gift_claimed(person),
         "linked_employee_id": person.linked_employee_id,
         "meal_type": person.meal_type,
         "group_name": person.group_name,
@@ -202,6 +205,7 @@ def api_status_list():
                 "public_prize_claimed": person.public_prize_claimed,
                 "participant_type": person.participant_type,
                 "participant_type_label": _participant_label(person.participant_type),
+                "vendor_gift_claimed": _vendor_gift_claimed(person),
                 "linked_employee_id": person.linked_employee_id,
                 "meal_type": person.meal_type,
                 "group_name": person.group_name,
@@ -281,6 +285,23 @@ def api_toggle_claim():
         db.session.rollback()
         return jsonify({"success": False, "message": str(e)}), 500
 
+@bp.route('/api/claim_vendor_gift', methods=['POST'])
+def api_claim_vendor_gift():
+    try:
+        data = request.get_json()
+        person_id = data.get('id')
+        person = CheckinList.query.get(person_id)
+        if not person:
+            return jsonify({"success": False, "message": "找不到人員"}), 404
+        if person.participant_type != 'vendor_contact':
+            return jsonify({"success": False, "message": "只有外部廠商主要窗口需要確認公司禮品"}), 400
+        person.vendor_gift_claimed = True
+        db.session.commit()
+        return jsonify({"success": True, "message": f"已確認 {person.name} 領取公司禮品", "vendor_gift_claimed": True})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"success": False, "message": str(e)}), 500
+
 @bp.route('/query')
 def query_page():
     return render_template('checkin/self_query.html')
@@ -324,6 +345,7 @@ def api_search_by_id():
             "status": p.status,
             "participant_type": p.participant_type,
             "participant_type_label": _participant_label(p.participant_type),
+            "vendor_gift_claimed": _vendor_gift_claimed(p),
             "linked_employee_id": p.linked_employee_id,
             "meal_type": p.meal_type,
             "group_name": p.group_name,
