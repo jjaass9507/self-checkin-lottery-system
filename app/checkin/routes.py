@@ -6,6 +6,8 @@ from datetime import datetime
 
 bp = Blueprint('checkin', __name__)
 
+DASH_FILTER_KEYS = ['status', 'site', 'dept', 'win', 'prize', 'type', 'meal', 'group']
+
 @bp.route('/')
 def index():
     return render_template('checkin/self_checkin.html')
@@ -23,7 +25,28 @@ def dashboard():
         s = AppSetting.query.get(f'dash_show_{key}')
         dash_fields[key] = (s.value != 'false') if s else True
 
-    return render_template('checkin/dashboard.html', dash_fields=dash_fields)
+    filter_modes = {}
+    for key in DASH_FILTER_KEYS:
+        s = AppSetting.query.get(f'dash_filter_mode_{key}')
+        filter_modes[key] = s.value if s and s.value in ('single', 'multiple') else 'single'
+
+    return render_template('checkin/dashboard.html', dash_fields=dash_fields, filter_modes=filter_modes)
+
+@bp.route('/dashboard/filter_modes', methods=['POST'])
+def update_dash_filter_modes():
+    if not session.get('is_admin'):
+        return redirect(url_for('admin.login'))
+    for key in DASH_FILTER_KEYS:
+        value = request.form.get(f'filter_mode_{key}', 'single')
+        value = 'multiple' if value == 'multiple' else 'single'
+        setting_key = f'dash_filter_mode_{key}'
+        setting = AppSetting.query.get(setting_key)
+        if setting:
+            setting.value = value
+        else:
+            db.session.add(AppSetting(key=setting_key, value=value))
+    db.session.commit()
+    return redirect(url_for('admin.import_page'))
 
 def _meal_seq_prefix(meal_type):
     raw = (meal_type or '').strip().upper()
@@ -157,7 +180,7 @@ def api_checkin_by_id():
 @bp.route('/api/status_list')
 def api_status_list():
     try:
-        checkin_list = CheckinList.query.all()
+        checkin_list = CheckinList.query.order_by(CheckinList.id.asc()).all()
         total_count = CheckinList.query.count()
         checked_in_count = CheckinList.query.filter_by(status='CheckedIn').count()
         all_draws = DrawnTailNumber.query.all()
