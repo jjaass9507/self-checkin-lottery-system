@@ -1,7 +1,7 @@
 # 修正後的程式碼 (補上 session 和 redirect)
 from flask import Blueprint, render_template, request, jsonify, url_for, session, redirect
 from app import db
-from app.models import CheckinList, DrawnTailNumber, Prize, CancellationLog
+from app.models import CheckinList, DrawnTailNumber, Prize, CancellationLog, AppSetting
 from datetime import datetime
 
 bp = Blueprint('checkin', __name__)
@@ -15,7 +15,6 @@ def dashboard():
     if not session.get('is_admin'):
         return redirect(url_for('admin.login'))
 
-    from app.models import AppSetting
     dash_field_keys = ['checkin_seq', 'site', 'dept', 'table', 'business_trip',
                        'participant_type', 'age_group', 'phone', 'meal', 'group', 'lottery_number',
                        'status', 'prize', 'checkin_time']
@@ -33,11 +32,10 @@ def _meal_seq_prefix(meal_type):
     first = raw[0]
     return first if 'A' <= first <= 'Z' else ''
 
-def _assign_checkin_seq(person):
-    """依餐別分配流水號：A餐→A001, C餐:...→C001, 無餐別→001。已有號碼則不重複分配。"""
-    if person.checkin_seq:
-        return
-    prefix = _meal_seq_prefix(person.meal_type)
+def _seq_counter_key(prefix):
+    return f"checkin_seq_counter_{prefix or 'NO_PREFIX'}"
+
+def _max_existing_seq_num(prefix):
     seq_len = len(prefix) + 3
     candidates = CheckinList.query.filter(
         CheckinList.checkin_seq.isnot(None),
@@ -50,7 +48,33 @@ def _assign_checkin_seq(person):
             max_num = max(max_num, int(c.checkin_seq[len(prefix):]))
         except (ValueError, TypeError):
             pass
-    person.checkin_seq = f'{prefix}{max_num + 1:03d}'
+    return max_num
+
+def _assign_checkin_seq(person):
+    """依餐別分配流水號，且已配發過的號碼不回收。取消報到後下一位仍會往後遞增。"""
+    if person.checkin_seq:
+        return
+
+    prefix = _meal_seq_prefix(person.meal_type)
+    key = _seq_counter_key(prefix)
+    setting = AppSetting.query.get(key)
+
+    saved_max = 0
+    if setting and setting.value:
+        try:
+            saved_max = int(setting.value)
+        except (ValueError, TypeError):
+            saved_max = 0
+
+    # 向後相容：若這個 counter 是第一次建立，需同時參考目前名單已存在的最大流水號。
+    # 之後即使取消報到清空 checkin_seq，也會以 AppSetting 裡的 saved_max 繼續遞增，不會重複配發。
+    next_num = max(saved_max, _max_existing_seq_num(prefix)) + 1
+    person.checkin_seq = f'{prefix}{next_num:03d}'
+
+    if setting:
+        setting.value = str(next_num)
+    else:
+        db.session.add(AppSetting(key=key, value=str(next_num)))
 
 
 def _participant_label(value):
@@ -201,7 +225,7 @@ def api_admin_checkin():
         person.check_in_time = datetime.now()
         _assign_checkin_seq(person)
         db.session.commit()
-        return jsonify({"success": True, "message": f"{person.name} 簽到成功"})
+        return jsonify({"success": True, "message": f"{person.name} 簽到成功", "checkin_seq": person.checkin_seq})
     except Exception as e:
         db.session.rollback()
         return jsonify({"success": False, "message": str(e)}), 500
@@ -263,7 +287,6 @@ def query_page():
 
 @bp.route('/api/search_by_id', methods=['POST'])
 def api_search_by_id():
-    from app.models import AppSetting
     data = request.get_json()
     emp_id = data.get('employee_id')
     if not emp_id:
