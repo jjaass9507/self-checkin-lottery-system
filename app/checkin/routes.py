@@ -10,6 +10,9 @@ DASH_FILTER_KEYS = ['status', 'site', 'dept', 'win', 'prize', 'type', 'meal', 'g
 
 @bp.route('/')
 def index():
+    s = AppSetting.query.get('checkin_station_enabled')
+    if s and s.value == 'false':
+        return render_template('checkin/station_disabled.html', station='自助報到站')
     return render_template('checkin/self_checkin.html')
 
 @bp.route('/dashboard')
@@ -327,6 +330,9 @@ def api_claim_vendor_gift():
 
 @bp.route('/query')
 def query_page():
+    s = AppSetting.query.get('query_station_enabled')
+    if s and s.value == 'false':
+        return render_template('checkin/station_disabled.html', station='純查詢站')
     return render_template('checkin/self_query.html')
 
 @bp.route('/api/search_by_id', methods=['POST'])

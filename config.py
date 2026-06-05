@@ -14,5 +14,7 @@ class Config:
         
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     
-    # (新增) 設定一組簡單的後台密碼
+    # 後台密碼（三層）
+    SUPER_ADMIN_PASSWORD = os.environ.get('SUPER_ADMIN_PASSWORD')
     ADMIN_PASSWORD = os.environ.get('ADMIN_PASSWORD')
+    VIEWER_PASSWORD = os.environ.get('VIEWER_PASSWORD')
