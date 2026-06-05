@@ -19,29 +19,63 @@ QUERY_FIELD_KEYS = ['employee_id', 'status', 'lottery_number', 'prize_info',
                     'age_group', 'phone']
 DASH_FILTER_KEYS = ['status', 'site', 'dept', 'win', 'prize', 'type', 'meal', 'group']
 
-# --- (新增) 1. 權限卡控攔截器 ---
+ADMIN_PERMISSION_KEYS = [
+    'import', 'reset_list', 'reset_checkin', 'reset_lottery',
+    'manage_prizes', 'toggle_lottery', 'dash_config', 'query_config', 'test_checkin',
+]
+
+def _admin_role():
+    return session.get('admin_role')
+
+def _has_permission(feature):
+    role = _admin_role()
+    if role == 'super':
+        return True
+    if role == 'admin':
+        s = AppSetting.query.get(f'admin_can_{feature}')
+        return (s.value != 'false') if s else True
+    return False
+
+def _guard(feature):
+    """Return a redirect response if current user lacks permission, else None."""
+    if not _has_permission(feature):
+        flash('您的帳號無此操作權限', 'danger')
+        return redirect(url_for('admin.import_page'))
+    return None
+
 @bp.before_request
 def require_login():
     if request.endpoint == 'admin.login':
         return
-    if not session.get('is_admin'):
+    if not session.get('admin_role'):
         return redirect(url_for('admin.login'))
 
 @bp.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
-        input_password = request.form.get('password')
-        if input_password == current_app.config['ADMIN_PASSWORD']:
-            session['is_admin'] = True
-            session.permanent = True
-            flash('登入成功', 'success')
-            return redirect(url_for('admin.import_page'))
+        pw = request.form.get('password', '')
+        cfg = current_app.config
+        if pw and pw == cfg.get('SUPER_ADMIN_PASSWORD'):
+            role = 'super'
+        elif pw and pw == cfg.get('ADMIN_PASSWORD'):
+            role = 'admin'
+        elif pw and cfg.get('VIEWER_PASSWORD') and pw == cfg.get('VIEWER_PASSWORD'):
+            role = 'viewer'
         else:
             flash('密碼錯誤', 'danger')
+            return render_template('admin/login.html')
+        session['admin_role'] = role
+        session['is_admin'] = True
+        session.permanent = True
+        flash('登入成功', 'success')
+        if role == 'viewer':
+            return redirect(url_for('admin.logs_page'))
+        return redirect(url_for('admin.import_page'))
     return render_template('admin/login.html')
 
 @bp.route('/logout')
 def logout():
+    session.pop('admin_role', None)
     session.pop('is_admin', None)
     flash('已登出', 'info')
     return redirect(url_for('admin.login'))
@@ -52,7 +86,12 @@ def index():
 
 @bp.route('/import', methods=['GET', 'POST'])
 def import_page():
+    if _admin_role() == 'viewer':
+        return redirect(url_for('admin.logs_page'))
     if request.method == 'POST':
+        denied = _guard('import')
+        if denied:
+            return denied
         if 'file' not in request.files:
             flash('沒有檔案被上傳', 'danger')
             return redirect(request.url)
@@ -133,10 +172,31 @@ def import_page():
     for key in DASH_FILTER_KEYS:
         setting = AppSetting.query.get(f'dash_filter_mode_{key}')
         filter_modes[key] = setting.value if setting and setting.value in ('single', 'multiple') else 'single'
-    return render_template('admin/import.html', query_fields=query_fields, dash_fields=dash_fields, filter_modes=filter_modes)
+    # Admin permission settings (for super admin config panel)
+    admin_perms = {}
+    for key in ADMIN_PERMISSION_KEYS:
+        s = AppSetting.query.get(f'admin_can_{key}')
+        admin_perms[key] = (s.value != 'false') if s else True
+    # Station enable/disable settings
+    s_checkin = AppSetting.query.get('checkin_station_enabled')
+    s_query = AppSetting.query.get('query_station_enabled')
+    checkin_station_enabled = (s_checkin.value != 'false') if s_checkin else True
+    query_station_enabled = (s_query.value != 'false') if s_query else True
+    return render_template(
+        'admin/import.html',
+        query_fields=query_fields, dash_fields=dash_fields, filter_modes=filter_modes,
+        admin_role=_admin_role(),
+        admin_perms=admin_perms,
+        checkin_station_enabled=checkin_station_enabled,
+        query_station_enabled=query_station_enabled,
+        has_permission=_has_permission,
+    )
 
 @bp.route('/dash_fields', methods=['POST'])
 def toggle_dash_fields():
+    denied = _guard('dash_config')
+    if denied:
+        return denied
     for key in DASH_FIELD_KEYS:
         new_value = 'true' if request.form.get(f'show_{key}') else 'false'
         setting = AppSetting.query.get(f'dash_show_{key}')
@@ -147,6 +207,9 @@ def toggle_dash_fields():
 
 @bp.route('/dash_filter_modes', methods=['POST'])
 def toggle_dash_filter_modes():
+    denied = _guard('dash_config')
+    if denied:
+        return denied
     labels = {'status':'報到狀態','site':'站點','dept':'部門','win':'中獎狀態','prize':'特定獎項','type':'身分類別','meal':'餐點類型','group':'組別'}
     for key in DASH_FILTER_KEYS:
         value = request.form.get(f'filter_mode_{key}', 'single')
@@ -160,6 +223,9 @@ def toggle_dash_filter_modes():
 
 @bp.route('/query_fields', methods=['POST'])
 def toggle_query_fields():
+    denied = _guard('query_config')
+    if denied:
+        return denied
     for key in QUERY_FIELD_KEYS:
         new_value = 'true' if request.form.get(f'show_{key}') else 'false'
         setting = AppSetting.query.get(f'query_show_{key}')
@@ -171,6 +237,9 @@ def toggle_query_fields():
 # --- 其餘管理功能 ---
 @bp.route('/reset/list', methods=['POST'])
 def reset_list():
+    denied = _guard('reset_list')
+    if denied:
+        return denied
     try:
         deleted = db.session.query(CheckinList).delete(); db.session.commit(); flash(f"已清除所有名單 (共 {deleted} 筆)。", 'warning')
     except Exception as e:
@@ -179,6 +248,9 @@ def reset_list():
 
 @bp.route('/reset/checkin', methods=['POST'])
 def reset_checkin():
+    denied = _guard('reset_checkin')
+    if denied:
+        return denied
     try:
         updated = CheckinList.query.filter_by(status='CheckedIn').update({'status': 'Registered','check_in_time': None,'checkin_seq': None})
         db.session.commit(); flash(f"已重置所有報到狀態 (共 {updated} 人變回未報到)。", 'warning')
@@ -188,6 +260,9 @@ def reset_checkin():
 
 @bp.route('/reset/lottery', methods=['POST'])
 def reset_lottery():
+    denied = _guard('reset_lottery')
+    if denied:
+        return denied
     try:
         deleted_log = db.session.query(DrawnTailNumber).delete()
         updated_rows = db.session.query(CheckinList).update({CheckinList.has_won: False, CheckinList.prize_claimed: False, CheckinList.has_won_public: False, CheckinList.public_prize_claimed: False})
@@ -224,6 +299,9 @@ def reset_prize():
 
 @bp.route('/test_checkin_all', methods=['POST'])
 def test_checkin_all():
+    denied = _guard('test_checkin')
+    if denied:
+        return denied
     try:
         pending_users = CheckinList.query.filter(CheckinList.status != 'CheckedIn').all(); count = len(pending_users)
         if count == 0:
@@ -252,6 +330,9 @@ def download_template():
 
 @bp.route('/toggle_lottery', methods=['POST'])
 def toggle_lottery():
+    denied = _guard('toggle_lottery')
+    if denied:
+        return denied
     new_value = request.form.get('lottery_enabled', 'true'); setting = AppSetting.query.get('lottery_enabled')
     if setting: setting.value = new_value
     else: db.session.add(AppSetting(key='lottery_enabled', value=new_value))
@@ -266,6 +347,9 @@ def logs_page():
 @bp.route('/prizes', methods=['GET', 'POST'])
 def manage_prizes():
     if request.method == 'POST':
+        denied = _guard('manage_prizes')
+        if denied:
+            return denied
         action = request.form.get('action')
         if action == 'add':
             name = request.form.get('name'); prize_type = request.form.get('prize_type'); quantity = int(request.form.get('quantity', 1)); display_order = int(request.form.get('display_order', 0))
@@ -280,3 +364,36 @@ def manage_prizes():
         db.session.commit(); return redirect(url_for('admin.manage_prizes'))
     prizes = Prize.query.order_by(Prize.prize_type, Prize.display_order).all()
     return render_template('admin/prizes.html', prizes=prizes)
+
+@bp.route('/admin_permissions', methods=['POST'])
+def save_admin_permissions():
+    if _admin_role() != 'super':
+        flash('僅超級管理員可修改此設定', 'danger')
+        return redirect(url_for('admin.import_page'))
+    for key in ADMIN_PERMISSION_KEYS:
+        new_value = 'true' if request.form.get(f'admin_can_{key}') else 'false'
+        setting = AppSetting.query.get(f'admin_can_{key}')
+        if setting:
+            setting.value = new_value
+        else:
+            db.session.add(AppSetting(key=f'admin_can_{key}', value=new_value))
+    db.session.commit()
+    flash('管理員權限設定已更新', 'success')
+    return redirect(url_for('admin.import_page'))
+
+@bp.route('/toggle_stations', methods=['POST'])
+def toggle_stations():
+    if _admin_role() != 'super':
+        flash('僅超級管理員可修改此設定', 'danger')
+        return redirect(url_for('admin.import_page'))
+    for key in ('checkin_station_enabled', 'query_station_enabled'):
+        new_value = request.form.get(key, 'false')
+        new_value = 'true' if new_value == 'true' else 'false'
+        setting = AppSetting.query.get(key)
+        if setting:
+            setting.value = new_value
+        else:
+            db.session.add(AppSetting(key=key, value=new_value))
+    db.session.commit()
+    flash('前台站點設定已更新', 'success')
+    return redirect(url_for('admin.import_page'))
