@@ -8,7 +8,10 @@ from flask import flash, redirect, render_template, request, send_file, url_for
 from openpyxl.styles import Font, PatternFill
 
 from app import db
-from app.admin.routes import bp
+from app.admin.routes import (
+    bp, _admin_role, _has_permission, _guard,
+    ADMIN_PERMISSION_KEYS, DASH_FILTER_KEYS,
+)
 from app.admin.xlsx_stream import iter_xlsx_rows
 from app.models import AppSetting, CancellationLog, CheckinList
 
@@ -154,12 +157,41 @@ def _render_import_page():
         setting = AppSetting.query.get(f'dash_show_{key}')
         dash_fields[key] = (setting.value != 'false') if setting else True
 
-    return render_template('admin/import.html', query_fields=query_fields, dash_fields=dash_fields)
+    filter_modes = {}
+    for key in DASH_FILTER_KEYS:
+        setting = AppSetting.query.get(f'dash_filter_mode_{key}')
+        filter_modes[key] = setting.value if setting and setting.value in ('single', 'multiple') else 'single'
+
+    admin_perms = {}
+    for key in ADMIN_PERMISSION_KEYS:
+        s = AppSetting.query.get(f'admin_can_{key}')
+        admin_perms[key] = (s.value != 'false') if s else True
+
+    s_checkin = AppSetting.query.get('checkin_station_enabled')
+    s_query = AppSetting.query.get('query_station_enabled')
+    checkin_station_enabled = (s_checkin.value != 'false') if s_checkin else True
+    query_station_enabled = (s_query.value != 'false') if s_query else True
+
+    return render_template(
+        'admin/import.html',
+        query_fields=query_fields, dash_fields=dash_fields, filter_modes=filter_modes,
+        admin_role=_admin_role(),
+        admin_perms=admin_perms,
+        checkin_station_enabled=checkin_station_enabled,
+        query_station_enabled=query_station_enabled,
+        has_permission=_has_permission,
+    )
 
 
 def optimized_import_page():
+    if _admin_role() == 'viewer':
+        return redirect(url_for('admin.logs_page'))
     if request.method != 'POST':
         return _render_import_page()
+
+    denied = _guard('import')
+    if denied:
+        return denied
 
     if 'file' not in request.files:
         flash('沒有檔案被上傳', 'danger')
@@ -231,6 +263,9 @@ def optimized_import_page():
 
 
 def optimized_reset_list():
+    denied = _guard('reset_list')
+    if denied:
+        return denied
     try:
         deleted_logs = db.session.query(CancellationLog).delete(synchronize_session=False)
         deleted_list = db.session.query(CheckinList).delete(synchronize_session=False)
@@ -243,6 +278,9 @@ def optimized_reset_list():
 
 
 def optimized_toggle_dash_fields():
+    denied = _guard('dash_config')
+    if denied:
+        return denied
     for key in DASH_FIELD_KEYS:
         new_value = 'true' if request.form.get(f'show_{key}') else 'false'
         setting = AppSetting.query.get(f'dash_show_{key}')
@@ -256,6 +294,9 @@ def optimized_toggle_dash_fields():
 
 
 def optimized_toggle_query_fields():
+    denied = _guard('query_config')
+    if denied:
+        return denied
     for key in QUERY_FIELD_KEYS:
         new_value = 'true' if request.form.get(f'show_{key}') else 'false'
         setting = AppSetting.query.get(f'query_show_{key}')

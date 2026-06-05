@@ -1,6 +1,7 @@
 from flask import flash, redirect, url_for
 
 from app import db
+from app.admin.routes import _guard
 from app.models import AppSetting, CheckinList
 
 
@@ -12,6 +13,9 @@ def reset_checkin():
     records over, so it must clear both assigned checkin_seq values and the
     persisted AppSetting counters used by the next assignment.
     """
+    denied = _guard('reset_checkin')
+    if denied:
+        return denied
     try:
         checked_in_count = CheckinList.query.filter_by(status='CheckedIn').count()
         updated_people = db.session.query(CheckinList).update(
