@@ -2,33 +2,36 @@
 
 {% block title %}中獎名單日誌{% endblock %}
 
-{% block content %}
-<div class="container mt-4 mb-5">
-    <div class="row g-4">
+{% block styles %}
+.draw-row { display: flex; align-items: center; gap: 14px; }
+.draw-num { width: 44px; height: 44px; border-radius: 50%; border: 1px solid var(--a-aqua); display: flex; align-items: center; justify-content: center; font-family: var(--num-font); font-weight: 700; font-size: 15px; color: var(--a-gold); flex-shrink: 0; }
+.draw-tag { font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--a-line-2); color: #C9EEF8; }
+.biz-tag { margin-left: 8px; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--a-line-2); color: #9FD8FF; }
+{% endblock %}
 
+{% block content %}
+<div class="page-wrap wide">
+    <div class="page-head">
+        <div><div class="page-eyebrow">WINNERS LOG</div><h1 class="page-title">中獎名單日誌</h1></div>
+    </div>
+
+    <div class="row g-4">
         {# ===== 左欄：開獎號碼紀錄 ===== #}
-        <div class="col-md-4">
+        <div class="col-md-5 col-lg-4">
             <div class="card h-100">
-                <div class="card-header ch-info d-flex align-items-center gap-2">
-                    <i class="bi bi-clock-history fs-5"></i>
-                    <span>開獎號碼紀錄</span>
+                <div class="card-header d-flex align-items-center gap-2">
+                    <i class="bi bi-clock-history"></i><span>開獎號碼紀錄</span>
                 </div>
                 <ul class="list-group list-group-flush" style="max-height:70vh; overflow-y:auto;">
                     {% for draw in drawn_numbers %}
-                    <li class="list-group-item d-flex justify-content-between align-items-center">
-                        <div class="d-flex align-items-center gap-2 flex-wrap">
-                            <span class="badge" style="background:#fef9c3;color:#92400e;border:1px solid #fde68a;font-weight:700;font-size:0.85rem;">
-                                {{ draw.tail_number }}
-                            </span>
-                            <span class="fw-bold" style="color:var(--text-main);">{{ draw.prize_name }}</span>
-                            {% if draw.is_addon %}
-                                <span class="badge" style="background:#faf5ff;color:#7c3aed;border:1px solid #ddd6fe;">加碼</span>
-                            {% endif %}
-                            {% if draw.prize_type == 'public' %}
-                                <span class="badge" style="background:#e0f2fe;color:#0369a1;border:1px solid #bae6fd;">公獎</span>
-                            {% endif %}
+                    <li class="list-group-item draw-row">
+                        <span class="draw-num">{{ draw.tail_number }}</span>
+                        <div class="d-flex align-items-center gap-2 flex-wrap flex-grow-1" style="min-width:0">
+                            <span class="fw-bold" style="color:var(--a-ink)">{{ draw.prize_name }}</span>
+                            {% if draw.is_addon %}<span class="draw-tag">加碼</span>{% endif %}
+                            {% if draw.prize_type == 'public' %}<span class="draw-tag">公獎</span>{% endif %}
                         </div>
-                        <small class="text-muted">{{ draw.timestamp.strftime('%H:%M:%S') }}</small>
+                        <small class="num text-muted" style="font-size:12px">{{ draw.timestamp.strftime('%H:%M:%S') }}</small>
                     </li>
                     {% else %}
                     <li class="list-group-item text-center p-4 text-muted">
@@ -41,62 +44,48 @@
         </div>
 
         {# ===== 右欄：中獎人員名單 ===== #}
-        <div class="col-md-8">
+        <div class="col-md-7 col-lg-8">
             <div class="card">
-                <div class="card-header ch-success d-flex justify-content-between align-items-center">
+                <div class="card-header d-flex justify-content-between align-items-center">
                     <div class="d-flex align-items-center gap-2">
-                        <i class="bi bi-trophy-fill fs-5"></i>
-                        <span>已中獎人員名單</span>
+                        <i class="bi bi-trophy"></i><span>已中獎人員名單</span>
                     </div>
-                    <span class="badge" style="background:#d1fae5;color:#065f46;border:1px solid #6ee7b7;">
-                        {{ winners_data|length }} 人
-                    </span>
+                    <span class="pill gold" style="padding:3px 12px">{{ winners_data|length }} 人</span>
                 </div>
-                <div class="card-body p-0">
-                    <div class="table-responsive" style="max-height:70vh; overflow-y:auto;">
-                        <table class="table table-hover table-striped mb-0 align-middle">
-                            <thead>
-                                <tr>
-                                    <th>姓名</th>
-                                    <th>工號</th>
-                                    <th>抽獎號碼</th>
-                                    <th>獎項</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for w in winners_data %}
-                                <tr>
-                                    <td class="fw-bold">
-                                        {{ w.name }}
-                                        {% if w.is_business_trip %}
-                                            <span class="ms-1 badge" style="background:#e0f2fe;color:#0369a1;border:1px solid #bae6fd;font-size:0.72rem;">公差</span>
-                                        {% endif %}
-                                    </td>
-                                    <td class="text-muted">{{ w.employee_id }}</td>
-                                    <td>
-                                        <span style="font-weight:700;color:var(--ocean-dark);">
-                                            {{ w.lottery_number }}
-                                        </span>
-                                    </td>
-                                    <td>
-                                        <span class="fw-bold" style="color:#dc2626;">{{ w.prize_name }}</span>
-                                    </td>
-                                </tr>
-                                {% else %}
-                                <tr>
-                                    <td colspan="4" class="text-center p-5 text-muted">
-                                        <i class="bi bi-stars fs-2 d-block mb-2" style="color:var(--sand-light);"></i>
-                                        目前尚未產生中獎者
-                                    </td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
+                <div class="table-responsive" style="max-height:70vh; overflow-y:auto;">
+                    <table class="table table-hover mb-0 align-middle" style="min-width:520px">
+                        <thead>
+                            <tr>
+                                <th>姓名</th>
+                                <th>工號</th>
+                                <th>抽獎號碼</th>
+                                <th>獎項</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for w in winners_data %}
+                            <tr>
+                                <td class="fw-bold">
+                                    {{ w.name }}
+                                    {% if w.is_business_trip %}<span class="biz-tag">公差</span>{% endif %}
+                                </td>
+                                <td class="num" style="color:#B6DCEB">{{ w.employee_id }}</td>
+                                <td class="num" style="font-weight:700;color:#FFE3A3">{{ w.lottery_number }}</td>
+                                <td class="fw-bold">{{ w.prize_name }}</td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="4" class="text-center p-5 text-muted">
+                                    <i class="bi bi-stars fs-2 d-block mb-2" style="color:#FFE3A3;"></i>
+                                    目前尚未產生中獎者
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>
-
     </div>
 </div>
 {% endblock %}
