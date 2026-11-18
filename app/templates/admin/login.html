@@ -3,105 +3,32 @@
 {% block title %}後台驗證{% endblock %}
 
 {% block styles %}
-<style>
-    .login-wrapper {
-        min-height: calc(100vh - 100px);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
-    .login-card {
-        background: #fff;
-        border: 1px solid #bae6fd;
-        border-radius: 20px;
-        padding: 44px 40px;
-        width: 100%;
-        max-width: 400px;
-        box-shadow: 0 12px 40px rgba(2, 132, 199, 0.1);
-    }
-    .login-icon {
-        font-size: 3rem;
-        color: var(--ocean);
-        display: block;
-        text-align: center;
-        margin-bottom: 6px;
-    }
-    .login-title {
-        text-align: center;
-        font-family: 'Nunito', sans-serif;
-        font-weight: 900;
-        font-size: 0.9rem;
-        letter-spacing: 3px;
-        color: var(--text-muted);
-        margin-bottom: 28px;
-        text-transform: uppercase;
-    }
-    .password-input {
-        text-align: center;
-        font-size: 1.3rem;
-        letter-spacing: 4px;
-        border: 2px solid #bae6fd;
-        border-radius: 12px;
-        height: 54px;
-        color: var(--text-main);
-    }
-    .password-input:focus {
-        border-color: var(--ocean);
-        box-shadow: 0 0 0 0.2rem rgba(2,132,199,0.18);
-    }
-    .btn-login {
-        background: linear-gradient(90deg, var(--ocean-dark), var(--ocean));
-        border: none;
-        color: #fff;
-        font-weight: 800;
-        font-size: 1.05rem;
-        padding: 13px;
-        border-radius: 12px;
-        transition: all 0.2s;
-    }
-    .btn-login:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 8px 20px rgba(2, 132, 199, 0.3);
-        color: #fff;
-    }
-    .back-link { color: var(--text-muted); font-size: 0.85rem; text-decoration: none; }
-    .back-link:hover { color: var(--ocean); }
-    .wave-deco {
-        text-align: center;
-        font-size: 1.5rem;
-        margin-bottom: 4px;
-        letter-spacing: 4px;
-        opacity: 0.35;
-    }
-</style>
+.login-wrapper { min-height: calc(100vh - 140px); display: flex; align-items: center; justify-content: center; padding: 40px 20px; }
+.login-card { width: 100%; max-width: 400px; background: var(--a-solid); border: 1px solid var(--a-line); border-radius: 20px; padding: 44px 40px 32px; box-shadow: 0 30px 70px rgba(0, 0, 0, .4); text-align: center; }
+.login-mark { width: 64px; height: 64px; margin: 0 auto 20px; border-radius: 50%; border: 1px solid var(--a-aqua); display: flex; align-items: center; justify-content: center; color: var(--a-aqua); font-size: 26px; }
+.login-eyebrow { font-family: var(--num-font); letter-spacing: .34em; font-size: 12px; color: var(--a-aqua); font-weight: 700; }
+.login-title { font-size: 26px; font-weight: 700; margin: 12px 0 28px; color: var(--a-ink); }
+.password-input { height: 56px; text-align: center; font-size: 22px; letter-spacing: .4em; border-radius: 12px; }
+.btn-login { margin-top: 14px; width: 100%; height: 54px; border-radius: 12px; font-size: 16px; letter-spacing: .12em; display: flex; align-items: center; justify-content: center; gap: 8px; }
+.back-link { display: inline-flex; align-items: center; gap: 6px; margin-top: 22px; font-size: 13px; color: var(--a-muted); text-decoration: none; }
+.back-link:hover { color: var(--a-aqua); }
 {% endblock %}
 
 {% block content %}
 <div class="login-wrapper">
     <div class="login-card">
-        <div class="wave-deco">🌊 🌿 🌊</div>
-        <i class="bi bi-shield-check login-icon"></i>
-        <div class="login-title">Admin Access</div>
+        <div class="login-mark"><i class="bi bi-shield-lock"></i></div>
+        <div class="login-eyebrow">ADMIN ACCESS</div>
+        <div class="login-title">後台驗證</div>
 
         <form method="POST">
-            <div class="mb-4">
-                <input type="password" name="password"
-                       class="form-control password-input"
-                       placeholder="• • • • • •"
-                       required autofocus>
-            </div>
-            <div class="d-grid mb-3">
-                <button type="submit" class="btn btn-login">
-                    <i class="bi bi-box-arrow-in-right me-2"></i>驗證進入
-                </button>
-            </div>
+            <input type="password" name="password" class="form-control password-input" placeholder="• • • • • •" required autofocus>
+            <button type="submit" class="btn btn-ocean btn-login">
+                <i class="bi bi-box-arrow-in-right"></i>驗證進入
+            </button>
         </form>
 
-        <div class="text-center">
-            <a href="{{ url_for('checkin.index') }}" class="back-link">
-                <i class="bi bi-arrow-left me-1"></i>返回前台
-            </a>
-        </div>
+        <a href="{{ url_for('checkin.index') }}" class="back-link"><i class="bi bi-arrow-left"></i>返回前台</a>
     </div>
 </div>
 {% endblock %}
