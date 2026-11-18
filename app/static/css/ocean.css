@@ -1,0 +1,154 @@
+/*
+ * 海洋風共用樣式（前台報到／查詢、抽獎大螢幕）
+ *
+ * 效能原則：
+ *  - 不使用 backdrop-filter。毛玻璃疊在每幀都在動的背景上，瀏覽器每幀都要重算模糊，是卡頓主因；
+ *    改用較不透明的深藍底＋上緣高光，外觀接近但幾乎零成本。
+ *  - 無限循環的動畫只動 transform / opacity（交給 GPU 合成），不動 box-shadow、filter、width。
+ */
+:root {
+    --ink: #F2FBFF;
+    --ink-2: #DDF6FF;
+    --muted: #B6DCEB;
+    --dim: #7FB2C8;
+    --aqua: #7EF0E0;
+    --aqua-2: #9FF7EA;
+    --foam: #BDF7FF;
+    --gold: #FFE3A3;
+    --gold-2: #E9C98A;
+    --error: #FFB4A2;
+    --line: rgba(190, 245, 255, .22);
+    --panel: rgba(5, 34, 58, .66);
+    --panel-soft: rgba(4, 30, 52, .5);
+    --num-font: 'Unbounded', 'Noto Sans TC', sans-serif;
+}
+
+html, body { margin: 0; }
+body {
+    background: #02101f;
+    color: var(--ink);
+    font-family: 'Noto Sans TC', sans-serif;
+    -webkit-font-smoothing: antialiased;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+a { color: var(--aqua); }
+input::placeholder { color: rgba(190, 240, 255, .42); }
+select option { background: #06223A; color: var(--ink); }
+button { font-family: inherit; }
+button:disabled { cursor: default; opacity: .7; }
+
+.ocean-layer { position: relative; z-index: 1; }
+
+/* 面板（取代毛玻璃） */
+.glass {
+    background: linear-gradient(180deg, rgba(14, 64, 96, .7), rgba(4, 30, 52, .82));
+    border: 1px solid var(--line);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, .18), 0 24px 60px rgba(0, 8, 22, .45);
+}
+.glass-soft {
+    background: rgba(4, 30, 52, .42);
+    border: 1px solid rgba(190, 245, 255, .16);
+}
+
+/* 英文小標 */
+.eyebrow {
+    display: flex; align-items: center; justify-content: center; gap: 10px;
+    color: var(--foam); font: 600 12px var(--num-font); letter-spacing: .5em;
+}
+.eyebrow i { font-size: 16px; letter-spacing: 0; }
+
+/* 流光標題：只重繪文字本身，不再疊 drop-shadow 濾鏡 */
+.shimmer-text {
+    background: linear-gradient(100deg, #FFFFFF 30%, #7EF0E0 45%, #FFE3A3 50%, #7EF0E0 55%, #FFFFFF 70%);
+    background-size: 300% 100%;
+    -webkit-background-clip: text; background-clip: text;
+    color: transparent;
+    animation: shimmer 6s linear infinite;
+}
+.shimmer-text.gold {
+    background-image: linear-gradient(100deg, #FFE3A3 30%, #FFFFFF 45%, #7EF0E0 50%, #FFFFFF 55%, #FFE3A3 70%);
+}
+
+/* 主要按鈕（水藍） */
+.btn-aqua, .btn-gold {
+    position: relative; border: 0; cursor: pointer;
+    display: inline-flex; align-items: center; justify-content: center; gap: 10px;
+    font-weight: 900; letter-spacing: .2em;
+    transition: transform .12s;
+}
+.btn-aqua { background: linear-gradient(180deg, #8FF5E6, #3FD6C3); color: #03202F; box-shadow: 0 10px 40px rgba(94, 234, 212, .35); }
+.btn-gold { background: linear-gradient(180deg, #FFE9B5, #E2B456); color: #2A1C02; }
+.btn-aqua:active:not(:disabled), .btn-gold:active:not(:disabled) { transform: scale(.98); }
+.btn-aqua > *, .btn-gold > * { position: relative; }
+/* 呼吸光暈：固定陰影的偽元素，只動 opacity */
+.btn-aqua.glow::before {
+    content: ''; position: absolute; inset: -8px; border-radius: inherit; pointer-events: none;
+    box-shadow: 0 0 0 8px rgba(94, 234, 212, .12), 0 10px 60px rgba(94, 234, 212, .5);
+    opacity: 0; animation: glow-pulse 3s ease-in-out infinite;
+}
+/* 掃光：外層裁切、內層只動 transform */
+.sweep { position: absolute; inset: 0; border-radius: inherit; overflow: hidden; pointer-events: none; }
+.sweep::after {
+    content: ''; position: absolute; top: 0; bottom: 0; left: 0; width: 30%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, .6), transparent);
+    animation: sweep 3.2s ease-in-out infinite;
+    will-change: transform;
+}
+.sweep.soft::after { background: linear-gradient(90deg, transparent, rgba(255, 240, 200, .4), transparent); animation-duration: 2.6s; }
+.sweep.faint::after { background: linear-gradient(90deg, transparent, rgba(255, 240, 200, .18), transparent); animation-duration: 3s; }
+
+.spinner {
+    width: 1em; height: 1em; border-radius: 50%;
+    border: 2px solid currentColor; border-right-color: transparent;
+    animation: spin .7s linear infinite; display: inline-block;
+}
+
+
+/* 登船票卡（報到／查詢共用） */
+.ticket { position: relative; border-radius: 30px; overflow: hidden; transition: transform .18s ease-out; will-change: transform; }
+.holo { position: absolute; inset: 0; pointer-events: none; overflow: hidden; border-radius: inherit; opacity: .55; transition: opacity .3s; }
+.ticket.tilting .holo { opacity: 1; }
+.holo-band {
+    position: absolute; left: -80%; top: -80%; width: 260%; height: 260%;
+    background: linear-gradient(115deg, transparent 22%, rgba(126, 240, 224, .16) 38%, rgba(255, 227, 163, .18) 50%, rgba(125, 211, 252, .16) 62%, transparent 78%);
+    will-change: transform;
+}
+.holo-spot {
+    position: absolute; left: -50%; top: -50%; width: 100%; height: 100%;
+    background: radial-gradient(circle, rgba(255, 255, 255, .16), transparent 42%);
+    will-change: transform;
+}
+.pill-ok { display: inline-flex; align-items: center; gap: 7px; padding: 5px 12px; border-radius: 999px; background: rgba(94, 234, 212, .16); border: 1px solid rgba(126, 240, 224, .5); color: var(--aqua-2); font-size: 13px; font-weight: 700; letter-spacing: .1em; }
+.type-chip { font-size: 12px; font-weight: 700; padding: 3px 10px; border-radius: 999px; background: rgba(255, 255, 255, .1); color: var(--ink-2); }
+.linked { margin-top: 6px; font-size: 13px; color: var(--dim); }
+.num-box { padding: 18px 16px 20px; border-radius: 20px; text-align: center; background: rgba(255, 255, 255, .06); border: 1px solid rgba(190, 245, 255, .14); }
+.num-box.gold { background: rgba(242, 196, 109, .08); border-color: rgba(242, 196, 109, .35); }
+.num-box.gold .box-label { color: var(--gold-2); }
+.num-val { font: 800 64px/1.1 var(--num-font); margin-top: 8px; color: #fff; text-shadow: 0 0 30px rgba(126, 240, 224, .5); font-variant-numeric: tabular-nums; }
+.num-val.small { font-size: 40px; line-height: 1.6; }
+.num-box.gold .num-val { color: var(--gold); text-shadow: 0 0 30px rgba(242, 196, 109, .55); }
+.t-cut { position: relative; margin: 22px 30px 0; border-top: 1px dashed rgba(190, 245, 255, .3); }
+.chips { display: flex; gap: 10px; flex-wrap: wrap; }
+.chip { display: flex; align-items: center; gap: 8px; padding: 10px 16px; border-radius: 14px; background: rgba(255, 255, 255, .08); font-size: 16px; font-weight: 700; }
+.chip i { color: var(--aqua); }
+.prize { position: relative; overflow: hidden; display: flex; align-items: center; gap: 10px; padding: 14px 16px; border-radius: 14px; background: rgba(2, 20, 36, .35); color: var(--muted); font-size: 15px; }
+.prize i { color: var(--gold); }
+.prize.win { background: linear-gradient(100deg, rgba(242, 196, 109, .22), rgba(242, 196, 109, .08)); border: 1px solid rgba(255, 227, 163, .6); color: var(--gold); font-size: 17px; font-weight: 900; letter-spacing: .06em; }
+.box-label { font-size: 12px; color: var(--dim); letter-spacing: .24em; }
+
+@keyframes rise { from { opacity: 0; transform: translateY(40px) scale(.96); } to { opacity: 1; transform: none; } }
+@keyframes rise-big { from { opacity: 0; transform: translateY(60px) scale(.85); } to { opacity: 1; transform: none; } }
+@keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+@keyframes sweep { 0% { transform: translateX(-120%) skewX(-20deg); } 60%, 100% { transform: translateX(420%) skewX(-20deg); } }
+@keyframes bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+@keyframes drain { from { transform: scaleX(1); } to { transform: scaleX(0); } }
+@keyframes ring { 0% { transform: scale(.8); opacity: .7; } 100% { transform: scale(1.9); opacity: 0; } }
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes pop { 0% { opacity: 0; transform: scale(.6) rotateX(30deg); } 100% { opacity: 1; transform: none; } }
+@keyframes glow-pulse { 0%, 100% { opacity: 0; } 50% { opacity: 1; } }
+@keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-8px); } 75% { transform: translateX(8px); } }
+
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+}

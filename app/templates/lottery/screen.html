@@ -3,298 +3,174 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>幸運抽獎 (尾數)</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
+    <title>幸運抽獎 - 尾數</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Orbitron:wght@700;900&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&family=Unbounded:wght@400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/ocean.css') }}?v=20261118">
     <style>
-        :root {
-            --card-base-size: 1.2rem; /* JS 會動態調整這個數值 */
-        }
-        /* 修改後的尾數獎背景樣式 */
-        body {
-            background: linear-gradient(270deg, #8b0000, #d32f2f, #b71c1c, #fdb931);
-            background-size: 400% 400%;
-            animation: gradient-animation 15s ease infinite;
-            color: #fff;
-            font-family: 'Noto Sans TC', sans-serif;
-            height: 100vh;
-            overflow: hidden;
-            display: flex;
-            flex-direction: column;
-        }
+        :root { --card-base-size: 44px; /* JS 會依人數動態調整 */ }
+        body { overflow: hidden; }
+        .screen { height: 100vh; display: flex; flex-direction: column; }
 
-        /* 讓漸層流動感更平滑 */
-        @keyframes gradient-animation {
-            0% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
-        }
+        header { flex-shrink: 0; margin: 16px 24px 0; padding: 14px 26px; display: flex; align-items: center; justify-content: space-between; gap: 24px; border-radius: 24px; }
+        .h-left { display: flex; align-items: center; gap: 28px; min-width: 0; }
+        .brand { display: flex; flex-direction: column; flex-shrink: 0; }
+        .brand-en { font: 800 32px var(--num-font); letter-spacing: .06em; }
+        .brand-zh { font-size: 13px; color: var(--aqua); letter-spacing: .5em; margin-top: 2px; }
+        .prize-select { width: min(420px, 32vw); min-width: 220px; height: 56px; padding: 0 22px; border-radius: 999px; background: rgba(242, 196, 109, .1); border: 1px solid rgba(255, 227, 163, .55); color: var(--gold); font: 900 26px 'Noto Sans TC', sans-serif; outline: none; cursor: pointer; }
+        .prize-select:focus { border-color: var(--gold); box-shadow: 0 0 0 4px rgba(242, 196, 109, .18); }
+        .h-right { display: flex; align-items: center; gap: 22px; flex-shrink: 0; }
+        .drawn { display: flex; align-items: center; gap: 6px; flex-wrap: nowrap; overflow: hidden; justify-content: flex-end; max-width: 320px; }
+        .drawn-label { font-size: 12px; color: var(--dim); margin-right: 2px; flex-shrink: 0; }
+        .drawn-chip { flex-shrink: 0; min-width: 30px; height: 30px; padding: 0 6px; border-radius: 999px; display: flex; align-items: center; justify-content: center; font: 600 13px var(--num-font); background: radial-gradient(circle at 30% 30%, rgba(255, 255, 255, .4), rgba(160, 235, 255, .1) 60%); border: 1px solid rgba(220, 250, 255, .45); }
+        .pool { text-align: right; }
+        .pool-label { font-size: 12px; color: var(--dim); letter-spacing: .2em; }
+        .pool-val { font: 800 30px var(--num-font); }
 
-        /* 建議同步微調 header 背景透明度，讓紅色透出來 */
-        header { 
-            padding: 0.8rem 1.5rem; 
-            flex-shrink: 0; 
-            display: flex; 
-            justify-content: space-between; 
-            align-items: center;
-            background: rgba(0, 0, 0, 0.3); /* 加深一點透明黑 */
-            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
-        }
-        
-        .header-left { display: flex; align-items: center; gap: 20px; }
+        main { flex: 1; min-height: 0; display: flex; gap: 18px; padding: 16px 24px; }
+        .split-pane { flex: 1; min-width: 0; display: flex; flex-direction: column; border-radius: 26px; padding: 14px 18px; }
+        .col-header { flex-shrink: 0; display: flex; align-items: center; justify-content: center; gap: 14px; padding-bottom: 10px; margin-bottom: 14px; border-bottom: 1px solid rgba(190, 245, 255, .14); }
+        .col-code { font: 800 28px var(--num-font); letter-spacing: .1em; }
+        .col-label { font-size: 16px; color: var(--muted); letter-spacing: .24em; }
+        .col-count { font: 600 13px var(--num-font); color: var(--gold); }
+        .card-container { position: relative; flex: 1; min-height: 0; overflow: hidden; display: flex; flex-wrap: wrap; align-content: flex-start; justify-content: center; gap: .36em; font-size: var(--card-base-size); }
+        .empty { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; color: rgba(190, 245, 255, .45); font-size: 16px; letter-spacing: .4em; }
+        .card-container:not(:empty) + .empty { display: none; }
+        .empty-ring { width: 64px; height: 64px; border-radius: 50%; border: 1px dashed rgba(190, 245, 255, .4); animation: spin 14s linear infinite; }
 
-        .main-title { 
-            font-family: 'Orbitron', sans-serif; 
-            font-weight: 900; font-size: 2rem; 
-            color: #fff; text-shadow: 0 0 10px #fff; margin: 0; 
-        }
-
-        /* 下拉選單樣式 */
-        .prize-input-header {
-            background: transparent;
-            border: none;
-            border-bottom: 2px solid #ffd700;
-            color: #ffd700;
-            font-size: 2rem;
-            font-weight: bold;
-            width: 450px;
-            text-align: center;
-            padding: 0 10px;
-            font-family: 'Noto Sans TC', sans-serif;
-            transition: all 0.3s ease;
-            cursor: pointer;
-            text-align-last: center; 
-            appearance: none; -webkit-appearance: none;
-            background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23FFD700%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E");
-            background-repeat: no-repeat;
-            background-position: right 10px top 50%;
-            background-size: 15px auto;
-        }
-        .prize-input-header:focus { outline: none; background: rgba(255, 215, 0, 0.1); }
-        .prize-input-header option { background-color: #302b63; color: #fff; font-size: 1.2rem; padding: 10px; }
-
-        .status-info { color: #ccc; font-size: 0.9rem; text-align: right; }
-        #pool-count { color: #00ffea; font-weight: bold; }
-
-        /* 主顯示區 */
-        main { 
-            flex-grow: 1; 
-            display: flex; 
-            width: 100%; height: 100%;
-            overflow: hidden;
-            position: relative;
-            padding: 10px 20px;
-            gap: 15px;
-        }
-        
-        .split-pane {
-            flex: 1; /* 預設平分 */
-            display: flex;
-            flex-direction: column;
-            border-radius: 12px;
-            padding: 10px;
-            background: rgba(255, 255, 255, 0.03);
-            border: 1px solid rgba(255,255,255,0.1);
-            transition: all 0.5s ease; /* 加入過渡效果 */
-        }
-        
-        /* 當某個區塊隱藏時，另一個會自動 flex-grow 佔滿 */
-        .split-pane[style*="display: none"] { flex: 0; padding: 0; border: 0; }
-
-        .col-header {
-            text-align: center;
-            font-size: 1.8rem;
-            font-weight: 700;
-            text-transform: uppercase;
-            padding-bottom: 8px;
-            margin-bottom: 8px;
-            border-bottom: 2px solid rgba(255,255,255,0.15);
-            flex-shrink: 0; 
-        }
-        .col-header.hr { color: #ff9ff3; }
-        .col-header.fac { color: #54a0ff; }
-
-        /* 卡片容器 */
-        .card-container {
-            display: flex;
-            flex-wrap: wrap;
-            align-content: flex-start; /* 讓內容從上面開始排 */
-            justify-content: center;   /* 水平置中 */
-            gap: 0.5em;
-            width: 100%;
-            height: 100%;
-            overflow: hidden; /* 超出隱藏，由 JS 控制字體大小來適應 */
-        }
-
-        /* 卡片本體 */
         .winner-card {
-            background: linear-gradient(145deg, #fefde8, #f8d7a0);
-            color: #333;
-            border-radius: 8px;
-            border: 2px solid #fff;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-            
-            /* 關鍵：寬度與內距都跟著字體大小縮放 */
-            width: 9em; 
-            padding: 0.5em 0.2em;
-            
-            /* 字體大小由 CSS 變數控制 */
-            font-size: var(--card-base-size); 
-            
-            display: flex; flex-direction: column;
-            justify-content: center; align-items: center;
-            
-            animation: pop-in 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
-            opacity: 0; transform: scale(0.5);
+            width: 8.6em; padding: .6em .4em .55em; border-radius: .7em;
+            background: rgba(8, 50, 80, .72); border: 1px solid rgba(190, 245, 255, .28);
+            box-shadow: 0 .35em .7em rgba(0, 8, 22, .35), inset 0 1px 0 rgba(255, 255, 255, .2);
+            display: flex; flex-direction: column; align-items: center; position: relative; overflow: hidden;
+            animation: rise-big .8s cubic-bezier(.2, .9, .25, 1.15) both;
         }
-        
-        .winner-name { 
-            font-weight: 800; 
-            /* (*** 修改 1：將字體從 1.2em 加大到 1.5em ***) */
-            font-size: 1.5em; 
-            line-height: 1.2; 
-            width: 100%; 
-            text-align: center; 
-            white-space: nowrap; 
-            overflow: hidden; 
-            text-overflow: ellipsis; 
-        }
-        .winner-info { font-size: 0.7em; opacity: 0.8; margin-top: 0.1em; }
-        .winner-num { font-family: 'Orbitron', sans-serif; font-weight: bold; color: #d63031; font-size: 0.9em; margin-top: 0.1em; }
+        .winner-card > div { position: relative; }
+        .winner-name { font-weight: 900; font-size: 1.45em; line-height: 1.25; max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .winner-biz { font-size: .6em; color: #9FD8FF; font-weight: 700; }
+        .winner-info { font: 400 .62em var(--num-font); color: var(--muted); }
+        .winner-num { font: 800 1em var(--num-font); color: var(--gold); margin-top: .12em; text-shadow: 0 0 .6em rgba(242, 196, 109, .6); }
+        .winner-card.bonus-highlight { background: rgba(242, 196, 109, .2); border-color: rgba(255, 227, 163, .9); box-shadow: 0 0 .7em rgba(242, 196, 109, .45), inset 0 1px 0 rgba(255, 255, 255, .3); }
 
-        @keyframes pop-in { to { opacity: 1; transform: scale(1); } }
-
-        .winner-card.bonus-highlight {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
-            color: #fff !important;
-            border: 3px solid #ffd700 !important;
-            box-shadow: 0 0 30px rgba(255, 215, 0, 0.8);
-            transform: scale(1.05);
-            z-index: 10;
-        }
-        .winner-card.bonus-highlight .winner-num { color: #ffd700; }
-
-        /* 底部控制區 */
-        footer { 
-            padding: 10px; 
-            background: rgba(0,0,0,0.6); 
-            backdrop-filter: blur(10px); 
-            flex-shrink: 0;
-        }
-        .controls { max-width: 800px; margin: auto; }
-        
-        .digit-input-group { display: flex; gap: 15px; justify-content: center; align-items: flex-end; }
-        .digit-box label { display: block; color: #ccc; font-size: 0.9rem; margin-bottom: 5px; text-align: center; }
-        .digit-box input { 
-            width: 80px; height: 80px; 
-            font-size: 2.5rem; text-align: center; 
-            background: rgba(0,0,0,0.5); color: #fff; 
-            border: 2px solid #555; border-radius: 12px;
-            font-family: 'Orbitron', sans-serif;
-        }
-        .digit-box input:focus { border-color: #00ffea; outline: none; box-shadow: 0 0 15px rgba(0, 255, 234, 0.3); }
-        .btn-action { height: 60px; font-weight: bold; border-radius: 8px; font-size: 1.2rem; }
+        footer { flex-shrink: 0; margin: 0 24px 16px; padding: 16px 26px; border-radius: 26px; }
+        .controls { display: flex; align-items: center; justify-content: center; gap: 26px; flex-wrap: wrap; }
+        .digits { display: flex; gap: 18px; align-items: center; }
+        .digit-box { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+        .digit-box span { font-size: 12px; color: var(--dim); letter-spacing: .1em; }
+        .digit-box.req span { color: var(--gold); }
+        .porthole { width: 92px; height: 92px; border-radius: 50%; padding: 5px; background: conic-gradient(from 40deg, #6f5420, #FFE3A3, #a37a2f, #FFF1C9, #7d5f25, #E9C98A, #6f5420); }
+        .digit-box.req .porthole { box-shadow: 0 0 30px rgba(242, 196, 109, .35); }
+        .porthole input { width: 100%; height: 100%; border-radius: 50%; text-align: center; font: 800 38px var(--num-font); background: radial-gradient(circle at 35% 30%, #12507A, #04192E 70%); color: #fff; border: 0; outline: none; }
+        .porthole input:focus { box-shadow: inset 0 0 0 2px rgba(126, 240, 224, .6); }
+        .btn-action { height: 72px; min-width: 220px; padding: 0 30px; border-radius: 999px; font-size: 22px; }
+        .btn-addon { position: relative; border: 1px solid rgba(255, 227, 163, .7); background: rgba(242, 196, 109, .1); color: var(--gold); font-weight: 900; letter-spacing: .2em; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 10px; transition: background .2s; }
+        .btn-addon:hover:not(:disabled) { background: rgba(242, 196, 109, .2); }
+        #msg-area { text-align: center; margin-top: 6px; min-height: 18px; font-size: 14px; color: var(--error); }
     </style>
 </head>
 <body>
+<ocean-scene palette="abyss" intensity="1.1" bubbles="70"></ocean-scene>
 
-    <header>
-        <div class="header-left">
-            <h1 class="main-title">LUCKY DRAW</h1>
-            <select id="header-prize-name" class="prize-input-header" required>
+<div class="screen ocean-layer">
+    <header class="glass">
+        <div class="h-left">
+            <div class="brand">
+                <span class="brand-en shimmer-text">LUCKY DRAW</span>
+                <span class="brand-zh">幸運抽獎 · 尾數</span>
+            </div>
+            <select id="header-prize-name" class="prize-select" required>
                 <option value="" disabled selected hidden>請選擇獎項</option>
             </select>
         </div>
-        
-        <div class="status-info">
-            <div>可抽獎: <span id="pool-count">...</span></div>
-            <div class="small text-muted" style="max-width: 400px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">已出: <span id="drawn-history">...</span></div>
+        <div class="h-right">
+            <div class="drawn"><span class="drawn-label">已出</span><span id="drawn-history" style="display:flex;gap:6px"></span></div>
+            <div class="pool"><div class="pool-label">可抽獎</div><div class="pool-val" id="pool-count">...</div></div>
         </div>
     </header>
 
     <main id="display-area">
-        <div id="pane-hr" class="split-pane">
-            <div class="col-header hr">HR <small style="font-size:0.5em">行政單位</small></div>
-            <div id="list-hr" class="card-container"></div>
-        </div>
-        
-        <div id="pane-fac" class="split-pane">
-            <div class="col-header fac">FAC <small style="font-size:0.5em">廠務單位</small></div>
-            <div id="list-fac" class="card-container"></div>
-        </div>
+        <section id="pane-hr" class="split-pane glass-soft">
+            <div class="col-header"><span class="col-code">HR</span><span class="col-label">行政單位</span><span class="col-count" id="count-hr"></span></div>
+            <div style="position:relative;flex:1;min-height:0;display:flex">
+                <div id="list-hr" class="card-container"></div>
+                <div class="empty"><span class="empty-ring"></span>等待抽出</div>
+            </div>
+        </section>
+        <section id="pane-fac" class="split-pane glass-soft">
+            <div class="col-header"><span class="col-code">FAC</span><span class="col-label">廠務單位</span><span class="col-count" id="count-fac"></span></div>
+            <div style="position:relative;flex:1;min-height:0;display:flex">
+                <div id="list-fac" class="card-container"></div>
+                <div class="empty"><span class="empty-ring"></span>等待抽出</div>
+            </div>
+        </section>
     </main>
-    
-    <footer>
+
+    <footer class="glass">
         <div class="controls">
-            <form id="draw-form" class="row g-3 align-items-end justify-content-center">
-                <div class="col-md-6">
-                    <div class="digit-input-group">
-                        <div class="digit-box">
-                            <label>十位 (選填)</label>
-                            <input type="text" id="input-10" maxlength="1" pattern="[0-9]*" placeholder="-">
-                        </div>
-                        <div class="digit-box">
-                            <label>個位 (必填)</label>
-                            <input type="text" id="input-1" maxlength="1" pattern="[0-9]*" required style="border-color: #f5af19;" placeholder="-">
-                        </div>
-                    </div>
-                </div>
-
-                <div class="col-md-3">
-                    <button type="button" class="btn btn-warning w-100 btn-action" id="btn-draw-normal">
-                        <i class="bi bi-play-fill"></i> 抽出
-                    </button>
-                </div>
-                <div class="col-md-3">
-                    <button type="button" class="btn btn-outline-info w-100 btn-action" id="btn-draw-addon">
-                        <i class="bi bi-stars"></i> 加碼抽出
-                    </button>
-                </div>
-            </form>
+            <div class="digits">
+                <label class="digit-box"><span>十位 (選填)</span>
+                    <span class="porthole"><input type="text" id="input-10" maxlength="1" inputmode="numeric" pattern="[0-9]*" placeholder="-"></span></label>
+                <label class="digit-box req"><span>個位 (必填)</span>
+                    <span class="porthole"><input type="text" id="input-1" maxlength="1" inputmode="numeric" pattern="[0-9]*" required placeholder="-"></span></label>
+            </div>
+            <button type="button" class="btn-aqua glow btn-action" id="btn-draw-normal"><span class="sweep"></span><i class="bi bi-play-fill"></i><span>抽出</span></button>
+            <button type="button" class="btn-addon btn-action" id="btn-draw-addon"><i class="bi bi-stars"></i><span>加碼抽出</span></button>
         </div>
+        <div id="msg-area"></div>
     </footer>
+</div>
 
-    <script>
-        const listHrEl = document.getElementById('list-hr');
-        const listFacEl = document.getElementById('list-fac');
-        const paneHr = document.getElementById('pane-hr');
-        const paneFac = document.getElementById('pane-fac');
-        
-        const btnDrawNormal = document.getElementById('btn-draw-normal');
-        const btnDrawAddon = document.getElementById('btn-draw-addon');
-        
-        const input10 = document.getElementById('input-10');
-        const input1 = document.getElementById('input-1');
-        const prizeSelect = document.getElementById('header-prize-name');
+<script src="{{ url_for('static', filename='js/ocean-fx.js') }}?v=20261118"></script>
+<script>
+    const listHrEl = document.getElementById('list-hr');
+    const listFacEl = document.getElementById('list-fac');
+    const paneHr = document.getElementById('pane-hr');
+    const paneFac = document.getElementById('pane-fac');
+    const countHr = document.getElementById('count-hr');
+    const countFac = document.getElementById('count-fac');
 
-        // 輸入跳格邏輯 (從十位跳個位)
-        input10.addEventListener('input', (e) => { if(e.target.value) input1.focus(); });
+    const btnDrawNormal = document.getElementById('btn-draw-normal');
+    const btnDrawAddon = document.getElementById('btn-draw-addon');
 
-        document.addEventListener('DOMContentLoaded', () => {
-            loadPrizes();
-            fetchData();
-            window.addEventListener('resize', fitCardsToScreen);
-            if(prizeSelect) prizeSelect.focus();
-        });
+    const input10 = document.getElementById('input-10');
+    const input1 = document.getElementById('input-1');
+    const prizeSelect = document.getElementById('header-prize-name');
+    const msgArea = document.getElementById('msg-area');
 
-        // (*** 新增：監聽獎項切換事件 ***)
+    function esc(v) {
+        return String(v ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+    }
+    function fx(opts) { if (window.OceanFX) OceanFX.burst(innerWidth / 2, innerHeight / 2, opts); }
+    function showMsg(text) { msgArea.innerText = text || ''; }
+
+    // 只允許數字；十位輸入後跳到個位
+    [input10, input1].forEach(el => el.addEventListener('input', () => { el.value = el.value.replace(/\D/g, '').slice(-1); showMsg(''); }));
+    input10.addEventListener('input', e => { if (e.target.value) input1.focus(); });
+    input1.addEventListener('keyup', e => { if (e.key === 'Enter') performDraw(false); });
+
+    document.addEventListener('DOMContentLoaded', () => {
+        loadPrizes();
+        fetchData();
+        let resizeTimer = null;
+        window.addEventListener('resize', () => { clearTimeout(resizeTimer); resizeTimer = setTimeout(fitCardsToScreen, 150); });
+        if (prizeSelect) prizeSelect.focus();
+    });
+
+    // 監聽獎項切換事件：載入該獎項已開出的名單
     prizeSelect.addEventListener('change', async function() {
         const prizeName = this.value;
-        
-        // 1. 重置畫面 (清空輸入框與名單)
+
         input10.value = '';
         input1.value = '';
+        showMsg('');
         listHrEl.innerHTML = '';
         listFacEl.innerHTML = '';
-        
-        // 強制重設版面配置 (顯示兩欄)
-        paneHr.style.display = 'flex';
-        paneFac.style.display = 'flex';
-        
+        fitCardsToScreen();
+
         if (!prizeName) return;
 
-        // 2. 呼叫 API 查詢該獎項歷史
         try {
             const res = await fetch("{{ url_for('lottery.api_query_prize') }}", {
                 method: 'POST',
@@ -304,41 +180,15 @@
             const data = await res.json();
 
             if (data.success && data.drawn) {
-                console.log(`載入獎項 [${prizeName}] 紀錄:`, data);
-
-                // A. 自動帶入號碼 (取該獎項最新開出的一組)
+                // 自動帶入號碼 (取該獎項最新開出的一組)
                 if (data.tail_numbers && data.tail_numbers.length > 0) {
-                    const latestNum = data.tail_numbers[0];
-                    const numStr = latestNum.toString();
-                    
-                    if (numStr.length === 1) {
-                        input1.value = numStr;
-                    } else if (numStr.length >= 2) {
-                        input1.value = numStr.slice(-1);       // 個位
-                        input10.value = numStr.slice(-2, -1);  // 十位
-                    }
+                    const numStr = data.tail_numbers[0].toString();
+                    input1.value = numStr.slice(-1);
+                    if (numStr.length >= 2) input10.value = numStr.slice(-2, -1);
                 }
 
-                // B. 重新渲染中獎名單
                 if (data.winners && data.winners.length > 0) {
-                    data.winners.forEach(w => {
-                        const card = createCard(w);
-                        
-                        // (*** 關鍵：如果是加碼中獎者，加上特效類別 ***)
-                        if (w.is_addon) {
-                            card.classList.add('bonus-highlight');
-                        }
-
-                        // 依照站點分流
-                        if (w.site && w.site.toUpperCase().includes('HR')) {
-                            listHrEl.appendChild(card);
-                        } else {
-                            listFacEl.appendChild(card);
-                        }
-                    });
-                    
-                    // C. 執行縮放
-                    setTimeout(fitCardsToScreen, 100);
+                    appendWinners(data.winners, w => !!w.is_addon);
                 }
             }
         } catch (e) {
@@ -346,209 +196,194 @@
         }
     });
 
+    // 載入獎項 (含剩餘數量顯示)
+    async function loadPrizes() {
+        try {
+            const res = await fetch("{{ url_for('lottery.api_get_prizes', type='tail') }}");
+            const data = await res.json();
 
-        // 載入獎項 (含剩餘數量顯示)
-        async function loadPrizes() {
-            try {
-                const res = await fetch("{{ url_for('lottery.api_get_prizes', type='tail') }}");
-                const data = await res.json();
-                
-                if(data.success) {
-                    const currentVal = prizeSelect.value;
-                    prizeSelect.innerHTML = '<option value="" disabled selected hidden>請選擇獎項</option>';
-                    
-                    if (data.prizes.length === 0) {
-                        const opt = document.createElement('option');
-                        opt.innerText = "(後台未設定獎項)";
-                        opt.disabled = true;
-                        prizeSelect.appendChild(opt);
-                    } else {
-                        data.prizes.forEach(p => {
-                            const opt = document.createElement('option');
-                            opt.value = p.name;
-                            opt.dataset.remaining = p.remaining; 
+            if (data.success) {
+                const currentVal = prizeSelect.value;
+                prizeSelect.innerHTML = '<option value="" disabled selected hidden>請選擇獎項</option>';
 
-                            if (p.remaining > 0) {
-                                opt.innerText = `${p.name} (剩 ${p.remaining})`;
-                            } else {
-                                const over = Math.abs(p.remaining);
-                                opt.innerText = `${p.name} (已滿${over > 0 ? ' + 加碼'+over : ''})`;
-                            }
-                            prizeSelect.appendChild(opt);
-                        });
-                    }
-
-                    if (currentVal) {
-                        const exists = Array.from(prizeSelect.options).some(o => o.value === currentVal);
-                        if (exists) prizeSelect.value = currentVal;
-                    }
-                }
-            } catch (e) { console.error("無法載入獎項", e); }
-        }
-
-        async function fetchData() {
-            try {
-                const response = await fetch("{{ url_for('lottery.api_get_data') }}");
-                const data = await response.json();
-                document.getElementById('pool-count').innerText = data.available_count;
-                document.getElementById('drawn-history').innerText = data.drawn_numbers_list.join(", ");
-                return data.drawn_numbers_list;
-            } catch (e) { return []; }
-        }
-
-        function getFullNumber() {
-            let suffix = "";
-            if (input10.value) suffix += input10.value;
-            suffix += input1.value;
-            return suffix;
-        }
-
-        btnDrawNormal.addEventListener('click', () => performDraw(false));
-        btnDrawAddon.addEventListener('click', () => performDraw(true));
-
-        async function performDraw(isAddon) {
-            const suffix = getFullNumber();
-            const prizeName = prizeSelect.value;
-            
-            if (!suffix) return alert("請輸入號碼");
-            if (!prizeName) return alert("請選擇獎項");
-            if (!input1.checkValidity()) return alert("請輸入有效數字");
-
-            // 檢查數量 (若非加碼)
-            const selectedOption = prizeSelect.options[prizeSelect.selectedIndex];
-            const remaining = parseInt(selectedOption.dataset.remaining || 0);
-
-            if (!isAddon && remaining <= 0) {
-                return alert(`【${prizeName}】數量已全數抽出！\n\n如欲加碼，請點擊右側藍色的「加碼抽出」按鈕。`);
-            }
-
-            const drawnList = await fetchData();
-            if (drawnList.includes(suffix)) return alert(`號碼 ${suffix} 已經抽過了`);
-
-            let confirmMsg = isAddon 
-                ? `確認要【加碼抽出】獎項：${prizeName} (尾數 ${suffix})？\n這將會記錄到資料庫。`
-                : `確認要【一般抽出】獎項：${prizeName} (尾數 ${suffix})？\n這將會清空畫面並抽出新名單。`;
-
-            if(!confirm(confirmMsg)) return;
-
-            setLoading(true);
-
-            try {
-                const res = await fetch("{{ url_for('lottery.api_draw') }}", {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ 
-                        prize_name: prizeName, 
-                        suffix: suffix,
-                        is_addon: isAddon 
-                    })
-                });
-                const result = await res.json();
-
-                if (result.success) {
-                    if (!isAddon) {
-                        listHrEl.innerHTML = '';
-                        listFacEl.innerHTML = '';
-                    }
-
-                    if (result.winners.length === 0) {
-                        alert(`號碼 ${suffix} 沒有人中獎`);
-                    } else {
-                        result.winners.forEach(w => {
-                            if (isAddon) {
-                                highlightExistingCard(w.employee_id);
-                            } else {
-                                const card = createCard(w);
-                                if (w.site && w.site.toUpperCase().includes('HR')) {
-                                    listHrEl.appendChild(card);
-                                } else {
-                                    listFacEl.appendChild(card);
-                                }
-                            }
-                        });
-                        // 確保畫面更新後再執行縮放
-                        setTimeout(fitCardsToScreen, 50);
-                    }
-                    await loadPrizes(); 
+                if (data.prizes.length === 0) {
+                    const opt = document.createElement('option');
+                    opt.innerText = "(後台未設定獎項)";
+                    opt.disabled = true;
+                    prizeSelect.appendChild(opt);
                 } else {
-                    alert(result.message);
+                    data.prizes.forEach(p => {
+                        const opt = document.createElement('option');
+                        opt.value = p.name;
+                        opt.dataset.remaining = p.remaining;
+                        if (p.remaining > 0) {
+                            opt.innerText = `${p.name} (剩 ${p.remaining})`;
+                        } else {
+                            const over = Math.abs(p.remaining);
+                            opt.innerText = `${p.name} (已滿${over > 0 ? ' + 加碼' + over : ''})`;
+                        }
+                        prizeSelect.appendChild(opt);
+                    });
                 }
-                fetchData();
-            } catch (err) {
-                alert("伺服器錯誤: " + err);
-            } finally {
-                setLoading(false);
+
+                if (currentVal && Array.from(prizeSelect.options).some(o => o.value === currentVal)) {
+                    prizeSelect.value = currentVal;
+                }
             }
+        } catch (e) { console.error("無法載入獎項", e); }
+    }
+
+    async function fetchData() {
+        try {
+            const response = await fetch("{{ url_for('lottery.api_get_data') }}");
+            const data = await response.json();
+            document.getElementById('pool-count').innerText = data.available_count;
+            document.getElementById('drawn-history').innerHTML = data.drawn_numbers_list.map(n => `<span class="drawn-chip">${esc(n)}</span>`).join('');
+            return data.drawn_numbers_list;
+        } catch (e) { return []; }
+    }
+
+    function getFullNumber() {
+        return (input10.value || '') + input1.value;
+    }
+
+    btnDrawNormal.addEventListener('click', () => performDraw(false));
+    btnDrawAddon.addEventListener('click', () => performDraw(true));
+
+    async function performDraw(isAddon) {
+        if (btnDrawNormal.disabled) return;
+        const suffix = getFullNumber();
+        const prizeName = prizeSelect.value;
+
+        if (!prizeName) { showMsg('請選擇獎項'); prizeSelect.focus(); return; }
+        if (!input1.value) { showMsg('請輸入號碼（個位必填）'); input1.focus(); return; }
+
+        // 檢查數量 (若非加碼)
+        const selectedOption = prizeSelect.options[prizeSelect.selectedIndex];
+        const remaining = parseInt(selectedOption.dataset.remaining || 0);
+        if (!isAddon && remaining <= 0) {
+            showMsg(`【${prizeName}】數量已全數抽出！如欲加碼，請按「加碼抽出」。`);
+            return;
         }
 
-        function createCard(winner) {
-            const div = document.createElement('div');
-            div.className = 'winner-card';
-            div.dataset.eid = winner.employee_id;
-            
-            // (*** 修改：加入公差標示邏輯 ***)
-            let bizHtml = '';
-            if (winner.is_business_trip) {
-                // 使用深藍色或對比色顯示
-                bizHtml = '<div style="font-size:0.6em; color:#0056b3; font-weight:bold; margin-bottom:2px;">(公差)</div>';
+        const drawnList = await fetchData();
+        if (drawnList.includes(suffix)) { showMsg(`號碼 ${suffix} 已經抽過了`); return; }
+
+        const confirmMsg = isAddon
+            ? `確認要【加碼抽出】獎項：${prizeName} (尾數 ${suffix})？\n這將會記錄到資料庫。`
+            : `確認要【一般抽出】獎項：${prizeName} (尾數 ${suffix})？\n這將會清空畫面並抽出新名單。`;
+        if (!confirm(confirmMsg)) return;
+
+        setLoading(true);
+        showMsg('');
+
+        try {
+            const res = await fetch("{{ url_for('lottery.api_draw') }}", {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ prize_name: prizeName, suffix: suffix, is_addon: isAddon })
+            });
+            const result = await res.json();
+
+            if (result.success) {
+                if (!isAddon) {
+                    listHrEl.innerHTML = '';
+                    listFacEl.innerHTML = '';
+                }
+
+                if (result.winners.length === 0) {
+                    showMsg(`號碼 ${suffix} 沒有人中獎`);
+                    fitCardsToScreen();
+                } else if (isAddon) {
+                    result.winners.forEach(w => highlightExistingCard(w.employee_id));
+                    fx({ count: 120, gold: .9 });
+                } else {
+                    appendWinners(result.winners, () => false);
+                    fx({ count: 170 });
+                }
+                await loadPrizes();
+            } else {
+                showMsg(result.message);
             }
-
-            div.innerHTML = `
-                <div class="winner-name">${winner.name}</div>
-                ${bizHtml} <div class="winner-info">${winner.employee_id}</div>
-                <div class="winner-num">${winner.lottery_number || ''}</div>
-            `;
-            return div;
+            fetchData();
+        } catch (err) {
+            showMsg("伺服器錯誤: " + err);
+        } finally {
+            setLoading(false);
         }
+    }
 
-        function highlightExistingCard(employeeId) {
-            const card = document.querySelector(`.winner-card[data-eid="${employeeId}"]`);
-            if (card) card.classList.add('bonus-highlight');
+    function appendWinners(winners, isBonus) {
+        const hr = document.createDocumentFragment(), fac = document.createDocumentFragment();
+        let iHr = listHrEl.children.length, iFac = listFacEl.children.length;
+        winners.forEach(w => {
+            const toHr = !!(w.site && w.site.toUpperCase().includes('HR'));
+            const card = createCard(w, toHr ? iHr++ : iFac++);
+            if (isBonus(w)) markBonus(card);
+            (toHr ? hr : fac).appendChild(card);
+        });
+        listHrEl.appendChild(hr);
+        listFacEl.appendChild(fac);
+        fitCardsToScreen();
+    }
+
+    function createCard(winner, index) {
+        const div = document.createElement('div');
+        div.className = 'winner-card';
+        div.dataset.eid = winner.employee_id;
+        div.style.animationDelay = Math.min(index * 0.06, 1.5).toFixed(2) + 's';
+        div.innerHTML = `
+            <div class="winner-name">${esc(winner.name)}</div>
+            ${winner.is_business_trip ? '<div class="winner-biz">(公差)</div>' : ''}
+            <div class="winner-info">${esc(winner.employee_id)}</div>
+            <div class="winner-num">${esc(winner.lottery_number || '')}</div>`;
+        return div;
+    }
+
+    function markBonus(card) {
+        if (card.classList.contains('bonus-highlight')) return;
+        card.classList.add('bonus-highlight');
+        const sheen = document.createElement('span');
+        sheen.className = 'sweep soft';
+        card.prepend(sheen);
+    }
+
+    function highlightExistingCard(employeeId) {
+        const card = document.querySelector(`.winner-card[data-eid="${CSS.escape(employeeId)}"]`);
+        if (card) markBonus(card);
+    }
+
+    function setLoading(isLoading) {
+        btnDrawNormal.disabled = isLoading;
+        btnDrawAddon.disabled = isLoading;
+    }
+
+    // --- 核心縮放：二分搜尋最大可容納字級（約 8 次版面計算，原本最多 55 次） ---
+    function fitCardsToScreen() {
+        const hrCount = listHrEl.children.length;
+        const facCount = listFacEl.children.length;
+        countHr.innerText = hrCount ? `${hrCount} 人` : '';
+        countFac.innerText = facCount ? `${facCount} 人` : '';
+
+        // 若某一邊完全沒人，隱藏它，讓另一邊獨佔
+        paneHr.hidden = hrCount === 0 && facCount > 0;
+        paneFac.hidden = facCount === 0 && hrCount > 0;
+
+        const root = document.documentElement.style;
+        const over = el => el.scrollHeight > el.clientHeight + 1 || el.scrollWidth > el.clientWidth + 1;
+        const overflow = () => (!paneHr.hidden && over(listHrEl)) || (!paneFac.hidden && over(listFacEl));
+
+        let lo = 8, hi = 96; // px
+        root.setProperty('--card-base-size', hi + 'px');
+        if (!overflow()) return;
+        while (hi - lo > 1) {
+            const mid = Math.floor((lo + hi) / 2);
+            root.setProperty('--card-base-size', mid + 'px');
+            if (overflow()) hi = mid; else lo = mid;
         }
-
-        function setLoading(isLoading) {
-            btnDrawNormal.disabled = isLoading;
-            btnDrawAddon.disabled = isLoading;
-        }
-
-        // --- 核心縮放邏輯 ---
-        function fitCardsToScreen() {
-            // 1. 偵測單欄/雙欄模式
-            const hrCount = listHrEl.children.length;
-            const facCount = listFacEl.children.length;
-
-            // 預設全部顯示
-            paneHr.style.display = 'flex';
-            paneFac.style.display = 'flex';
-
-            // 若某一邊完全沒人，隱藏它，讓另一邊獨佔
-            if (hrCount === 0 && facCount > 0) {
-                paneHr.style.display = 'none';
-            } else if (facCount === 0 && hrCount > 0) {
-                paneFac.style.display = 'none';
-            }
-
-            // 2. 由大到小嘗試字體大小
-            // (*** 修改 2：將起始最大字體從 4.0 調整到 6.0，讓少人時更巨大 ***)
-            let size = 6.0; 
-            const minSize = 0.5; // 最小字體
-            
-            // 強制重設為最大，準備開始測量
-            document.documentElement.style.setProperty('--card-base-size', `${size}rem`);
-
-            while (size > minSize) {
-                let hasOverflow = false;
-
-                // 檢查顯示中的區塊是否溢位
-                if (paneHr.style.display !== 'none' && listHrEl.scrollHeight > listHrEl.clientHeight) hasOverflow = true;
-                if (paneFac.style.display !== 'none' && listFacEl.scrollHeight > listFacEl.clientHeight) hasOverflow = true;
-
-                if (!hasOverflow) break; // 塞得下，停止縮小
-
-                size -= 0.1;
-                document.documentElement.style.setProperty('--card-base-size', `${size}rem`);
-            }
-        }
-    </script>
+        root.setProperty('--card-base-size', lo + 'px');
+    }
+    fitCardsToScreen();
+</script>
 </body>
 </html>

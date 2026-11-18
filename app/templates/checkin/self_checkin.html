@@ -4,302 +4,124 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>自助報到</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Nunito:wght@700;900&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&family=Unbounded:wght@400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/ocean.css') }}?v=20261118">
     <style>
-        :root {
-            --ocean:       #0284c7;
-            --ocean-dark:  #0369a1;
-            --ocean-light: #38bdf8;
-            --nature:      #059669;
-            --sand:        #d97706;
-            --bg-page:     #f0f9ff;
-        }
+        .page { min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 64px 20px; }
+        .form-col { width: 100%; max-width: 520px; display: flex; flex-direction: column; align-items: center; text-align: center; }
+        h1 { margin: 18px 0 10px; font: 900 76px/1.05 'Noto Sans TC', sans-serif; letter-spacing: .1em; }
+        .lead { margin: 0 0 40px; color: var(--muted); font-size: 17px; letter-spacing: .1em; }
 
-        body {
-            background: linear-gradient(160deg, #e0f2fe 0%, #f0fdf4 50%, #fef9c3 100%);
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-family: 'Noto Sans TC', sans-serif;
-            overflow-x: hidden;
-            padding: 20px 0;
+        #emp-id {
+            width: 100%; height: 84px; border-radius: 24px; outline: none;
+            background: rgba(6, 40, 66, .72); border: 1px solid rgba(190, 245, 255, .3);
+            color: #fff; text-align: center; font: 600 30px var(--num-font); letter-spacing: .2em;
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, .18), 0 20px 50px rgba(0, 12, 30, .35);
+            transition: border-color .2s, box-shadow .2s;
         }
+        #emp-id::placeholder { letter-spacing: .14em; font-family: 'Noto Sans TC', sans-serif; }
+        #emp-id:focus { border-color: var(--aqua); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .18), 0 0 0 6px rgba(94, 234, 212, .16), 0 20px 60px rgba(94, 234, 212, .25); }
+        #emp-id.is-invalid { border-color: var(--error); animation: shake .3s; }
 
-        .checkin-card {
-            background: #ffffff;
-            border: 2px solid #bae6fd;
-            border-radius: 24px;
-            padding: 40px 36px;
-            width: 90%;
-            max-width: 500px;
-            box-shadow: 0 16px 48px rgba(2, 132, 199, 0.13);
-            text-align: center;
-        }
+        #btn-submit { margin-top: 16px; width: 100%; height: 70px; border-radius: 24px; font-size: 21px; }
+        #btn-submit i { font-size: 22px; }
+        #msg-area { min-height: 26px; margin-top: 14px; font-size: 16px; font-weight: 700; color: var(--error); }
 
-        .title-icon {
-            font-size: 3rem;
-            color: var(--ocean);
-            display: block;
-            margin-bottom: 6px;
-            filter: drop-shadow(0 4px 8px rgba(2,132,199,0.25));
-        }
-        .main-title {
-            font-family: 'Nunito', 'Noto Sans TC', sans-serif;
-            font-weight: 900;
-            font-size: 0.88rem;
-            letter-spacing: 4px;
-            color: #64748b;
-            margin-bottom: 6px;
-            text-transform: uppercase;
-        }
-        .wave-deco {
-            font-size: 1.4rem;
-            letter-spacing: 4px;
-            opacity: 0.4;
-            margin-bottom: 18px;
-        }
+        /* 票卡版面 */
+        .ticket-wrap { width: 100%; max-width: 500px; margin-top: 6px; perspective: 1100px; animation: rise .7s cubic-bezier(.2, .9, .25, 1.1) both; }
+        .t-head { position: relative; padding: 28px 30px 22px; display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; }
+        .t-name { font: 900 40px/1.15 'Noto Sans TC', sans-serif; margin: 14px 0 8px; letter-spacing: .06em; word-break: break-all; }
+        .t-id { font: 600 14px var(--num-font); color: var(--muted); letter-spacing: .08em; }
+        .seq-label { font-size: 12px; color: var(--dim); letter-spacing: .24em; }
+        .seq-val { font: 600 26px var(--num-font); color: var(--ink-2); margin-top: 6px; }
+        .t-grid { position: relative; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding: 0 18px; }
+        .t-foot { position: relative; padding: 18px 30px 26px; display: flex; flex-direction: column; gap: 12px; }
+        .drain { position: absolute; left: 0; right: 0; bottom: 0; height: 3px; background: linear-gradient(90deg, #7EF0E0, #FFE3A3); transform-origin: left; animation: drain 12s linear both; }
 
-        /* 輸入框 */
-        .form-control-lg {
-            border: 2px solid #bae6fd !important;
-            background: #f8fafc !important;
-            color: #0c4a6e !important;
-            text-align: center;
-            font-size: 1.5rem;
-            letter-spacing: 3px;
-            border-radius: 12px;
-            transition: all 0.3s;
+        @media (max-width: 560px) {
+            h1 { font-size: 52px; }
+            .num-val { font-size: 48px; }
+            .t-name { font-size: 32px; }
         }
-        .form-control-lg:focus {
-            border-color: var(--ocean) !important;
-            box-shadow: 0 0 0 0.2rem rgba(2,132,199,0.18) !important;
-            background: #ffffff !important;
-            outline: none;
-        }
-        .form-control-lg::placeholder { color: #94a3b8; }
-
-        /* 報到按鈕 */
-        .btn-checkin {
-            background: linear-gradient(90deg, var(--ocean-dark), var(--ocean));
-            border: none;
-            color: #fff;
-            font-weight: 800;
-            font-size: 1.05rem;
-            padding: 13px;
-            border-radius: 12px;
-            margin-top: 14px;
-            transition: all 0.2s;
-        }
-        .btn-checkin:hover {
-            background: linear-gradient(90deg, var(--ocean), var(--ocean-light));
-            color: #fff;
-            transform: translateY(-2px);
-            box-shadow: 0 8px 20px rgba(2,132,199,0.3);
-        }
-        .btn-checkin:active { transform: scale(0.98); }
-
-        /* 結果區 */
-        .result-box {
-            margin-top: 24px;
-            padding: 24px 20px;
-            background: #f8fafc;
-            border-radius: 16px;
-            border: 1px solid #e0f2fe;
-            display: none;
-            animation: slideUp 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        }
-        @keyframes slideUp {
-            from { opacity: 0; transform: translateY(16px); }
-            to   { opacity: 1; transform: translateY(0); }
-        }
-
-        .res-label {
-            font-size: 0.75rem;
-            color: #64748b;
-            margin-bottom: 3px;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            font-weight: 500;
-        }
-        .res-name { color: #0c4a6e; font-size: 1.5rem; font-weight: 800; }
-
-        /* 抽獎號碼框 */
-        .lottery-box {
-            margin: 14px 0;
-            padding: 12px;
-            background: #e0f2fe;
-            border-radius: 12px;
-            border: 1px solid #bae6fd;
-        }
-        .lottery-num {
-            font-family: 'Nunito', sans-serif;
-            font-size: 2.4rem;
-            color: var(--ocean-dark);
-            font-weight: 900;
-            letter-spacing: 4px;
-        }
-
-        /* 桌次 */
-        .table-badge {
-            font-family: 'Nunito', sans-serif;
-            font-size: 3.2rem;
-            font-weight: 900;
-            color: var(--sand);
-            line-height: 1;
-            margin: 8px 0 14px 0;
-        }
-
-        /* 餐點區塊 */
-        .meal-box {
-            display: none;
-            margin: 10px 0;
-            padding: 10px 14px;
-            border-radius: 10px;
-            font-size: 1.3rem;
-            font-weight: 800;
-        }
-        .meal-box.meal-a {
-            background: #d1fae5;
-            border: 1px solid #6ee7b7;
-            color: #065f46;
-        }
-        .meal-box.meal-b {
-            background: #dbeafe;
-            border: 1px solid #93c5fd;
-            color: #1e3a8a;
-        }
-
-        /* 組別區塊 */
-        .group-box {
-            display: none;
-            margin: 8px 0;
-            padding: 8px 14px;
-            border-radius: 10px;
-            background: #ecfdf5;
-            border: 1px solid #a7f3d0;
-            font-size: 1rem;
-            font-weight: 700;
-            color: #065f46;
-        }
-
-        /* 身分徽章 */
-        .type-badge-employee  {
-            background: #eff6ff; color: #1d4ed8;
-            border: 1px solid #bfdbfe; border-radius: 6px;
-            padding: 3px 10px; font-size: 0.8rem; font-weight: 600;
-        }
-        .type-badge-dependent {
-            background: #faf5ff; color: #7c3aed;
-            border: 1px solid #ddd6fe; border-radius: 6px;
-            padding: 3px 10px; font-size: 0.8rem; font-weight: 600;
-        }
-        .linked-text { color: #7c3aed; font-size: 0.82rem; }
-
-        /* 中獎卡 */
-        .prize-card {
-            background: linear-gradient(135deg, #dc2626, #b91c1c);
-            color: #fff;
-            padding: 16px;
-            border-radius: 12px;
-            font-weight: 700;
-            font-size: 1rem;
-            box-shadow: 0 6px 18px rgba(220,38,38,0.3);
-            animation: pulse 2s infinite;
-        }
-        .prize-card.no-prize {
-            background: #f1f5f9;
-            color: #94a3b8;
-            box-shadow: none;
-            animation: none;
-            font-weight: 400;
-            border: 1px solid #e2e8f0;
-        }
-        @keyframes pulse {
-            0%, 100% { transform: scale(1); }
-            50%       { transform: scale(1.02); }
-        }
-
-        .divider { border-color: #e0f2fe; margin: 14px 0; }
-        #msg-area { min-height: 22px; margin-top: 8px; font-size: 0.95rem; color: #dc2626; font-weight: 700; }
-        #msg-area.msg-success { color: var(--nature); }
     </style>
 </head>
 <body>
+<ocean-scene palette="lagoon" intensity="1"></ocean-scene>
 
-<div class="checkin-card">
-    <i class="bi bi-qr-code-scan title-icon"></i>
-    <div class="main-title">Guest Check-In</div>
-    <div class="wave-deco">🌊 🌿 🌊</div>
+<div class="page ocean-layer">
+    <div class="form-col">
+        <div class="eyebrow"><i class="bi bi-water"></i>GUEST CHECK-IN</div>
+        <h1 class="shimmer-text">活動報到</h1>
+        <p class="lead">請輸入工號完成報到</p>
 
-    <div class="mb-3">
-        <input type="text" id="emp-id" class="form-control form-control-lg"
-               placeholder="請輸入工號" autocomplete="off" autofocus>
-    </div>
+        <input type="text" id="emp-id" placeholder="請輸入工號" autocomplete="off" autofocus>
 
-    <div class="d-grid">
-        <button class="btn btn-checkin" id="btn-submit">
-            確認報到 <i class="bi bi-arrow-right-circle-fill ms-1"></i>
+        <button class="btn-aqua glow" id="btn-submit" type="button">
+            <span class="sweep"></span>
+            <span id="btn-label">確認報到</span><i class="bi bi-arrow-right-circle-fill"></i>
         </button>
+
+        <div id="msg-area"></div>
     </div>
 
-    <div id="msg-area"></div>
+    <div id="result-area" class="ticket-wrap" hidden>
+        <div class="ticket glass" id="ticket">
+            <div class="holo"><div class="holo-band"></div><div class="holo-spot"></div></div>
 
-    <div id="result-area" class="result-box">
-        <!-- 姓名 + 身分 -->
-        <div class="res-name mb-1" id="res-name"></div>
-        <div class="d-flex align-items-center justify-content-center gap-2 mb-1">
-            <span id="res-id" class="text-muted small"></span>
-            <span id="res-type-badge"></span>
+            <div class="t-head">
+                <div style="text-align:left;min-width:0">
+                    <div class="pill-ok"><i class="bi bi-check-circle-fill"></i>報到成功</div>
+                    <div class="t-name" id="res-name"></div>
+                    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+                        <span class="t-id" id="res-id"></span>
+                        <span class="type-chip" id="res-type" hidden></span>
+                    </div>
+                    <div class="linked" id="res-linked" hidden></div>
+                </div>
+                <div id="res-seq-box" style="text-align:right;flex-shrink:0" hidden>
+                    <div class="seq-label">報到序號</div>
+                    <div class="seq-val" id="res-seq"></div>
+                </div>
+            </div>
+
+            <div class="t-grid">
+                <div class="num-box">
+                    <div class="box-label">您的桌次</div>
+                    <div class="num-val" id="res-table">-</div>
+                </div>
+                <div class="num-box gold">
+                    <div class="box-label">抽獎號碼</div>
+                    <div class="num-val" id="res-lottery-num">---</div>
+                </div>
+            </div>
+
+            <div class="t-cut"></div>
+            <div class="t-foot">
+                <div class="chips">
+                    <div class="chip" id="res-meal-box" hidden><i class="bi bi-egg-fried"></i><span id="res-meal-text"></span></div>
+                    <div class="chip" id="res-group-box" hidden><i class="bi bi-people-fill"></i><span id="res-group-text"></span></div>
+                </div>
+                <div class="prize" id="prize-container"></div>
+            </div>
+            <div class="drain" id="drain"></div>
         </div>
-        <div id="res-linked" class="small mb-3 linked-text"></div>
-
-        <!-- 報到流水號（有值才顯示） -->
-        <div id="res-seq-box" style="display:none;margin:10px 0;padding:10px 14px;border-radius:10px;background:#faf5ff;border:1px solid #ddd6fe;text-align:center;">
-            <div class="res-label" style="color:#7c3aed;">報到序號</div>
-            <div style="font-family:'Nunito',sans-serif;font-size:2rem;font-weight:900;color:#7c3aed;letter-spacing:3px;" id="res-seq">-</div>
-        </div>
-
-        <!-- 抽獎號碼 -->
-        <div class="lottery-box">
-            <div class="res-label">抽獎號碼</div>
-            <div class="lottery-num" id="res-lottery-num">---</div>
-        </div>
-
-        <!-- 桌次 -->
-        <hr class="divider">
-        <div class="res-label">您的桌次</div>
-        <div class="table-badge"><span id="res-table">-</span></div>
-
-        <!-- 餐點（有值才顯示） -->
-        <div id="res-meal-box" class="meal-box">
-            <i class="bi bi-egg-fried me-2"></i>
-            <span id="res-meal-text">-</span>
-        </div>
-
-        <!-- 組別（有值才顯示） -->
-        <div id="res-group-box" class="group-box">
-            <i class="bi bi-people-fill me-2"></i>
-            <span id="res-group-text">-</span>
-        </div>
-
-        <hr class="divider">
-
-        <!-- 中獎資訊 -->
-        <div id="prize-container"></div>
     </div>
 </div>
 
+<script src="{{ url_for('static', filename='js/ocean-fx.js') }}?v=20261118"></script>
 <script>
     const empInput    = document.getElementById('emp-id');
     const btnSubmit   = document.getElementById('btn-submit');
+    const btnLabel    = document.getElementById('btn-label');
     const msgArea     = document.getElementById('msg-area');
     const resultArea  = document.getElementById('result-area');
+    const ticket      = document.getElementById('ticket');
     const resName     = document.getElementById('res-name');
     const resId       = document.getElementById('res-id');
-    const resTypeBadge= document.getElementById('res-type-badge');
+    const resType     = document.getElementById('res-type');
     const resLinked   = document.getElementById('res-linked');
     const resTable    = document.getElementById('res-table');
     const resSeqBox   = document.getElementById('res-seq-box');
@@ -310,19 +132,23 @@
     const resGroupBox = document.getElementById('res-group-box');
     const resGroupText= document.getElementById('res-group-text');
     const prizeContainer = document.getElementById('prize-container');
+    const drain       = document.getElementById('drain');
+
+    const TYPE_LABELS = { employee: '員工', dependent: '眷屬', vendor_contact: '外部廠商主要窗口', vendor: '外部廠商' };
+    let resetTimer = null;
 
     empInput.addEventListener('keyup', e => { if (e.key === 'Enter') checkin(); });
     btnSubmit.addEventListener('click', checkin);
 
     async function checkin() {
+        if (btnSubmit.disabled) return;
         const empId = empInput.value.trim();
-        if (!empId) { msgArea.innerText = '請輸入工號！'; msgArea.className = ''; shakeInput(); return; }
+        if (!empId) { msgArea.innerText = '請輸入工號！'; shakeInput(); return; }
 
-        msgArea.innerText = '查詢中…';
-        msgArea.className = '';
-        resultArea.style.display = 'none';
+        msgArea.innerText = '';
+        resultArea.hidden = true;
         btnSubmit.disabled = true;
-        btnSubmit.innerHTML = '<span class="spinner-border spinner-border-sm"></span> 處理中…';
+        btnLabel.innerHTML = '<span class="spinner"></span> 處理中…';
 
         try {
             const res  = await fetch("{{ url_for('checkin.api_checkin_by_id') }}", {
@@ -333,75 +159,11 @@
             const data = await res.json();
 
             if (data.success) {
-                msgArea.innerText = '';
-
-                // 基本資訊
-                resName.innerText = data.name;
-                resId.innerText   = data.employee_id;
-                resLotteryNum.innerText = data.lottery_number || '---';
-                resTable.innerText = data.table_number || '未分配';
-
-                // 報到流水號
-                if (data.checkin_seq) {
-                    resSeq.innerText = data.checkin_seq;
-                    resSeqBox.style.display = 'block';
-                } else {
-                    resSeqBox.style.display = 'none';
-                }
-
-                // 身分徽章
-                if (data.participant_type === 'employee') {
-                    resTypeBadge.innerHTML = '<span class="type-badge-employee">員工</span>';
-                    resLinked.innerText = '';
-                } else if (data.participant_type === 'dependent') {
-                    resTypeBadge.innerHTML = '<span class="type-badge-dependent">眷屬</span>';
-                    resLinked.innerText = data.linked_employee_id ? `綁定員工：${data.linked_employee_id}` : '';
-                } else {
-                    resTypeBadge.innerHTML = '';
-                    resLinked.innerText = '';
-                }
-
-                // 餐點
-                if (data.meal_type === 'A') {
-                    resMealBox.className = 'meal-box meal-a';
-                    resMealText.innerText = 'A 餐';
-                    resMealBox.style.display = 'block';
-                } else if (data.meal_type === 'B') {
-                    resMealBox.className = 'meal-box meal-b';
-                    resMealText.innerText = 'B 餐';
-                    resMealBox.style.display = 'block';
-                } else {
-                    resMealBox.style.display = 'none';
-                }
-
-                // 組別
-                if (data.group_name) {
-                    resGroupText.innerText = data.group_name;
-                    resGroupBox.style.display = 'block';
-                } else {
-                    resGroupBox.style.display = 'none';
-                }
-
-                // 中獎資訊
-                if (data.is_winner) {
-                    prizeContainer.innerHTML = `
-                        <div class="prize-card">
-                            <i class="bi bi-gift-fill me-2"></i>恭喜獲得<br>
-                            <span style="color:#fde68a;font-size:1.1em;">${data.prize_info}</span>
-                        </div>`;
-                } else {
-                    prizeContainer.innerHTML = `
-                        <div class="prize-card no-prize">
-                            <i class="bi bi-stars me-1"></i> ${data.prize_info}
-                        </div>`;
-                }
-
-                resultArea.style.display = 'block';
-                setTimeout(resetForm, 12000);
-
+                showResult(data);
+                clearTimeout(resetTimer);
+                resetTimer = setTimeout(resetForm, 12000);
             } else {
                 msgArea.innerText = data.message;
-                msgArea.className = '';
                 shakeInput();
                 resetBtn();
             }
@@ -412,27 +174,90 @@
         }
     }
 
+    function showResult(data) {
+        resName.innerText = data.name;
+        resId.innerText   = data.employee_id;
+
+        const typeLabel = data.participant_type_label || TYPE_LABELS[data.participant_type] || '';
+        resType.innerText = typeLabel;
+        resType.hidden = !typeLabel;
+        const linked = data.participant_type === 'dependent' && data.linked_employee_id;
+        resLinked.innerText = linked ? `綁定員工：${data.linked_employee_id}` : '';
+        resLinked.hidden = !linked;
+
+        resSeqBox.hidden = !data.checkin_seq;
+
+        const table = data.table_number || '未分配';
+        resTable.classList.toggle('small', table.length > 3);
+
+        if (data.meal_type) {
+            resMealText.innerText = /^[A-Z]$/i.test(data.meal_type) ? data.meal_type.toUpperCase() + ' 餐' : data.meal_type;
+            resMealBox.hidden = false;
+        } else {
+            resMealBox.hidden = true;
+        }
+
+        if (data.group_name) {
+            resGroupText.innerText = data.group_name;
+            resGroupBox.hidden = false;
+        } else {
+            resGroupBox.hidden = true;
+        }
+
+        prizeContainer.className = 'prize' + (data.is_winner ? ' win' : '');
+        prizeContainer.innerHTML = data.is_winner
+            ? '<span class="sweep soft"></span><i class="bi bi-gift-fill"></i><span></span>'
+            : '<i class="bi bi-stars"></i><span></span>';
+        prizeContainer.lastElementChild.innerText = data.is_winner ? `恭喜獲得　${data.prize_info}` : data.prize_info;
+
+        // 重新觸發進場與倒數動畫
+        resultArea.hidden = false;
+        resultArea.style.animation = 'none'; drain.style.animation = 'none';
+        void resultArea.offsetWidth;
+        resultArea.style.animation = ''; drain.style.animation = '';
+
+        rollTo([
+            [resSeq, data.checkin_seq ? String(data.checkin_seq) : ''],
+            [resTable, table],
+            [resLotteryNum, data.lottery_number || '---']
+        ]);
+        if (window.OceanFX) OceanFX.burst(innerWidth / 2, innerHeight * 0.62, { count: 170, gold: .65, power: 12 });
+    }
+
+    // 數字先亂跳再定格（只改文字，不重排版面）
+    let rollTimer = null;
+    function rollTo(pairs) {
+        clearInterval(rollTimer);
+        const rand = s => String(s).replace(/[0-9]/g, () => Math.floor(Math.random() * 10));
+        const end = performance.now() + 1100;
+        rollTimer = setInterval(() => {
+            const done = performance.now() >= end;
+            pairs.forEach(([el, v]) => { el.textContent = done ? v : rand(v); });
+            if (done) clearInterval(rollTimer);
+        }, 50);
+    }
+
+    const tilt = window.OceanFX ? OceanFX.tilt(resultArea, ticket) : { reset() {} };
+
     function resetForm() {
         empInput.value = '';
-        resultArea.style.display = 'none';
+        resultArea.hidden = true;
         msgArea.innerText = '';
-        resTypeBadge.innerHTML = '';
-        resLinked.innerText = '';
-        resMealBox.style.display = 'none';
-        resGroupBox.style.display = 'none';
-        resSeqBox.style.display = 'none';
+        tilt.reset();
         resetBtn();
         empInput.focus();
     }
 
     function resetBtn() {
         btnSubmit.disabled = false;
-        btnSubmit.innerHTML = '確認報到 <i class="bi bi-arrow-right-circle-fill ms-1"></i>';
+        btnLabel.innerText = '確認報到';
     }
 
     function shakeInput() {
+        empInput.classList.remove('is-invalid');
+        void empInput.offsetWidth;
         empInput.classList.add('is-invalid');
-        setTimeout(() => empInput.classList.remove('is-invalid'), 500);
+        setTimeout(() => empInput.classList.remove('is-invalid'), 600);
     }
 </script>
 </body>

@@ -3,374 +3,238 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>榮譽榜 - 中獎名單輪播</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700&family=Orbitron:wght@900&display=swap" rel="stylesheet">
+    <title>中獎名單輪播</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&family=Unbounded:wght@400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/ocean.css') }}?v=20261118">
     <style>
-        :root {
-            --card-base-size: 1.2rem;
-        }
-        
-        body {
-            background: radial-gradient(ellipse at bottom, #1b2735 0%, #090a0f 100%);
-            height: 100vh;
-            color: #fff;
-            overflow: hidden;
-            font-family: 'Noto Sans TC', sans-serif;
-            display: flex; flex-direction: column;
-        }
+        :root { --card-base-size: 30px; /* JS 會依人數動態調整 */ }
+        body { overflow: hidden; }
+        .screen { height: 100vh; display: flex; flex-direction: column; position: relative; }
 
-        header {
-            padding: 15px;
-            text-align: center;
-            background: rgba(255, 255, 255, 0.05);
-            backdrop-filter: blur(5px);
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-            flex-shrink: 0;
-            display: flex; flex-direction: column; align-items: center;
-        }
-        .main-title {
-            font-family: 'Orbitron', sans-serif;
-            font-size: 2rem;
-            letter-spacing: 2px;
-            color: #fff;
-            text-shadow: 0 0 10px rgba(255,255,255,0.5);
-            margin: 0;
-            opacity: 0.7;
-        }
-        
-        #current-prize-title {
-            font-size: 3.5rem;
-            font-weight: 900;
-            margin-top: 5px;
-            background: linear-gradient(to right, #ffd700, #ffec8b, #ffd700);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            text-shadow: 0 0 30px rgba(255, 215, 0, 0.6);
-            animation: glow 2s ease-in-out infinite alternate;
-        }
-        @keyframes glow { from { text-shadow: 0 0 20px rgba(255,215,0,0.4); } to { text-shadow: 0 0 40px rgba(255,215,0,0.8); } }
+        header { flex-shrink: 0; display: flex; flex-direction: column; align-items: center; padding: 28px 20px 14px; }
+        .main-title { font: 600 16px var(--num-font); letter-spacing: .6em; color: var(--foam); }
+        #current-prize-title { font: 900 64px/1.2 'Noto Sans TC', sans-serif; margin-top: 8px; letter-spacing: .06em; max-width: 92vw; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; transition: opacity .5s; }
+        .dots { display: flex; gap: 8px; margin-top: 12px; height: 6px; }
+        .dot { width: 10px; height: 6px; border-radius: 3px; background: rgba(190, 245, 255, .3); transition: width .4s, background-color .4s; }
+        .dot.on { width: 34px; background: linear-gradient(90deg, #7EF0E0, #FFE3A3); }
 
-        main {
-            flex-grow: 1;
-            padding: 20px 40px;
-            display: flex;
-            gap: 40px;
-            overflow: hidden;
-            opacity: 1;
-            transition: opacity 0.5s ease-in-out;
-        }
-        
-        .fade-out { opacity: 0; }
+        main { flex: 1; min-height: 0; display: flex; gap: 28px; padding: 12px 36px 34px; transition: opacity .5s; }
+        main.fade-out { opacity: 0; }
+        .split-pane { flex: 1; min-width: 0; display: flex; flex-direction: column; border-radius: 28px; padding: 16px 18px; }
+        .col-header { flex-shrink: 0; display: flex; align-items: center; justify-content: center; gap: 14px; padding-bottom: 12px; margin-bottom: 16px; border-bottom: 1px solid rgba(190, 245, 255, .14); }
+        .col-code { font: 800 30px var(--num-font); letter-spacing: .1em; }
+        .col-label { font-size: 18px; color: var(--muted); letter-spacing: .24em; }
+        .card-container { flex: 1; min-height: 0; overflow: hidden; display: flex; flex-wrap: wrap; align-content: flex-start; justify-content: center; gap: .5em; padding: 10px 0 2px; font-size: var(--card-base-size); }
 
-        .split-pane {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            border-radius: 15px;
-            padding: 15px;
-            background: rgba(255, 255, 255, 0.03);
-            border: 1px solid rgba(255,255,255,0.1);
-            position: relative;
-        }
-
-        .col-header {
-            text-align: center;
-            font-size: 2rem;
-            font-weight: 700;
-            text-transform: uppercase;
-            padding-bottom: 10px;
-            margin-bottom: 15px;
-            border-bottom: 2px solid rgba(255,255,255,0.2);
-            flex-shrink: 0;
-        }
-        .col-header.hr { color: #ff9ff3; text-shadow: 0 0 10px #ff9ff3; }
-        .col-header.fac { color: #54a0ff; text-shadow: 0 0 10px #54a0ff; }
-
-        .card-container {
-            display: flex;
-            flex-wrap: wrap;
-            align-content: flex-start;
-            justify-content: center;
-            gap: 0.8em;
-            width: 100%;
-            height: 100%;
-            overflow: hidden;
-        }
-
+        .card-in { animation: rise-big .8s cubic-bezier(.2, .9, .25, 1.15) both; }
         .winner-card {
-            background: linear-gradient(145deg, rgba(255,255,255,0.1), rgba(255,255,255,0.05));
-            border: 1px solid rgba(255,255,255,0.2);
-            border-radius: 0.6em;
-            width: 11em; 
-            padding: 0.6em;
-            font-size: var(--card-base-size); 
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            box-shadow: 0 0.5em 1em rgba(0,0,0,0.3);
-            position: relative;
+            width: 10em; padding: .65em .5em; border-radius: .8em;
+            background: rgba(8, 50, 80, .72); border: 1px solid rgba(190, 245, 255, .28);
+            box-shadow: 0 .5em 1em rgba(0, 8, 22, .35), inset 0 1px 0 rgba(255, 255, 255, .2);
+            display: flex; flex-direction: column; align-items: center; position: relative; overflow: hidden;
+            animation: bob 6s ease-in-out infinite;
         }
-        
-        .winner-card::before {
-            content: ''; position: absolute; left: 0; top: 0; bottom: 0;
-            width: 4px; background: linear-gradient(to bottom, #f12711, #f5af19);
-            border-top-left-radius: 0.6em; border-bottom-left-radius: 0.6em;
-        }
+        .winner-card > div { position: relative; }
+        .winner-name { font-size: 1.45em; font-weight: 900; max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .winner-biz { font-size: .45em; color: #9FD8FF; margin-left: .3em; }
+        .winner-id { font: 400 .75em var(--num-font); color: var(--muted); margin: .15em 0; }
+        .winner-number { font: 800 1em var(--num-font); color: var(--gold); text-shadow: 0 0 .6em rgba(242, 196, 109, .6); }
+        .winner-card.bonus-highlight { background: rgba(242, 196, 109, .2); border-color: rgba(255, 227, 163, .9); box-shadow: 0 0 1em rgba(242, 196, 109, .45), inset 0 1px 0 rgba(255, 255, 255, .3); }
 
-        /* (新增) 加碼獎項的高亮樣式：紫色漸層 + 金色邊框 + 發光 */
-        .winner-card.bonus-highlight {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
-            color: #fff !important;
-            border: 3px solid #ffd700 !important;
-            box-shadow: 0 0 30px rgba(255, 215, 0, 0.8);
-            transform: scale(1.05);
-            z-index: 10;
-        }
-
-        /* 加碼卡片內的數字改為金色 */
-        .winner-card.bonus-highlight .winner-number { 
-            color: #ffd700; 
-        }
-
-        /* 移除原本卡片左側的紅橘色裝飾線，避免顏色衝突 */
-        .winner-card.bonus-highlight::before { 
-            content: none; 
-        }
-
-
-        .winner-name { font-size: 1.4em; font-weight: 700; margin-bottom: 0.2em; color: #fff; }
-        .winner-id { font-size: 0.9em; color: #ccc; margin-bottom: 0.2em; }
-        
-        .winner-number {
-            font-family: 'Orbitron', sans-serif;
-            font-size: 1.1em;
-            color: #ffd700;
-            font-weight: bold;
-        }
-
-        .progress-bar-container {
-            position: fixed; bottom: 0; left: 0; width: 100%; height: 5px; background: #333;
-        }
-        .progress-bar {
-            height: 100%; background: #00ffea; width: 0%;
-        }
-        
-        /* 避免標題過長時跑版 */
-        #current-prize-title {
-            max-width: 90vw;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
+        .progress-bar-container { position: absolute; left: 0; right: 0; bottom: 0; height: 4px; background: rgba(4, 30, 52, .6); overflow: hidden; }
+        /* 用 scaleX 取代 width 動畫，進度條不再每幀重排版面 */
+        .progress-bar { height: 100%; width: 100%; transform-origin: left; transform: scaleX(0); background: linear-gradient(90deg, #7EF0E0, #FFE3A3); box-shadow: 0 0 12px rgba(126, 240, 224, .7); }
     </style>
 </head>
 <body>
+<ocean-scene palette="abyss" intensity="1.1" bubbles="70" interactive="false"></ocean-scene>
 
+<div class="screen ocean-layer">
     <header>
         <div class="main-title">CONGRATULATIONS</div>
-        <div id="current-prize-title">讀取中...</div>
+        <div id="current-prize-title" class="shimmer-text gold">讀取中...</div>
+        <div class="dots" id="dots"></div>
     </header>
 
     <main id="main-content">
-        <div class="split-pane">
-            <div class="col-header hr">HR 行政</div>
+        <section class="split-pane glass-soft" id="pane-hr">
+            <div class="col-header"><span class="col-code">HR</span><span class="col-label">行政</span></div>
             <div id="list-hr" class="card-container"></div>
-        </div>
-        
-        <div class="split-pane">
-            <div class="col-header fac">FAC 廠務</div>
+        </section>
+        <section class="split-pane glass-soft" id="pane-fac">
+            <div class="col-header"><span class="col-code">FAC</span><span class="col-label">廠務</span></div>
             <div id="list-fac" class="card-container"></div>
-        </div>
+        </section>
     </main>
 
     <div class="progress-bar-container">
         <div class="progress-bar" id="page-progress"></div>
     </div>
+</div>
 
-    <script>
-        const mainContent = document.getElementById('main-content');
-        const titleEl = document.getElementById('current-prize-title');
-        const listHrEl = document.getElementById('list-hr');
-        const listFacEl = document.getElementById('list-fac');
-        const progressBar = document.getElementById('page-progress');
-        
-        let winnersGroups = {}; // 存放分組後的資料 { "三獎": [winners...] }
-        let groupKeys = [];     // 存放獎項名稱的順序
-        let currentIndex = 0;
-        const intervalTime = 10000; 
-        let timer = null;
+<script src="{{ url_for('static', filename='js/ocean-fx.js') }}?v=20261118"></script>
+<script>
+    const mainContent = document.getElementById('main-content');
+    const titleEl = document.getElementById('current-prize-title');
+    const listHrEl = document.getElementById('list-hr');
+    const listFacEl = document.getElementById('list-fac');
+    const progressBar = document.getElementById('page-progress');
+    const dotsEl = document.getElementById('dots');
 
-        // 初始化
-        fetchData();
-        setInterval(fetchData, 60000); 
+    let winnersGroups = {}; // 存放分組後的資料 { "三獎": [winners...] }
+    let groupKeys = [];     // 存放獎項名稱的順序
+    let currentIndex = 0;
+    const intervalTime = 10000;
+    let timer = null;
+    let firstRender = true;
 
-        async function fetchData() {
-            try {
-                const res = await fetch("{{ url_for('lottery.api_winners_all') }}");
-                const json = await res.json();
-                
-                if (json.success) {
-                    processData(json.data);
-                    
-                    if (!timer && groupKeys.length > 0) {
-                        renderCurrentGroup();
-                        startLoop();
-                    }
+    function esc(v) {
+        return String(v ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+    }
+
+    // 初始化
+    fetchData();
+    setInterval(fetchData, 60000);
+
+    async function fetchData() {
+        try {
+            const res = await fetch("{{ url_for('lottery.api_winners_all') }}");
+            const json = await res.json();
+
+            if (json.success) {
+                processData(json.data);
+                renderDots();
+                if (!timer && groupKeys.length > 0) {
+                    renderCurrentGroup();
+                    startLoop();
+                } else if (groupKeys.length === 0) {
+                    titleEl.innerText = "目前無中獎名單";
                 }
-            } catch (e) { console.error(e); }
+            }
+        } catch (e) { console.error(e); }
+    }
+
+    function processData(data) {
+        const grouped = {};
+        // 保持由舊到新，這樣獎項輪播順序才符合時間軸 (A獎 -> B獎)
+        const sortedData = [...data].reverse();
+
+        sortedData.forEach(w => {
+            const key = w.prize_name;
+            if (!grouped[key]) grouped[key] = [];
+
+            // 同一人重複出現時，若新紀錄是「加碼」則覆蓋，以顯示加碼樣式
+            const existingIndex = grouped[key].findIndex(item => item.employee_id === w.employee_id);
+            if (existingIndex === -1) {
+                grouped[key].push(w);
+            } else if (w.is_addon) {
+                grouped[key][existingIndex] = w;
+            }
+        });
+
+        winnersGroups = grouped;
+        groupKeys = Object.keys(grouped);
+    }
+
+    function renderDots() {
+        if (dotsEl.children.length !== groupKeys.length) {
+            dotsEl.innerHTML = groupKeys.map(() => '<span class="dot"></span>').join('');
+        }
+    }
+
+    function renderCurrentGroup() {
+        if (groupKeys.length === 0) {
+            titleEl.innerText = "目前無中獎名單";
+            return;
         }
 
-        function processData(data) {
-            const grouped = {};
-            // 保持由舊到新，這樣獎項輪播順序才符合時間軸 (A獎 -> B獎)
-            const sortedData = [...data].reverse(); 
+        mainContent.classList.add('fade-out');
+        titleEl.style.opacity = 0;
 
-            sortedData.forEach(w => {
-                const key = w.prize_name;
-                
-                if (!grouped[key]) grouped[key] = [];
-                
-                // 檢查此人是否已在該獎項名單中
-                //findIndex 回傳索引，若無則回傳 -1
-                const existingIndex = grouped[key].findIndex(item => item.employee_id === w.employee_id);
-                
-                if (existingIndex === -1) {
-                    // 1. 如果沒出現過，直接加入
-                    grouped[key].push(w);
-                } else {
-                    // 2. 如果出現過 (重複中獎紀錄)，檢查是否為「加碼」
-                    // 如果原本是「一般」，但現在這筆是「加碼」，我們希望能顯示加碼的樣式 (紫色)
-                    // 所以要用這筆資料「覆蓋」掉原本的舊資料
-                    if (w.is_addon) {
-                        grouped[key][existingIndex] = w;
-                    }
-                }
-            });
+        setTimeout(() => {
+            if (currentIndex >= groupKeys.length) currentIndex = 0;
+            const currentPrizeName = groupKeys[currentIndex];
+            const winners = winnersGroups[currentPrizeName];
 
-            winnersGroups = grouped;
-            groupKeys = Object.keys(grouped);
-        }
-
-        function renderCurrentGroup() {
-            if (groupKeys.length === 0) {
-                titleEl.innerText = "目前無中獎名單";
-                return;
+            // 公獎不顯示尾號提示
+            const isPublic = winners.length > 0 && winners[0].prize_type === 'public';
+            let titleText = currentPrizeName;
+            if (!isPublic) {
+                // 標題只顯示個位數
+                const uniqueTails = [...new Set(winners.map(w => String(w.tail_number).slice(-1)))].sort();
+                if (uniqueTails.length > 0) titleText += ` (尾號 ${uniqueTails.join(', ')})`;
             }
 
-            mainContent.classList.add('fade-out');
-            titleEl.style.opacity = 0;
+            titleEl.innerText = titleText;
+            titleEl.style.opacity = 1;
+            [...dotsEl.children].forEach((d, i) => d.classList.toggle('on', i === currentIndex));
 
-            setTimeout(() => {
-                // 2. 取出當前獎項
-                const currentPrizeName = groupKeys[currentIndex];
-                const winners = winnersGroups[currentPrizeName];
+            // 依照抽獎編號排序
+            winners.sort((a, b) => a.lottery_number.localeCompare(b.lottery_number));
 
-                // --- 檢查是否為公獎 ---
-                const isPublic = winners.length > 0 && winners[0].prize_type === 'public';
+            const hr = [], fac = [];
+            winners.forEach(w => (w.site && w.site.toUpperCase().includes('HR') ? hr : fac).push(w));
+            listHrEl.innerHTML = hr.map(createCard).join('');
+            listFacEl.innerHTML = fac.map(createCard).join('');
 
-                let titleText = currentPrizeName;
+            mainContent.classList.remove('fade-out');
+            fitCardsToScreen();
+            resetProgressBar();
 
-                // 若「不是公獎」，才顯示尾號提示
-                if (!isPublic) {
-                    // ---【修正重點 2：標題只顯示個位數】---
-                    // 收集該獎項的所有尾號，並強制只取最後一位 (slice(-1))
-                    const uniqueTails = [...new Set(winners.map(w => {
-                        const t = String(w.tail_number);
-                        return t.slice(-1); 
-                    }))].sort();
+            if (!firstRender && window.OceanFX) OceanFX.burst(innerWidth / 2, innerHeight / 2, { count: 60, gold: .5, power: 9 });
+            firstRender = false;
 
-                    if (uniqueTails.length > 0) {
-                        titleText += ` (尾號 ${uniqueTails.join(', ')})`;
-                    }
-                }
+            currentIndex = (currentIndex + 1) % groupKeys.length;
+        }, 500);
+    }
 
-                titleEl.innerText = titleText;
-                titleEl.style.opacity = 1;
-                
-                listHrEl.innerHTML = '';
-                listFacEl.innerHTML = '';
-                
-                document.documentElement.style.setProperty('--card-base-size', '1.2rem');
+    function createCard(winner, i) {
+        const delay = Math.min(i * 0.06, 1.5).toFixed(2);
+        const bob = (-(i * 0.7) % 6).toFixed(2);
+        const bonus = winner.is_addon;
+        return `<div class="card-in" style="animation-delay:${delay}s">
+            <div class="winner-card${bonus ? ' bonus-highlight' : ''}" style="animation-delay:${bob}s">
+                ${bonus ? '<span class="sweep soft"></span>' : ''}
+                <div class="winner-name">${esc(winner.name)}${winner.is_business_trip ? '<span class="winner-biz">(公差)</span>' : ''}</div>
+                <div class="winner-id">${esc(winner.employee_id)}</div>
+                <div class="winner-number">NO.${esc(winner.lottery_number)}</div>
+            </div>
+        </div>`;
+    }
 
-                // (*** 排序邏輯：依照抽獎編號排序 ***)
-                winners.sort((a, b) => {
-                    return a.lottery_number.localeCompare(b.lottery_number);
-                });
+    function startLoop() {
+        if (timer) clearInterval(timer);
+        timer = setInterval(renderCurrentGroup, intervalTime);
+    }
 
-                // 3. 產生卡片
-                winners.forEach(w => {
-                    const card = createCard(w);
-                    if (w.site && w.site.toUpperCase().includes('HR')) {
-                        listHrEl.appendChild(card);
-                    } else {
-                        listFacEl.appendChild(card);
-                    }
-                });
+    function resetProgressBar() {
+        progressBar.style.transition = 'none';
+        progressBar.style.transform = 'scaleX(0)';
+        void progressBar.offsetWidth;
+        progressBar.style.transition = `transform ${intervalTime}ms linear`;
+        progressBar.style.transform = 'scaleX(1)';
+    }
 
-                mainContent.classList.remove('fade-out');
-                setTimeout(fitCardsToScreen, 50);
-                resetProgressBar();
-
-                currentIndex = (currentIndex + 1) % groupKeys.length;
-
-            }, 500);
+    // 二分搜尋最大可容納字級（約 7 次版面計算）
+    function fitCardsToScreen() {
+        const root = document.documentElement.style;
+        const over = el => el.scrollHeight > el.clientHeight + 1 || el.scrollWidth > el.clientWidth + 1;
+        const overflow = () => over(listHrEl) || over(listFacEl);
+        let lo = 8, hi = 64;
+        root.setProperty('--card-base-size', hi + 'px');
+        if (!overflow()) return;
+        while (hi - lo > 1) {
+            const mid = Math.floor((lo + hi) / 2);
+            root.setProperty('--card-base-size', mid + 'px');
+            if (overflow()) hi = mid; else lo = mid;
         }
+        root.setProperty('--card-base-size', lo + 'px');
+    }
 
-        function createCard(winner) {
-            const div = document.createElement('div');
-            div.className = 'winner-card';
-            
-            // (新增) 判斷是否為加碼 (is_addon)，若是則加上高亮樣式類別
-            if (winner.is_addon) {
-                div.classList.add('bonus-highlight');
-            }
-
-            // 處理公差顯示文字
-            let nameDisplay = winner.name;
-            if (winner.is_business_trip) {
-                nameDisplay += ' <span style="font-size:0.6em; color:#54a0ff;">(公差)</span>';
-            }
-
-            div.innerHTML = `
-                <div class="winner-name">${nameDisplay}</div>
-                <div class="winner-id">${winner.employee_id}</div>
-                <div class="winner-number">NO.${winner.lottery_number}</div>
-            `;
-            return div;
-        }
-
-        function startLoop() {
-            if (timer) clearInterval(timer);
-            timer = setInterval(renderCurrentGroup, intervalTime);
-        }
-
-        function resetProgressBar() {
-            progressBar.style.transition = 'none';
-            progressBar.style.width = '0%';
-            void progressBar.offsetWidth; 
-            progressBar.style.transition = `width ${intervalTime}ms linear`;
-            progressBar.style.width = '100%';
-        }
-
-        function fitCardsToScreen() {
-            const containerHr = listHrEl;
-            const containerFac = listFacEl;
-            let size = 1.2; 
-            const minSize = 0.5;
-            
-            for (let i = 0; i < 40; i++) {
-                const overflowHr = containerHr.scrollHeight > containerHr.clientHeight;
-                const overflowFac = containerFac.scrollHeight > containerFac.clientHeight;
-                if (!overflowHr && !overflowFac) break;
-                size -= 0.05;
-                if (size < minSize) { size = minSize; break; }
-                document.documentElement.style.setProperty('--card-base-size', `${size}rem`);
-            }
-        }
-        
-        window.addEventListener('resize', fitCardsToScreen);
-
-    </script>
+    let resizeTimer = null;
+    window.addEventListener('resize', () => { clearTimeout(resizeTimer); resizeTimer = setTimeout(fitCardsToScreen, 150); });
+</script>
 </body>
 </html>
