@@ -139,7 +139,15 @@
         });
         setWidgetValues(key, values.filter(value => Array.from(select.options).some(o => o.value === value)));
     }
-    function rebuildAllMultiWidgets() { Object.keys(FILTER_MAP).forEach(rebuildMultiWidget); }
+    function rebuildAllMultiWidgets() { if (hasLegacyFilterSelects()) Object.keys(FILTER_MAP).forEach(rebuildMultiWidget); }
+    // 舊版多選篩選層只適用於 <select> 篩選欄。儀表板現在自帶單選／複選篩選（div 容器），
+    // 此時舊層必須完全停用，否則會讀取不存在的 select.options 而丟出錯誤、並干擾列的顯示。
+    function hasLegacyFilterSelects() {
+        return Object.values(FILTER_MAP).every(meta => {
+            const el = document.getElementById(meta.id);
+            return !el || el.tagName === 'SELECT';
+        });
+    }
 
     function matchFilter(key, person) {
         const values = selectedValuesFor(key);
@@ -151,6 +159,7 @@
         return values.includes(actual || '');
     }
     function applyMultiFilterVisibility() {
+        if (!hasLegacyFilterSelects()) return;
         const tableBody = document.getElementById('table-body');
         const displayCount = document.getElementById('display-count');
         if (!tableBody) return;
@@ -168,6 +177,7 @@
     }
 
     function enableDashboardFilterModes(modes) {
+        if (!hasLegacyFilterSelects()) return;
         MULTI_MODES = modes || {};
         rebuildAllMultiWidgets();
         wrapRenderTable();
@@ -220,6 +230,8 @@
 
     function injectAdminFilterModeCard() {
         if (!location.pathname.includes('/admin') || document.getElementById('filter-mode-settings-card')) return;
+        // 設定頁已有新版「報到儀表板篩選方式」卡片時不再插入舊卡片，避免兩組互相矛盾的設定
+        if (document.getElementById('sec-filter')) return;
         const queryCardTitle = Array.from(document.querySelectorAll('.card-header span')).find(el => el.textContent.trim() === '查詢站顯示欄位');
         if (!queryCardTitle) return;
         fetch('/admin/api/filter_modes').then(r => r.json()).then(data => {
