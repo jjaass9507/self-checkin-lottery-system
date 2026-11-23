@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+{% block title %}後台 - 歷史版次{% endblock %}
+
+{% block styles %}
+.cur-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; }
+.cur-stat { padding: 14px 16px; border-radius: 14px; background: var(--a-field); border: 1px solid var(--a-line); }
+.cur-stat .lbl { font-size: 12px; color: var(--a-muted); }
+.cur-stat .val { font-family: var(--num-font); font-size: 26px; font-weight: 700; color: var(--a-ink); margin-top: 4px; }
+.archive-form { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px; align-items: end; }
+.confirm-line { display: flex; align-items: flex-start; gap: 10px; font-size: 13px; color: var(--a-muted); cursor: pointer; }
+.confirm-line .form-check-input { margin-top: 2px; flex-shrink: 0; }
+.ed-name { font-weight: 700; font-size: 15px; color: var(--a-ink); text-decoration: none; }
+.ed-name:hover { color: var(--a-aqua); }
+.icon-btn { width: 34px; height: 34px; padding: 0; border-radius: 8px; display: inline-flex; align-items: center; justify-content: center; }
+@media (max-width: 575.98px) { .archive-form { grid-template-columns: 1fr; } }
+{% endblock %}
+
+{% block content %}
+<div class="page-wrap">
+    <div class="page-head">
+        <div><div class="page-eyebrow">EDITIONS</div><h1 class="page-title">歷史版次</h1></div>
+        <span class="pill">共 {{ editions|length }} 個版次</span>
+    </div>
+
+    {# ── 目前活動 ── #}
+    <div class="card mb-4">
+        <div class="card-header d-flex align-items-center gap-2">
+            <i class="bi bi-broadcast"></i><span>目前活動</span>
+            {% if is_super %}<span class="super-tag ms-auto" style="font-size:11px;font-weight:500;color:var(--a-gold);letter-spacing:.1em">超級管理員</span>{% endif %}
+        </div>
+        <div class="card-body p-4 d-flex flex-column gap-4">
+            <div class="cur-grid">
+                <div class="cur-stat"><div class="lbl">名單人數</div><div class="val">{{ current.total }}</div></div>
+                <div class="cur-stat"><div class="lbl">已報到</div><div class="val" style="color:#9FF7EA">{{ current.checked_in }}</div></div>
+                <div class="cur-stat"><div class="lbl">中獎人數</div><div class="val" style="color:#FFE3A3">{{ current.winners }}</div></div>
+                <div class="cur-stat"><div class="lbl">開獎紀錄</div><div class="val">{{ current.draws }}</div></div>
+                <div class="cur-stat"><div class="lbl">獎項</div><div class="val">{{ current.prizes }}</div></div>
+            </div>
+
+            {% if is_super %}
+            <form method="POST" action="{{ url_for('admin.archive_edition') }}" class="d-flex flex-column gap-3"
+                  onsubmit="return confirm('確定要封存「' + this.name.value + '」並清空目前的名單、報到、中獎、獎項與取消紀錄嗎？\n系統設定會保留。');">
+                <div class="archive-form">
+                    <div>
+                        <label class="form-label" for="edition-name">版次名稱</label>
+                        <input type="text" class="form-control" id="edition-name" name="name" value="{{ default_name }}" maxlength="100" required>
+                    </div>
+                    <button type="submit" class="btn btn-ocean" style="height:38px"><i class="bi bi-archive me-1"></i>結束本屆並封存</button>
+                </div>
+                <label class="confirm-line">
+                    <input class="form-check-input" type="checkbox" name="acknowledge" value="1" required>
+                    <span>我了解封存後，目前的名單、報到、中獎、獎項與取消紀錄會被清空（完整保存在歷史版次中，可查看與匯出）。站點開關、顯示欄位、篩選方式、管理員權限等系統設定會沿用到下一屆。</span>
+                </label>
+            </form>
+            {% else %}
+            <p class="small text-muted mb-0"><i class="bi bi-info-circle me-1"></i>封存本屆需由超級管理員操作。</p>
+            {% endif %}
+        </div>
+    </div>
+
+    {# ── 歷史版次列表 ── #}
+    <div class="card">
+        <div class="card-header d-flex align-items-center gap-2"><i class="bi bi-archive"></i><span>已封存版次</span></div>
+        <div class="table-responsive">
+            <table class="table table-hover mb-0 align-middle" style="min-width:720px">
+                <thead>
+                    <tr><th>版次</th><th>封存時間</th><th>名單</th><th>已報到</th><th>中獎</th><th>開獎</th><th class="text-end">操作</th></tr>
+                </thead>
+                <tbody>
+                    {% for e in editions %}
+                    <tr>
+                        <td><a class="ed-name" href="{{ url_for('admin.edition_detail', edition_id=e.id) }}">{{ e.name }}</a></td>
+                        <td class="num text-muted" style="font-size:13px">{{ e.archived_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                        <td class="num fw-bold">{{ e.total_count }}</td>
+                        <td class="num" style="color:#9FF7EA">{{ e.checked_in_count }}{% if e.total_count %} <span class="text-muted" style="font-size:12px">({{ (e.checked_in_count * 100 / e.total_count)|round|int }}%)</span>{% endif %}</td>
+                        <td class="num" style="color:#FFE3A3">{{ e.winner_count }}</td>
+                        <td class="num">{{ e.draw_count }}</td>
+                        <td class="text-end text-nowrap">
+                            <a class="btn btn-outline-secondary icon-btn me-1" href="{{ url_for('admin.edition_detail', edition_id=e.id) }}" title="查看"><i class="bi bi-eye"></i></a>
+                            <a class="btn btn-outline-secondary icon-btn me-1" href="{{ url_for('admin.edition_export', edition_id=e.id) }}" title="匯出 Excel"><i class="bi bi-download"></i></a>
+                            {% if is_super %}
+                            <form method="POST" action="{{ url_for('admin.edition_delete', edition_id=e.id) }}" class="d-inline" data-name="{{ e.name }}"
+                                  onsubmit="return confirm('確定要永久刪除歷史版次「' + this.dataset.name + '」嗎？\n刪除後無法復原，建議先匯出 Excel。');">
+                                <button type="submit" class="btn btn-outline-danger icon-btn" title="刪除"><i class="bi bi-trash"></i></button>
+                            </form>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="7" class="text-center p-5 text-muted"><i class="bi bi-inbox fs-2 d-block mb-2"></i>尚未封存任何版次</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

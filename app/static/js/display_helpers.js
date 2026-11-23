@@ -3,20 +3,20 @@
 
     const PARTICIPANT_LABELS = { employee: '員工', dependent: '眷屬', vendor_contact: '外部廠商主要窗口', vendor: '外部廠商' };
     const TYPE_STYLES = {
-        employee: 'background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;',
-        dependent: 'background:#faf5ff;color:#7c3aed;border:1px solid #ddd6fe;',
-        vendor_contact: 'background:#fff7ed;color:#c2410c;border:1px solid #fed7aa;',
-        vendor: 'background:#fefce8;color:#a16207;border:1px solid #fde68a;'
+        employee: 'background:rgba(159,216,255,.1);color:#9FD8FF;border:1px solid rgba(159,216,255,.4);',
+        dependent: 'background:rgba(201,184,255,.1);color:#C9B8FF;border:1px solid rgba(201,184,255,.4);',
+        vendor_contact: 'background:rgba(255,194,154,.1);color:#FFC29A;border:1px solid rgba(255,194,154,.4);',
+        vendor: 'background:rgba(255,227,163,.1);color:#FFE3A3;border:1px solid rgba(255,227,163,.4);'
     };
-    const MEAL_STYLE = 'background:#f0f9ff;color:#075985;border:1px solid #bae6fd;';
+    const MEAL_STYLE = 'background:rgba(189,247,255,.1);color:#BDF7FF;border:1px solid rgba(189,247,255,.4);';
     const GROUP_STYLES = {
-        A: 'background:#fff7ed;color:#c2410c;border:1px solid #fdba74;',
-        B: 'background:#fefce8;color:#a16207;border:1px solid #fde68a;',
-        C: 'background:#fdf2f8;color:#be185d;border:1px solid #fbcfe8;',
-        D: 'background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;',
-        E: 'background:#faf5ff;color:#7c3aed;border:1px solid #ddd6fe;',
-        F: 'background:#ecfdf5;color:#065f46;border:1px solid #a7f3d0;',
-        DEFAULT: 'background:#f8fafc;color:#475569;border:1px solid #cbd5e1;'
+        A: 'background:rgba(255,194,154,.1);color:#FFC29A;border:1px solid rgba(255,194,154,.4);',
+        B: 'background:rgba(255,227,163,.1);color:#FFE3A3;border:1px solid rgba(255,227,163,.4);',
+        C: 'background:rgba(255,179,209,.1);color:#FFB3D1;border:1px solid rgba(255,179,209,.4);',
+        D: 'background:rgba(159,216,255,.1);color:#9FD8FF;border:1px solid rgba(159,216,255,.4);',
+        E: 'background:rgba(201,184,255,.1);color:#C9B8FF;border:1px solid rgba(201,184,255,.4);',
+        F: 'background:rgba(159,247,234,.1);color:#9FF7EA;border:1px solid rgba(159,247,234,.4);',
+        DEFAULT: 'background:rgba(182,220,235,.1);color:#B6DCEB;border:1px solid rgba(182,220,235,.4);'
     };
     const FILTER_MAP = {
         status: { id: 'filter-status', empty: 'NONE', actual: p => p.status },
@@ -139,7 +139,15 @@
         });
         setWidgetValues(key, values.filter(value => Array.from(select.options).some(o => o.value === value)));
     }
-    function rebuildAllMultiWidgets() { Object.keys(FILTER_MAP).forEach(rebuildMultiWidget); }
+    function rebuildAllMultiWidgets() { if (hasLegacyFilterSelects()) Object.keys(FILTER_MAP).forEach(rebuildMultiWidget); }
+    // 舊版多選篩選層只適用於 <select> 篩選欄。儀表板現在自帶單選／複選篩選（div 容器），
+    // 此時舊層必須完全停用，否則會讀取不存在的 select.options 而丟出錯誤、並干擾列的顯示。
+    function hasLegacyFilterSelects() {
+        return Object.values(FILTER_MAP).every(meta => {
+            const el = document.getElementById(meta.id);
+            return !el || el.tagName === 'SELECT';
+        });
+    }
 
     function matchFilter(key, person) {
         const values = selectedValuesFor(key);
@@ -151,6 +159,7 @@
         return values.includes(actual || '');
     }
     function applyMultiFilterVisibility() {
+        if (!hasLegacyFilterSelects()) return;
         const tableBody = document.getElementById('table-body');
         const displayCount = document.getElementById('display-count');
         if (!tableBody) return;
@@ -168,6 +177,7 @@
     }
 
     function enableDashboardFilterModes(modes) {
+        if (!hasLegacyFilterSelects()) return;
         MULTI_MODES = modes || {};
         rebuildAllMultiWidgets();
         wrapRenderTable();
@@ -220,6 +230,8 @@
 
     function injectAdminFilterModeCard() {
         if (!location.pathname.includes('/admin') || document.getElementById('filter-mode-settings-card')) return;
+        // 設定頁已有新版「報到儀表板篩選方式」卡片時不再插入舊卡片，避免兩組互相矛盾的設定
+        if (document.getElementById('sec-filter')) return;
         const queryCardTitle = Array.from(document.querySelectorAll('.card-header span')).find(el => el.textContent.trim() === '查詢站顯示欄位');
         if (!queryCardTitle) return;
         fetch('/admin/api/filter_modes').then(r => r.json()).then(data => {

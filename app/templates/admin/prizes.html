@@ -1,122 +1,129 @@
 {% extends "base.html" %}
 {% block title %}後台 - 獎項管理{% endblock %}
 
+{% block styles %}
+.type-pill { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 700; padding: 4px 10px; border-radius: 999px; border: 1px solid; white-space: nowrap; }
+.type-pill.tail { color: #9FD8FF; border-color: rgba(159, 216, 255, .45); }
+.type-pill.public { color: var(--a-gold); border-color: rgba(94, 234, 212, .5); }
+.icon-btn { width: 34px; height: 34px; padding: 0; border-radius: 8px; display: inline-flex; align-items: center; justify-content: center; }
+.seg { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.seg input { position: absolute; opacity: 0; pointer-events: none; }
+.seg label { height: 42px; border-radius: 10px; border: 1px solid var(--a-line-2); color: var(--a-muted); font-weight: 700; font-size: 14px; display: flex; align-items: center; justify-content: center; gap: 6px; cursor: pointer; margin: 0; }
+.seg input:checked + label { border-color: var(--a-aqua); background: rgba(126, 240, 224, .12); color: var(--a-ink); }
+.seg input:focus-visible + label { box-shadow: 0 0 0 4px rgba(94, 234, 212, .14); }
+#prizeModal .form-label { font-size: 13px; color: #B6DCEB; }
+#prizeModal .form-label span { color: var(--a-dim); }
+#prizeModal .form-control { height: 44px; border-radius: 10px; }
+{% endblock %}
+
 {% block content %}
-<div class="container mt-4 mb-5">
-    <div class="d-flex justify-content-between align-items-center mb-3">
-        <h4 class="mb-0 fw-bold" style="color:var(--ocean-dark);">
-            <i class="bi bi-trophy me-2"></i>獎項管理
-        </h4>
-        <button class="btn btn-ocean" id="btn-open-add">
-            <i class="bi bi-plus-lg me-1"></i>新增獎項
-        </button>
+<div class="page-wrap">
+    <div class="page-head">
+        <div><div class="page-eyebrow">PRIZES</div><h1 class="page-title">獎項管理</h1></div>
+        <button class="btn btn-ocean" id="btn-open-add" style="height:42px"><i class="bi bi-plus-lg me-1"></i>新增獎項</button>
     </div>
 
     <div class="card">
-        <div class="card-body p-0">
-            <div class="table-responsive">
-                <table class="table table-hover table-striped mb-0 align-middle">
-                    <thead>
-                        <tr>
-                            <th>類型</th>
-                            <th>獎項名稱</th>
-                            <th>數量</th>
-                            <th>排序</th>
-                            <th class="text-end">操作</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for prize in prizes %}
-                        <tr>
-                            <td>
-                                {% if prize.prize_type == 'tail' %}
-                                    <span class="badge" style="background:#e0f2fe;color:#0369a1;border:1px solid #bae6fd;">
-                                        <i class="bi bi-ticket-perforated me-1"></i>尾數獎
-                                    </span>
-                                {% else %}
-                                    <span class="badge" style="background:#fffbeb;color:#92400e;border:1px solid #fde68a;">
-                                        <i class="bi bi-trophy me-1"></i>公獎
-                                    </span>
-                                {% endif %}
-                            </td>
-                            <td class="fw-bold">{{ prize.name }}</td>
-                            <td>{{ prize.quantity }}</td>
-                            <td><span class="badge bg-light text-secondary border">{{ prize.display_order }}</span></td>
-                            <td class="text-end">
-                                <button class="btn btn-sm btn-outline-secondary me-1"
-                                    onclick="openEditModal('{{ prize.id }}','{{ prize.name }}','{{ prize.prize_type }}','{{ prize.quantity }}','{{ prize.display_order }}')"
-                                    title="編輯">
-                                    <i class="bi bi-pencil"></i>
+        <div class="table-responsive">
+            <table class="table table-hover mb-0 align-middle" style="min-width:640px">
+                <thead>
+                    <tr>
+                        <th>類型</th>
+                        <th>獎項名稱</th>
+                        <th>數量</th>
+                        <th>排序</th>
+                        <th class="text-end">操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for prize in prizes %}
+                    <tr>
+                        <td>
+                            {% if prize.prize_type == 'tail' %}
+                                <span class="type-pill tail"><i class="bi bi-ticket-perforated"></i>尾數獎</span>
+                            {% else %}
+                                <span class="type-pill public"><i class="bi bi-trophy"></i>公獎</span>
+                            {% endif %}
+                        </td>
+                        <td class="fw-bold" style="font-size:15px">{{ prize.name }}</td>
+                        <td class="num fw-bold">{{ prize.quantity }}</td>
+                        <td class="num text-muted">{{ prize.display_order }}</td>
+                        <td class="text-end text-nowrap">
+                            <button type="button" class="btn btn-outline-secondary icon-btn me-1 js-edit" title="編輯"
+                                data-id="{{ prize.id }}" data-name="{{ prize.name }}" data-type="{{ prize.prize_type }}"
+                                data-qty="{{ prize.quantity }}" data-order="{{ prize.display_order }}">
+                                <i class="bi bi-pencil"></i>
+                            </button>
+                            <form method="POST" action="{{ url_for('admin.reset_prize') }}" class="d-inline"
+                                onsubmit="return confirm('確定要清除「' + this.prize_name.value + '」的所有中獎紀錄嗎？\n此操作無法復原！');">
+                                <input type="hidden" name="prize_name" value="{{ prize.name }}">
+                                <input type="hidden" name="prize_type" value="{{ prize.prize_type }}">
+                                <button type="submit" class="btn btn-outline-warning icon-btn me-1" title="清除中獎紀錄（重抽）">
+                                    <i class="bi bi-arrow-counterclockwise"></i>
                                 </button>
-                                <form method="POST" action="{{ url_for('admin.reset_prize') }}" class="d-inline"
-                                    onsubmit="return confirm('確定要清除「{{ prize.name }}」的所有中獎紀錄嗎？\n此操作無法復原！');">
-                                    <input type="hidden" name="prize_name" value="{{ prize.name }}">
-                                    <input type="hidden" name="prize_type" value="{{ prize.prize_type }}">
-                                    <button type="submit" class="btn btn-sm btn-outline-warning me-1" title="清除中獎紀錄（重抽）">
-                                        <i class="bi bi-arrow-counterclockwise"></i>
-                                    </button>
-                                </form>
-                                <form method="POST" action="{{ url_for('admin.manage_prizes') }}" class="d-inline"
-                                    onsubmit="return confirm('確定要刪除「{{ prize.name }}」嗎？');">
-                                    <input type="hidden" name="action" value="delete">
-                                    <input type="hidden" name="prize_id" value="{{ prize.id }}">
-                                    <button type="submit" class="btn btn-sm btn-outline-danger" title="刪除獎項">
-                                        <i class="bi bi-trash"></i>
-                                    </button>
-                                </form>
-                            </td>
-                        </tr>
-                        {% else %}
-                        <tr>
-                            <td colspan="5" class="text-center p-5 text-muted">
-                                <i class="bi bi-inbox fs-2 d-block mb-2"></i>尚未設定任何獎項
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
+                            </form>
+                            <form method="POST" action="{{ url_for('admin.manage_prizes') }}" class="d-inline"
+                                onsubmit="return confirm('確定要刪除「' + this.dataset.name + '」嗎？');" data-name="{{ prize.name }}">
+                                <input type="hidden" name="action" value="delete">
+                                <input type="hidden" name="prize_id" value="{{ prize.id }}">
+                                <button type="submit" class="btn btn-outline-danger icon-btn" title="刪除獎項">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="5" class="text-center p-5 text-muted">
+                            <i class="bi bi-inbox fs-2 d-block mb-2"></i>尚未設定任何獎項
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
         </div>
     </div>
 </div>
 
 {# Modal #}
 <div class="modal fade" id="prizeModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content border-0 shadow">
+    <div class="modal-dialog modal-dialog-centered" style="max-width:460px">
+        <div class="modal-content">
             <form method="POST" action="{{ url_for('admin.manage_prizes') }}">
-                <div class="modal-header" style="background:#f0f9ff;border-bottom:1px solid #bae6fd;">
-                    <h5 class="modal-title fw-bold" id="modalTitle" style="color:var(--ocean-dark);">新增獎項</h5>
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalTitle">新增獎項</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
-                <div class="modal-body">
+                <div class="modal-body d-flex flex-column gap-3">
                     <input type="hidden" name="action" id="formAction" value="add">
                     <input type="hidden" name="prize_id" id="prizeId">
-                    <div class="mb-3">
-                        <label class="form-label">獎項類型</label>
-                        <select class="form-select" name="prize_type" id="prizeType">
-                            <option value="tail">尾數獎</option>
-                            <option value="public">公獎</option>
-                        </select>
+                    <div>
+                        <div class="form-label">獎項類型</div>
+                        <div class="seg">
+                            <input type="radio" name="prize_type" id="typeTail" value="tail" checked>
+                            <label for="typeTail"><i class="bi bi-ticket-perforated"></i>尾數獎</label>
+                            <input type="radio" name="prize_type" id="typePublic" value="public">
+                            <label for="typePublic"><i class="bi bi-trophy"></i>公獎</label>
+                        </div>
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label">獎項名稱</label>
+                    <div>
+                        <label class="form-label" for="prizeName">獎項名稱</label>
                         <input type="text" class="form-control" name="name" id="prizeName" placeholder="例：限量環保袋" required>
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label">數量 <span class="text-muted">(公獎用)</span></label>
-                        <input type="number" class="form-control" name="quantity" id="prizeQuantity" value="1" min="1">
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">排序 <span class="text-muted">(數字越小越前)</span></label>
-                        <input type="number" class="form-control" name="display_order" id="prizeOrder" value="0">
+                    <div class="row g-3">
+                        <div class="col-6">
+                            <label class="form-label" for="prizeQuantity">數量 <span>(公獎用)</span></label>
+                            <input type="number" class="form-control" name="quantity" id="prizeQuantity" value="1" min="1">
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label" for="prizeOrder">排序 <span>(數字越小越前)</span></label>
+                            <input type="number" class="form-control" name="display_order" id="prizeOrder" value="0">
+                        </div>
                     </div>
                 </div>
-                <div class="modal-footer" style="background:#f8fafc;border-top:1px solid #e2e8f0;">
+                <div class="modal-footer">
                     <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">取消</button>
-                    <button type="submit" class="btn btn-ocean">
-                        <i class="bi bi-check-lg me-1"></i>儲存
-                    </button>
+                    <button type="submit" class="btn btn-ocean"><i class="bi bi-check-lg me-1"></i>儲存</button>
                 </div>
             </form>
         </div>
@@ -125,28 +132,23 @@
 
 <script>
     var prizeModal;
-    document.addEventListener('DOMContentLoaded', () => {
-        prizeModal = new bootstrap.Modal(document.getElementById('prizeModal'));
-        document.getElementById('btn-open-add').addEventListener('click', () => {
-            document.getElementById('modalTitle').innerText = '新增獎項';
-            document.getElementById('formAction').value = 'add';
-            document.getElementById('prizeId').value = '';
-            document.getElementById('prizeName').value = '';
-            document.getElementById('prizeType').value = 'tail';
-            document.getElementById('prizeQuantity').value = '1';
-            document.getElementById('prizeOrder').value = '0';
-            prizeModal.show();
-        });
-    });
-    function openEditModal(id, name, type, qty, order) {
-        document.getElementById('modalTitle').innerText = '編輯獎項';
-        document.getElementById('formAction').value = 'edit';
+    function fillModal(title, action, id, name, type, qty, order) {
+        document.getElementById('modalTitle').innerText = title;
+        document.getElementById('formAction').value = action;
         document.getElementById('prizeId').value = id;
         document.getElementById('prizeName').value = name;
-        document.getElementById('prizeType').value = type;
+        document.getElementById(type === 'public' ? 'typePublic' : 'typeTail').checked = true;
         document.getElementById('prizeQuantity').value = qty;
         document.getElementById('prizeOrder').value = order;
         prizeModal.show();
     }
+    document.addEventListener('DOMContentLoaded', () => {
+        prizeModal = new bootstrap.Modal(document.getElementById('prizeModal'));
+        document.getElementById('btn-open-add').addEventListener('click', () => fillModal('新增獎項', 'add', '', '', 'tail', '1', '0'));
+        document.querySelectorAll('.js-edit').forEach(btn => btn.addEventListener('click', () => {
+            const d = btn.dataset;
+            fillModal('編輯獎項', 'edit', d.id, d.name, d.type, d.qty, d.order);
+        }));
+    });
 </script>
 {% endblock %}

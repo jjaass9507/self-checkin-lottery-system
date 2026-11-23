@@ -36,6 +36,7 @@ def create_app(config_class=Config):
     from app.admin.routes import bp as admin_bp
     from app.admin import optimized_routes as admin_optimized_routes
     from app.admin.reset_checkin_patch import reset_checkin as patched_reset_checkin
+    from app.admin import editions  # noqa: F401  註冊歷史版次路由（需在 register_blueprint 之前）
     app.register_blueprint(admin_bp, url_prefix='/admin')
     app.view_functions['admin.import_page'] = admin_optimized_routes.optimized_import_page
     app.view_functions['admin.reset_list'] = admin_optimized_routes.optimized_reset_list

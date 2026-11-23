@@ -113,3 +113,22 @@ class AppSetting(db.Model):
 
     def __repr__(self):
         return f'<AppSetting {self.key}={self.value}>'
+
+
+# 6. 歷史版次 (EventEdition)
+#    「結束本屆並封存」時，把當屆名單、開獎、獎項、取消紀錄整包存成 JSON 快照，
+#    之後清空這些資料表開始下一屆。系統設定 (AppSetting) 不在快照內，會沿用到下一屆。
+class EventEdition(db.Model):
+    __tablename__ = 'event_editions'
+
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False)
+    archived_at = db.Column(db.DateTime, nullable=False, default=datetime.now)
+    total_count = db.Column(db.Integer, nullable=False, default=0)
+    checked_in_count = db.Column(db.Integer, nullable=False, default=0)
+    winner_count = db.Column(db.Integer, nullable=False, default=0)
+    draw_count = db.Column(db.Integer, nullable=False, default=0)
+    data = db.Column(db.Text, nullable=False)  # JSON 快照
+
+    def __repr__(self):
+        return f'<EventEdition {self.name}>'
