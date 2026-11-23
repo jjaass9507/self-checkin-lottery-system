@@ -1,0 +1,189 @@
+{% extends "base.html" %}
+{% block title %}歷史版次 - {{ edition.name }}{% endblock %}
+
+{% block styles %}
+.stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 180px), 1fr)); gap: 12px; }
+.stat-grid .card-body { padding: 20px 24px; }
+.stat-val { font-family: var(--num-font); font-size: 36px; font-weight: 700; color: var(--a-ink); margin-top: 4px; }
+.read-only { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--a-muted); padding: 4px 10px; border-radius: 999px; border: 1px dashed var(--a-line-2); }
+.ed-tabs { display: flex; gap: 4px; padding: 0 22px; border-bottom: 1px solid var(--a-line); overflow-x: auto; scrollbar-width: none; }
+.ed-tabs button { background: none; border: 0; border-bottom: 2px solid transparent; padding: 14px 10px; color: var(--a-muted); font-size: 14px; font-weight: 500; white-space: nowrap; }
+.ed-tabs button.on { color: var(--a-ink); border-bottom-color: var(--a-aqua); }
+.ed-tabs .cnt { font-family: var(--num-font); font-size: 11px; color: var(--a-dim); margin-left: 4px; }
+.ed-pane[hidden] { display: none; }
+.status-dot { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; white-space: nowrap; }
+.status-dot::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+.tag { font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--a-line-2); color: #C9EEF8; white-space: nowrap; }
+{% endblock %}
+
+{% block content %}
+{% set checked = edition.checked_in_count %}
+<div class="container-fluid mb-5" style="max-width:1440px;padding:28px 24px 0">
+    <div class="page-head">
+        <div>
+            <a href="{{ url_for('admin.editions_page') }}" class="small text-muted text-decoration-none"><i class="bi bi-arrow-left me-1"></i>歷史版次</a>
+            <h1 class="page-title">{{ edition.name }}</h1>
+            <div class="d-flex align-items-center gap-2 mt-2 flex-wrap">
+                <span class="read-only"><i class="bi bi-lock"></i>唯讀封存資料</span>
+                <span class="num text-muted" style="font-size:12px">封存於 {{ edition.archived_at.strftime('%Y-%m-%d %H:%M') }}</span>
+            </div>
+        </div>
+        <a class="btn btn-soft" href="{{ url_for('admin.edition_export', edition_id=edition.id) }}"><i class="bi bi-download me-1"></i>匯出 Excel</a>
+    </div>
+
+    <div class="stat-grid mb-3">
+        <div class="card"><div class="card-body"><div class="filter-label"><i class="bi bi-people me-2"></i>名單人數</div><div class="stat-val">{{ edition.total_count }}</div></div></div>
+        <div class="card"><div class="card-body"><div class="filter-label"><i class="bi bi-person-check me-2"></i>已報到</div><div class="stat-val" style="color:#9FF7EA">{{ checked }}</div></div></div>
+        <div class="card"><div class="card-body"><div class="filter-label"><i class="bi bi-graph-up me-2"></i>報到率</div><div class="stat-val">{{ ((checked * 100 / edition.total_count)|round|int) if edition.total_count else 0 }}%</div></div></div>
+        <div class="card"><div class="card-body"><div class="filter-label"><i class="bi bi-trophy me-2"></i>中獎人數</div><div class="stat-val" style="color:#FFE3A3">{{ edition.winner_count }}</div></div></div>
+    </div>
+
+    <div class="card">
+        <div class="ed-tabs" role="tablist">
+            <button type="button" class="on" data-tab="winners">中獎名單<span class="cnt">{{ winners|length }}</span></button>
+            <button type="button" data-tab="people">完整名單<span class="cnt">{{ people|length }}</span></button>
+            <button type="button" data-tab="draws">開獎紀錄<span class="cnt">{{ data.draws|length }}</span></button>
+            <button type="button" data-tab="prizes">獎項<span class="cnt">{{ data.prizes|length }}</span></button>
+            <button type="button" data-tab="cancels">取消報到紀錄<span class="cnt">{{ data.cancellations|length }}</span></button>
+        </div>
+
+        <div class="ed-pane" data-pane="winners">
+            <div class="table-container">
+                <table class="table table-hover mb-0 align-middle" style="min-width:640px">
+                    <thead><tr><th>姓名</th><th>工號</th><th>抽獎號碼</th><th>獎項</th><th>站點</th><th>領取</th></tr></thead>
+                    <tbody>
+                    {% for p in winners %}
+                        <tr>
+                            <td class="fw-bold">{{ p.name }}{% if p.is_business_trip %} <span class="tag ms-1">公差</span>{% endif %}</td>
+                            <td class="num" style="color:#B6DCEB">{{ p.employee_id }}</td>
+                            <td class="num fw-bold" style="color:#FFE3A3">{{ p.lottery_number or '-' }}</td>
+                            <td style="color:#FFE3A3">{{ p.prize_info or '-' }}</td>
+                            <td>{{ p.site or '-' }}</td>
+                            <td class="text-nowrap">
+                                {% if p.has_won %}<span class="tag me-1">尾數{{ '已領' if p.prize_claimed else '未領' }}</span>{% endif %}
+                                {% if p.has_won_public %}<span class="tag">公獎{{ '已領' if p.public_prize_claimed else '未領' }}</span>{% endif %}
+                            </td>
+                        </tr>
+                    {% else %}
+                        <tr><td colspan="6" class="text-center p-5 text-muted">本屆沒有中獎紀錄</td></tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="ed-pane" data-pane="people" hidden>
+            <div class="filter-section">
+                <div style="max-width:360px">
+                    <div class="filter-label">關鍵字搜尋</div>
+                    <input type="search" class="form-control form-control-sm" id="people-search" placeholder="工號 / 姓名 / 站點 / 號碼…">
+                </div>
+            </div>
+            <div class="table-container">
+                <table class="table table-hover mb-0 align-middle" style="min-width:1200px">
+                    <thead><tr><th>姓名</th><th>工號</th><th>身分</th><th>站點</th><th>部門</th><th>桌次</th><th>餐點</th><th>組別</th><th>抽獎號碼</th><th>狀態</th><th>報到時間</th><th>中獎資訊</th></tr></thead>
+                    <tbody id="people-body">
+                    {% for p in people %}
+                        <tr data-q="{{ [p.name, p.employee_id, p.site, p.dept_code, p.lottery_number, p.table_number, p.group_name, p.phone]|select|join(' ')|lower }}">
+                            <td class="fw-bold">{{ p.name }}</td>
+                            <td class="num" style="color:#B6DCEB">{{ p.employee_id }}</td>
+                            <td>{{ type_labels.get(p.participant_type, '-') }}{% if p.participant_type == 'dependent' and p.linked_employee_id %} <span class="text-muted small">→ {{ p.linked_employee_id }}</span>{% endif %}</td>
+                            <td>{{ p.site or '-' }}</td>
+                            <td>{{ p.dept_code or '-' }}</td>
+                            <td class="num fw-bold">{{ p.table_number or '-' }}</td>
+                            <td>{{ p.meal_type or '-' }}</td>
+                            <td>{{ p.group_name or '-' }}</td>
+                            <td class="num fw-bold" style="color:#FFE3A3">{{ p.lottery_number or '-' }}</td>
+                            <td>{% if p.status == 'CheckedIn' %}<span class="status-dot" style="color:#9FF7EA">已報到</span>{% elif p.is_business_trip %}<span class="status-dot" style="color:#9FD8FF">公差</span>{% else %}<span class="status-dot" style="color:#7FB2C8">未報到</span>{% endif %}</td>
+                            <td class="num text-muted" style="font-size:12px">{{ (p.check_in_time or '')[5:16] }}</td>
+                            <td style="color:#FFE3A3">{{ p.prize_info or '' }}</td>
+                        </tr>
+                    {% else %}
+                        <tr><td colspan="12" class="text-center p-5 text-muted">沒有名單資料</td></tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="ed-pane" data-pane="draws" hidden>
+            <div class="table-container">
+                <table class="table table-hover mb-0 align-middle" style="min-width:560px">
+                    <thead><tr><th>時間</th><th>號碼</th><th>獎項</th><th>類型</th></tr></thead>
+                    <tbody>
+                    {% for d in data.draws %}
+                        <tr>
+                            <td class="num text-muted" style="font-size:13px">{{ d.timestamp }}</td>
+                            <td class="num fw-bold" style="color:#FFE3A3">{{ d.tail_number }}</td>
+                            <td class="fw-bold">{{ d.prize_name }}</td>
+                            <td><span class="tag">{{ '公獎' if d.prize_type == 'public' else '尾數獎' }}</span>{% if d.is_addon %} <span class="tag">加碼</span>{% endif %}</td>
+                        </tr>
+                    {% else %}
+                        <tr><td colspan="4" class="text-center p-5 text-muted">沒有開獎紀錄</td></tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="ed-pane" data-pane="prizes" hidden>
+            <div class="table-container">
+                <table class="table table-hover mb-0 align-middle" style="min-width:480px">
+                    <thead><tr><th>類型</th><th>獎項名稱</th><th>數量</th><th>排序</th></tr></thead>
+                    <tbody>
+                    {% for pz in data.prizes %}
+                        <tr>
+                            <td><span class="tag">{{ '公獎' if pz.prize_type == 'public' else '尾數獎' }}</span></td>
+                            <td class="fw-bold">{{ pz.name }}</td>
+                            <td class="num fw-bold">{{ pz.quantity }}</td>
+                            <td class="num text-muted">{{ pz.display_order }}</td>
+                        </tr>
+                    {% else %}
+                        <tr><td colspan="4" class="text-center p-5 text-muted">沒有獎項資料</td></tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="ed-pane" data-pane="cancels" hidden>
+            <div class="table-container">
+                <table class="table table-hover mb-0 align-middle" style="min-width:560px">
+                    <thead><tr><th>操作時間</th><th>姓名</th><th>工號</th><th>執行者工號</th></tr></thead>
+                    <tbody>
+                    {% for c in data.cancellations %}
+                        <tr>
+                            <td class="num text-muted" style="font-size:13px">{{ c.timestamp }}</td>
+                            <td class="fw-bold">{{ c.name }}</td>
+                            <td class="num" style="color:#B6DCEB">{{ c.employee_id }}</td>
+                            <td><span class="num" style="font-size:13px;font-weight:700;padding:3px 10px;border-radius:6px;border:1px solid rgba(255,180,162,.4);color:#FFB4A2">{{ c.cancelled_by }}</span></td>
+                        </tr>
+                    {% else %}
+                        <tr><td colspan="4" class="text-center p-5 text-muted">沒有取消紀錄</td></tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.querySelectorAll('.ed-tabs button').forEach(btn => btn.addEventListener('click', () => {
+        document.querySelectorAll('.ed-tabs button').forEach(b => b.classList.toggle('on', b === btn));
+        document.querySelectorAll('.ed-pane').forEach(p => { p.hidden = p.dataset.pane !== btn.dataset.tab; });
+    }));
+    const search = document.getElementById('people-search');
+    const rows = [...document.querySelectorAll('#people-body tr[data-q]')];
+    let t = null;
+    search.addEventListener('input', () => {
+        clearTimeout(t);
+        t = setTimeout(() => {
+            const q = search.value.trim().toLowerCase();
+            rows.forEach(r => { r.hidden = !!q && !r.dataset.q.includes(q); });
+        }, 120);
+    });
+</script>
+{% endblock %}
