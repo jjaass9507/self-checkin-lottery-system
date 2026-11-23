@@ -38,6 +38,7 @@
 
         .result-area { flex: 1; min-height: 0; margin: 8px auto 14px; width: 94%; border-radius: 26px; padding: 16px; overflow: hidden; display: flex; flex-wrap: wrap; justify-content: center; align-content: center; gap: 1em; font-size: var(--card-base-size); }
         .waiting { font-size: 22px; color: rgba(190, 245, 255, .45); letter-spacing: .4em; }
+        .draw-status { color: #ffe3a3; font-size: clamp(24px, 4vw, 48px); font-weight: 900; text-align: center; }
         .candidate-card { width: 16.25em; padding: 1.375em; border-radius: 1.5em; background: rgba(60, 52, 30, .55); border: 1px solid rgba(255, 227, 163, .7); text-align: center; box-shadow: 0 0 2.5em rgba(242, 196, 109, .3); animation: rise-big .8s cubic-bezier(.2, .9, .25, 1.15) both; }
         .c-name { font: 900 1.875em 'Noto Sans TC', sans-serif; }
         .c-biz { font-size: .47em; color: #9FD8FF; margin-left: 6px; }
@@ -98,7 +99,7 @@
 
     <div class="info-bar" id="count-info"></div>
 
-    <div class="result-area glass-soft" id="result-list">
+    <div class="result-area glass-soft" id="result-list" aria-live="polite">
         <div class="waiting">等待開始抽獎…</div>
     </div>
 
@@ -169,6 +170,25 @@
     function fx(opts) { if (window.OceanFX) OceanFX.burst(innerWidth / 2, innerHeight / 2, opts); }
     function setHint(text, kind) { hintArea.innerText = text; hintArea.className = 'hint' + (kind ? ' ' + kind : ''); }
 
+    function showDrawStatus(message) {
+        const status = document.createElement('div');
+        status.className = 'draw-status';
+        status.textContent = message;
+        listEl.replaceChildren(status);
+        countInfoEl.textContent = '';
+        currentCandidates = [];
+        finalWinner = null;
+        modal.hidden = true;
+        cards.forEach(c => c.classList.remove('locked'));
+        inputEl.disabled = false;
+        btnReveal.disabled = false;
+        prizeSelect.disabled = false;
+        revealLabel.innerText = '揭曉';
+        setHint('可重新輸入 3 位數抽獎編號');
+        inputEl.focus();
+        inputEl.select();
+    }
+
     // 初始化
     loadPublicPrizes();
     inputEl.focus();
@@ -183,6 +203,10 @@
             digitEls[i].textContent = val[i] || '?';
             c.classList.toggle('active', !!val[i]);
         });
+        if (listEl.querySelector('.draw-status')) {
+            listEl.innerHTML = WAITING_HTML;
+            setHint('請輸入 3 位數抽獎編號');
+        }
         if (hintArea.classList.contains('err')) setHint('請輸入 3 位數抽獎編號');
     });
 
@@ -206,6 +230,7 @@
         inputEl.value = '';
         inputEl.disabled = false;
         btnReveal.disabled = false;
+        prizeSelect.disabled = false;
         revealLabel.innerText = "揭曉";
         setHint("請輸入 3 位數抽獎編號");
         inputEl.focus();
@@ -257,7 +282,10 @@
         }
 
         setHint('查詢中…');
+        listEl.innerHTML = WAITING_HTML;
         btnReveal.disabled = true;
+        inputEl.disabled = true;
+        prizeSelect.disabled = true;
 
         try {
             const res = await fetch("{{ url_for('lottery.api_public_search') }}", {
@@ -267,16 +295,12 @@
             });
             const data = await res.json();
 
-            if (!data.success) { setHint(data.message, 'err'); btnReveal.disabled = false; return; }
-            if (data.count === 0) {
-                setHint(`❌ 查無此號：輸入 ${val} 找不到符合資格的人員`, 'err');
-                btnReveal.disabled = false;
-                inputEl.select();
+            if (!res.ok || !data.success || data.status !== 'eligible' || data.count === 0) {
+                showDrawStatus(data.message || '抽獎查詢失敗，請重試。');
                 return;
             }
 
             currentCandidates = data.candidates;
-            inputEl.disabled = true;
             revealLabel.innerText = "抽獎完成";
             setHint('開獎中…', 'ok');
             spinThenLock(val, () => {
@@ -286,8 +310,7 @@
                 finishDraw();
             });
         } catch (e) {
-            setHint('API 錯誤，請重試', 'err');
-            btnReveal.disabled = false;
+            showDrawStatus('抽獎查詢失敗，請重試。');
         }
     }
 
@@ -356,6 +379,7 @@
         document.getElementById('final-prize-display').innerText = `【 ${prizeSelect.value} 】`;
         modal.hidden = false;
         btnSave.disabled = false;
+        btnRedraw.disabled = false;
         btnSave.focus();
     }
 
@@ -364,12 +388,15 @@
     btnSave.addEventListener('click', async () => {
         if (!finalWinner || btnSave.disabled) return;
         btnSave.disabled = true;
+        btnRedraw.disabled = true;
         try {
             const res = await fetch("{{ url_for('lottery.api_public_confirm') }}", {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({
+                    person_id: finalWinner.person_id,
                     employee_id: finalWinner.employee_id,
+                    digits: finalWinner.lottery_number,
                     prize_name: prizeSelect.value
                 })
             });
@@ -380,13 +407,16 @@
                 await loadPublicPrizes();
                 resetScreen();
                 setHint(`✅ ${data.message}`, 'ok');
+            } else if (['not_found', 'already_drawn', 'not_checked_in', 'eligibility_changed'].includes(data.status)) {
+                showDrawStatus(data.message);
             } else {
                 alert(data.message);
-                btnSave.disabled = false;
             }
         } catch (e) {
             alert("儲存錯誤: " + e);
+        } finally {
             btnSave.disabled = false;
+            btnRedraw.disabled = false;
         }
     });
 </script>
