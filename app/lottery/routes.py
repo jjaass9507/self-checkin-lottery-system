@@ -1,8 +1,11 @@
+import re
+from datetime import datetime
+
 from flask import Blueprint, render_template, request, jsonify
+from sqlalchemy import or_
+
 from app import db
 from app.models import CheckinList, DrawnTailNumber, Prize
-from datetime import datetime
-from sqlalchemy import or_
 
 bp = Blueprint('lottery', __name__)
 
@@ -150,56 +153,69 @@ def api_draw():
     
 # --- 公獎專用 API ---
 
-# --- 修改：公獎搜尋 API (支援 3 位數補零) ---
+def _public_number_values(digits):
+    # 舊名單可能將 005 存成 05 或 5。
+    unpadded = str(int(digits))
+    return {unpadded, unpadded.zfill(2), digits}
+
+
+def _public_number_matches(values):
+    return CheckinList.query.filter(CheckinList.lottery_number.in_(values)).order_by(CheckinList.id)
+
+
+def _public_draw_records(values):
+    return DrawnTailNumber.query.filter(
+        DrawnTailNumber.prize_type == 'public', DrawnTailNumber.tail_number.in_(values)
+    )
+
+
+def _public_number_status(digits, matches, records):
+    if not matches:
+        return 'not_found', f'沒有 {digits} 這個抽獎號碼。'
+    if any(person.has_won_public for person in matches) or records.first() is not None:
+        return 'already_drawn', f'號碼 {digits} 已抽過公獎。'
+    if all(person.status != 'CheckedIn' for person in matches):
+        return 'not_checked_in', f'號碼 {digits} 尚未報到。'
+    return 'eligible', ''
+
+
 @bp.route('/api/public/search', methods=['POST'])
 def api_public_search():
-    """
-    逐步搜尋符合資格的人 (邏輯修正：強制視為 3 位數)
-    """
-    data = request.get_json()
-    digits = data.get('digits', '') # 例如 "0" (代表百位數是0)
-    
-    if not digits:
-        return jsonify({"success": False, "message": "無輸入數字"}), 400
+    data = request.get_json(silent=True)
+    digits = data.get('digits') if isinstance(data, dict) else None
+    if not isinstance(digits, str) or not re.fullmatch(r'[0-9]{1,3}', digits):
+        return jsonify(success=False, message='請輸入 1 至 3 位數字。'), 400
 
-    # 1. 先取出所有「已報到」且「未中公獎」的人
-    #    (不使用 SQL LIKE，改用 Python 過濾，以處理 "5" -> "005" 的邏輯)
-    candidates_db = CheckinList.query.filter(
-        CheckinList.status == 'CheckedIn',
-        or_(CheckinList.has_won_public == False, CheckinList.has_won_public == None)
-    ).all()
+    response = {'success': True}
+    if len(digits) == 3:
+        values = _public_number_values(digits)
+        matches = _public_number_matches(values).all()
+        status, message = _public_number_status(digits, matches, _public_draw_records(values))
+        response.update(status=status, message=message)
+        candidates = [p for p in matches if p.status == 'CheckedIn'] if status == 'eligible' else []
+    else:
+        # 保留逐位輸入時的前綴搜尋。
+        candidates = CheckinList.query.filter(
+            CheckinList.status == 'CheckedIn',
+            or_(CheckinList.has_won_public.is_(False), CheckinList.has_won_public.is_(None))
+        ).all()
 
     results = []
-    
-    # 2. Python 端迴圈比對
-    for p in candidates_db:
-        # 如果欄位是空值，跳過
-        if not p.lottery_number:
-            continue
-            
-        # (*** 核心修改 ***)
-        # 將資料庫的號碼轉字串後，向左補零至 3 位數
-        # 例如: "5" -> "005", "15" -> "015", "123" -> "123"
-        normalized_num = str(p.lottery_number).zfill(3)
-        
-        # 比對開頭 (startswith)
-        if normalized_num.startswith(digits):
-            results.append({
-                "name": p.name,
-                "employee_id": p.employee_id,
-                "lottery_number": normalized_num, # 回傳補零後的號碼，讓前端顯示 "005"
-                "site": p.site,
-                "is_business_trip": p.is_business_trip  # (*** 新增此行 ***)
-            })
+    for person in candidates:
+        if person.lottery_number:
+            number = person.lottery_number.zfill(3)
+            if number.startswith(digits):
+                results.append({
+                    'person_id': person.id,
+                    'name': person.name,
+                    'employee_id': person.employee_id,
+                    'lottery_number': number,
+                    'site': person.site,
+                    'is_business_trip': person.is_business_trip,
+                })
 
-    # (*** 修改：回傳前依照抽獎編號排序 ***)
-    results.sort(key=lambda x: x['lottery_number'])
-
-    return jsonify({
-        "success": True,
-        "count": len(results),
-        "candidates": results
-    })
+    results.sort(key=lambda candidate: candidate['lottery_number'])
+    return jsonify(**response, count=len(results), candidates=results)
 
 @bp.route('/api/public/confirm', methods=['POST'])
 def api_public_confirm():
@@ -208,27 +224,53 @@ def api_public_confirm():
     """
     data = request.get_json()
     employee_id = data.get('employee_id')
+    person_id = data.get('person_id')
+    digits = data.get('digits')
     prize_name = data.get('prize_name', '公獎')
 
     if not employee_id:
         return jsonify({"success": False, "message": "未指定中獎者"}), 400
 
     try:
-        # 1. 先從資料庫找出這個人
-        person = CheckinList.query.filter_by(employee_id=employee_id).first()
+        people = CheckinList.query.filter_by(employee_id=employee_id)
+        if person_id is not None:
+            people = people.filter_by(id=person_id)
+        person = people.order_by(CheckinList.id).first()
         if not person:
-            return jsonify({"success": False, "message": "找不到此人"}), 404
+            return jsonify(success=False, status='not_found', message='找不到此中獎者，請重新揭曉。'), 404
 
-        # 2. 檢查是否已經中過
-        if person.has_won_public:
-            return jsonify({"success": False, "message": "此人已中過公獎"}), 400
+        lottery_num = (person.lottery_number or '').zfill(3)
+        if not person.lottery_number or not re.fullmatch(r'[0-9]{3}', lottery_num):
+            return jsonify(success=False, status='not_found', message='找不到有效的抽獎號碼。'), 404
+        if digits is not None and digits != lottery_num:
+            return jsonify(success=False, status='eligibility_changed', message='抽獎號碼已變更，請重新揭曉。'), 409
 
-        # 3. 更新狀態 (必須在找到 person 之後)
-        person.has_won_public = True
-        
-        # 4. 寫入紀錄，標記為 'public'
-        # 注意：這裡使用 person.lottery_number，確保它是 3 位數字串
-        lottery_num = str(person.lottery_number).zfill(3) if person.lottery_number else "000"
+        values = _public_number_values(lottery_num)
+        records = _public_draw_records(values)
+        matches = _public_number_matches(values).with_for_update().populate_existing().all()
+        status, message = _public_number_status(lottery_num, matches, records)
+        if status != 'eligible':
+            return jsonify(success=False, status=status, message=message), 409
+        if person not in matches:
+            return jsonify(success=False, status='eligibility_changed', message='抽獎號碼已變更，請重新揭曉。'), 409
+        if person.status != 'CheckedIn':
+            return jsonify(success=False, status='not_checked_in', message=f'號碼 {lottery_num} 尚未報到。'), 409
+
+        # SQLite 沒有列鎖，更新時一併檢查公獎紀錄，避免同號被重複存檔。
+        updated = people.filter(
+            CheckinList.id == person.id,
+            CheckinList.lottery_number.in_(values),
+            CheckinList.status == 'CheckedIn',
+            or_(CheckinList.has_won_public.is_(False), CheckinList.has_won_public.is_(None)),
+            ~records.exists(),
+        ).update({'has_won_public': True}, synchronize_session=False)
+        if not updated:
+            db.session.rollback()
+            matches = _public_number_matches(values).all()
+            status, message = _public_number_status(lottery_num, matches, records)
+            if status == 'eligible':
+                status, message = 'eligibility_changed', '人員資格已變更，請重新揭曉。'
+            return jsonify(success=False, status=status, message=message), 409
 
         new_record = DrawnTailNumber(
             tail_number=lottery_num, 
